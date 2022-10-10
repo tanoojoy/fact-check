@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../../utils';
+
 var React = require('react');
 var reactDom = require('react-dom/server');
 var template = require('../../views/layouts/template');
@@ -18,19 +20,9 @@ var EnumCoreModule = require('../../public/js/enum-core');
 
 var handlers = [authenticated, authorizedMerchant, onboardedMerchant];
 
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../../scripts/shared/user-permissions');
+orderRouter.get('/history', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
-const viewOrderHistoryPage = {
-    code: 'view-merchant-purchase-orders-api',
-    renderSidebar: true
-};
-
-const viewOrderDetailPage = {
-    code: 'view-merchant-purchase-order-details-api',
-    renderSidebar: true
-};
-
-orderRouter.get('/history', ...handlers, isAuthorizedToAccessViewPage(viewOrderHistoryPage), function (req, res) {
     let user = req.user;
 
     if (req.user === null) {
@@ -53,14 +45,13 @@ orderRouter.get('/history', ...handlers, isAuthorizedToAccessViewPage(viewOrderH
             });
         });
     } else {
-        //ARC9981
         promiseHistory = new Promise((resolve, reject) => {
             let options = {
                 userId: user.ID,
                 keyword: '',
                 pageNumber: 1,
                 pageSize: 20,
-                status: 'paid,waiting for payment,acknowledged,refunded,pending,processing'
+                status: 'success,waiting for payment,acknowledged,refunded,pending'
             }
             client.Orders.getHistory(options, function (err, result) {
                 resolve(result);
@@ -85,23 +76,14 @@ orderRouter.get('/history', ...handlers, isAuthorizedToAccessViewPage(viewOrderH
             resolve(result);
         });
     });
-    const promiseBookingDuration = new Promise((resolve, reject) => {
-        const options = {
-            version: 'v2'
-        };
-        client.Orders.getBookingDuration(options, function (err, result) {
-            resolve(result);
-        });
-    });
 
-    Promise.all([promiseHistory, promiseStatus, promiseFulfilmentStatus, promiseBookingDuration]).then((responses) => {
-
+    Promise.all([promiseHistory,promiseStatus, promiseFulfilmentStatus]).then((responses) => {
         let history = responses[0];
         const statuses = responses[1];
         const fStatuses = responses[2];
-        const bookingDuration = responses[3];
         const appString = 'merchant-order-history';
         const context = {};
+
         //EMpty History
         if (!history) {
             history = {
@@ -112,7 +94,6 @@ orderRouter.get('/history', ...handlers, isAuthorizedToAccessViewPage(viewOrderH
         let selectedOrderStatuses = "";
         let selectedDates = {};
         let keyword = "";
-        let bookings = "";
 
         let statusToPass = [];
         if (statuses && statuses.Records && process.env.CHECKOUT_FLOW_TYPE === 'b2b') {
@@ -131,6 +112,7 @@ orderRouter.get('/history', ...handlers, isAuthorizedToAccessViewPage(viewOrderH
 
         if (fStatuses && fStatuses.Records && process.env.CHECKOUT_FLOW_TYPE === 'b2c') {
             fStatuses.Records.map(function (status) {
+
                 if (status.Name.toLowerCase() === 'created') {
                     status.SortOrder = 1;
                 }
@@ -139,31 +121,22 @@ orderRouter.get('/history', ...handlers, isAuthorizedToAccessViewPage(viewOrderH
                     status.SortOrder = 2;
                 }
 
-                if (status.Name.toLowerCase() === 'shipped') {
+                if (status.Name.toLowerCase() === 'ready for consumer collection') {
                     status.SortOrder = 3;
                 }
-                if (status.Name.toLowerCase() === 'completed') {
+
+                if (status.Name.toLowerCase() === 'delivered') {
                     status.SortOrder = 4;
                 }
 
-                if (status.Name.toLowerCase() === 'ready for consumer collection') {
-                    status.SortOrder = 5;
-                }
-
-                if (status.Name.toLowerCase() === 'cancelled') {
-                    status.SortOrder = 7;
-                }
-
                 if (status.Name.toLowerCase() === 'collected') {
-                    status.SortOrder = 6;
+                    status.SortOrder = 5;
                 }
 
                 if (status.Name.toLowerCase() === 'created' ||
                     status.Name.toLowerCase() === 'ready for consumer collection' ||
-                    status.Name.toLowerCase() === 'cancelled' ||
+                    status.Name.toLowerCase() === 'delivered' ||
                     status.Name.toLowerCase() === 'collected' ||
-                    status.Name.toLowerCase() === 'completed' ||
-                    status.Name.toLowerCase() === 'shipped' ||
                     status.Name.toLowerCase() === 'acknowledged') {
                     statusToPass.push(status);
                 }
@@ -211,48 +184,42 @@ orderRouter.get('/history', ...handlers, isAuthorizedToAccessViewPage(viewOrderH
             }
         }
 
-        getUserPermissionsOnPage(user, 'Purchase Orders', 'Merchant', (pagePermissions) => {
-            const s = store.createOrderStore({
-                userReducer: {
-                    user: user,
-                    pagePermissions: pagePermissions
-                },
-                orderReducer: {
-                    history: history,
-                    keyword: keyword,
-                    selectedOrders: [],
-                    selectedFulfillmentStatuses: [],
-                    selectedSuppliers: selectedSuppliers,
-                    selectedOrderStatuses: selectedOrderStatuses,
-                    statuses: process.env.CHECKOUT_FLOW_TYPE === 'b2c' ? fStatuses : statuses,
-                    suppliers: suppliers,
-                    selectedDates: selectedDates,
-                    bookings: bookingDuration
-                }
-            });
 
-            const reduxState = s.getState();
-
-            let seoTitle = 'Order History';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const s = store.createOrderStore({
+            userReducer: { user: user },
+            orderReducer: {
+                history: history,
+                keyword: keyword,
+                selectedOrders: [],
+                selectedFulfillmentStatuses: [],
+                selectedSuppliers: selectedSuppliers,
+                selectedOrderStatuses: selectedOrderStatuses,
+                statuses: process.env.CHECKOUT_FLOW_TYPE === 'b2c' ? fStatuses : statuses,
+                suppliers: suppliers,
+                selectedDates: selectedDates
             }
-
-            const app = reactDom.renderToString(<OrderHistoryComponent
-                context={context}
-                pagePermissions={pagePermissions}
-                user={req.user} history={history} selectedOrders={[]}
-                selectedFulfillmentStatuses={[]} suppliers={suppliers}
-                selectedSuppliers={selectedSuppliers} selectedOrderStatuses={selectedOrderStatuses}
-                selectedDates={selectedDates}
-                bookingDuration={bookingDuration}
-                statuses={statuses} />);
-            res.send(template('page-seller purchase-order-history page-sidebar', seoTitle, app, appString, reduxState));
         });
+
+        const reduxState = s.getState();
+
+        let seoTitle = 'Order History';
+          if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+
+        const app = reactDom.renderToString(<OrderHistoryComponent context={context}
+            user={req.user} history={history} selectedOrders={[]}
+            selectedFulfillmentStatuses={[]} suppliers={suppliers}
+            selectedSuppliers={selectedSuppliers} selectedOrderStatuses={selectedOrderStatuses}
+            selectedDates={selectedDates}
+            statuses={statuses} />);
+        res.send(template('page-seller purchase-order-history page-sidebar', seoTitle, app, appString, reduxState));
     });
 });
 
-orderRouter.get('/detail/orderid/:id', authenticated, isAuthorizedToAccessViewPage(viewOrderDetailPage), function (req, res) {
+orderRouter.get('/detail/orderid/:id', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     let user = req.user;
     if (req.params.id === 'undefined') {
         return;
@@ -315,31 +282,26 @@ orderRouter.get('/detail/orderid/:id', authenticated, isAuthorizedToAccessViewPa
                 })
             }
             let purchaseDetail = detail.Records[0];
-
-            getUserPermissionsOnPage(user, 'Purchase Order Details', 'Merchant', (pagePermissions) => {
-                const s = store.createOrderStore({
-                    userReducer: {
-                        user: user,
-                        pagePermissions: pagePermissions
-                    },
-                    orderReducer: { detail: purchaseDetail, enableReviewAndRating: enableReviewAndRating },
-                    marketplaceReducer: { locationVariantGroupId: req.LocationVariantGroupId }
-                });
-                const reduxState = s.getState();
-
-                let seoTitle = 'Purchase Order';
-                if (req.SeoTitle) {
-                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-                }
-
-                const app = reactDom.renderToString(<OrderDetailComponent pagePermissions={pagePermissions} context={context} categories={[]} user={req.user} detail={purchaseDetail} enableReviewAndRating={enableReviewAndRating} locationVariantGroupId={req.LocationVariantGroupId} />);
-                res.send(template('page-seller page-purchase-order-details page-sidebar', seoTitle, app, appString, reduxState));
+            const s = store.createOrderStore({
+                userReducer: { user: user },
+                orderReducer: { detail: purchaseDetail, enableReviewAndRating: enableReviewAndRating }
             });
+            const reduxState = s.getState();
+
+            let seoTitle = 'Purchase Order';
+            if (req.SeoTitle) {
+                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            }
+
+            const app = reactDom.renderToString(<OrderDetailComponent context={context} categories={[]} user={req.user} detail={purchaseDetail} enableReviewAndRating={enableReviewAndRating} />);
+            res.send(template('page-seller page-purchase-order-details page-sidebar', seoTitle, app, appString, reduxState));
         });
     });
 });
 
-orderRouter.get('/detail/:id', ...handlers, isAuthorizedToAccessViewPage(viewOrderDetailPage), function (req, res) {
+orderRouter.get('/detail/:id', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     let user = req.user;
 
     const options = {
@@ -365,25 +327,15 @@ orderRouter.get('/detail/:id', ...handlers, isAuthorizedToAccessViewPage(viewOrd
             resolve(result);
         });
     });
-    const promiseBookingDuration = new Promise((resolve, reject) => {
-        const options = {
-            version: 'v2'
-        };
-        client.Orders.getBookingDuration(options, function (err, result) {
-            resolve(result);
-        });
-    });
 
-    Promise.all([promiseDetail, promiseMarketplace, promiseBookingDuration]).then((responses) => {
+    Promise.all([promiseDetail, promiseMarketplace]).then((responses) => {
         const detail = responses[0];
         let marketPlaceInfo = responses[1];
-        let bookingDuration = responses[2];
- 
         let enableReviewAndRating = marketPlaceInfo && marketPlaceInfo.ControlFlags ? marketPlaceInfo.ControlFlags.ReviewAndRating : null;
         const appString = 'merchant-order-detail';
         const context = {};
         let cartIds = [];
-    
+
         detail.Orders.map(o => {
             if (o.CartItemDetails) {
                 cartIds.push(...o.CartItemDetails.map(c => c.ID));
@@ -412,36 +364,27 @@ orderRouter.get('/detail/:id', ...handlers, isAuthorizedToAccessViewPage(viewOrd
                     }
                 })
             }
-
-            getUserPermissionsOnPage(user, 'Purchase Order Details', 'Merchant', (pagePermissions) => {
-                const s = store.createOrderStore({
-                    userReducer: {
-                        user: user,
-                        pagePermissions: pagePermissions
-                    },
-                    orderReducer: { detail: detail, enableReviewAndRating: enableReviewAndRating, bookings: bookingDuration },
-                    marketplaceReducer: { locationVariantGroupId: req.LocationVariantGroupId }
-                });
-
-                const reduxState = s.getState();
-
-                let seoTitle = 'Purchase Order';
-                if (req.SeoTitle) {
-                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-                }
-
-                const app = reactDom.renderToString(<OrderDetailComponent context={context}
-                    pagePermissions={pagePermissions}
-                    categories={[]} user={req.user} detail={detail} enableReviewAndRating={enableReviewAndRating}
-                    locationVariantGroupId={req.LocationVariantGroupId}
-                    bookingDuration={bookingDuration} />);
-                res.send(template('page-seller page-purchase-order-details page-sidebar', seoTitle, app, appString, reduxState));
+            const s = store.createOrderStore({
+                userReducer: { user: user },
+                orderReducer: { detail: detail, enableReviewAndRating: enableReviewAndRating}
             });
+
+            const reduxState = s.getState();
+
+            let seoTitle = 'Purchase Order';
+            if (req.SeoTitle) {
+                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            }
+
+            const app = reactDom.renderToString(<OrderDetailComponent context={context} categories={[]} user={req.user} detail={detail} enableReviewAndRating={enableReviewAndRating} />);
+            res.send(template('page-seller page-purchase-order-details page-sidebar', seoTitle, app, appString, reduxState));
         });
     });
 });
 
-orderRouter.get('/history/search', ...handlers, isAuthorizedToAccessViewPage(viewOrderHistoryPage), function (req, res) {
+orderRouter.get('/history/search', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const options = {
         userId: req.user.ID,
         keyword: req.query['keyword'],
@@ -483,9 +426,8 @@ orderRouter.get('/history/search', ...handlers, isAuthorizedToAccessViewPage(vie
         });
     } else {
         // TODO: align all api parameter names to prevent confusion
-        //ARC9981
-        options.cartItemFulfilmentStatuses = options.status;
-        options.status = 'paid,waiting for payment,acknowledged,refunded,pending,processing';
+        options.orderStatus = options.status;
+        options.status = 'success,waiting for payment,acknowledged,refunded,pending';
 
         promiseHistory = new Promise((resolve, reject) => {
             client.Orders.getHistory(options, function (err, history) {
@@ -500,7 +442,7 @@ orderRouter.get('/history/search', ...handlers, isAuthorizedToAccessViewPage(vie
     });
 });
 
-orderRouter.post('/history/updateStatus', ...handlers, isAuthorizedToPerformAction('edit-merchant-purchase-orders-api'), function (req, res) {
+orderRouter.post('/history/updateStatus', ...handlers, function (req, res) {
     const options = {
         userId: req.user.ID,
         invoices: req.body['invoices'],
@@ -526,6 +468,7 @@ orderRouter.post('/detail/updateStatus', ...handlers, function (req, res) {
         invoiceNo: req.body['invoiceNo'],
         status: req.body['status']
     };
+
     var promiseUpdate = new Promise((resolve, reject) => {
         client.Orders.updateOrderStatus(options, function (err, result) {
             resolve(result);
@@ -592,32 +535,6 @@ orderRouter.post('/detail/revertPayment', ...handlers, function (req, res) {
     });
 
     Promise.all([promiseRefund]).then((responses) => {
-        const result = responses[0];
-        res.send(result);
-    });
-});
-
-orderRouter.post('/detail/updateBooking', ...handlers, function (req, res) {
- 
-    let user = req.user;
-    let body = req.body;
-
-    const options = {
-        userId: req.user['ID'],
-        cartitemid: req.body['ID'],
-        Notes: req.body['Notes'],
-        Quantity: req.body['Quantity'],
-        ItemDetail: req.body['ItemDetail'],
-        BookingSlot: req.body['BookingSlot'],
-        ItemDetailID: req.body['ItemDetailID'],
-    };
-    var promiseBooking = new Promise((resolve, reject) => {
-        client.Orders.updateBooking(options, function (err, result) {
-            resolve(result);
-        });
-    });
-
-    Promise.all([promiseBooking]).then((responses) => {
         const result = responses[0];
         res.send(result);
     });

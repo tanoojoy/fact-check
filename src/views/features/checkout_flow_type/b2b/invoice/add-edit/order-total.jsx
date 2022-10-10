@@ -17,7 +17,7 @@ class FeatureCreateInvoiceB2bOrderTotalComponent extends React.Component {
         if (this.props.invoiceDetail && this.props.invoiceDetail.Orders && this.props.invoiceDetail.Orders.length > 0) {
             if (this.props.invoiceDetail.Orders[0].CartItemDetails && this.props.invoiceDetail.Orders[0].CartItemDetails[0] && this.props.invoiceDetail.Orders[0].CartItemDetails[0].AcceptedOffer) {
                 const id = this.props.invoiceDetail.Orders[0].CartItemDetails[0].AcceptedOffer.ID;
-                quoteNo = this.props.invoiceDetail.Orders[0].CartItemDetails[0].AcceptedOffer.CosmeticNo != null && this.props.invoiceDetail.Orders[0].CartItemDetails[0].AcceptedOffer.CosmeticNo != "" ? this.props.invoiceDetail.Orders[0].CartItemDetails[0].AcceptedOffer.CosmeticNo : this.props.invoiceDetail.Orders[0].CartItemDetails[0].AcceptedOffer.QuoteNo;
+                quoteNo = this.props.invoiceDetail.Orders[0].CartItemDetails[0].AcceptedOffer.QuoteNo;
                 link = "/quotation/detail?id=" + id;
             }
         }
@@ -30,47 +30,24 @@ class FeatureCreateInvoiceB2bOrderTotalComponent extends React.Component {
         if (this.props.invoiceDetail && this.props.invoiceDetail.Orders && this.props.invoiceDetail.Orders.length > 0) {
             if (this.props.invoiceDetail.Orders[0]) {
                 const id = this.props.invoiceDetail.Orders[0].ID;
-                PurchaseOrderNo = this.props.invoiceDetail.Orders[0].CosmeticNo != null && this.props.invoiceDetail.Orders[0].CosmeticNo != "" ? this.props.invoiceDetail.Orders[0].CosmeticNo : this.props.invoiceDetail.Orders[0].PurchaseOrderNo;
+                PurchaseOrderNo = this.props.invoiceDetail.Orders[0].PurchaseOrderNo;
                 link = "/purchase/detail/orderid/" + id;
             }
         }
         return (<a href={link}><span className="highlight-text">{PurchaseOrderNo}</span></a>)
     }
 
-    getUnique(arr, index) {
-
-        const unique = arr
-            .map(e => e[index])
-
-            // store the keys of the unique objects
-            .map((e, i, final) => final.indexOf(e) === i && i)
-
-            // eliminate the dead keys & store unique objects
-            .filter(e => arr[e]).map(e => arr[e]);
-
-        return unique;
-    }
-
     renderInvoiceInfo() {
         let links = [];
         if (this.props.invoiceDetail && this.props.invoiceDetail.Orders && this.props.invoiceDetail.Orders.length > 0) {
             if (this.props.invoiceDetail.Orders[0] && this.props.invoiceDetail.Orders[0].PaymentDetails && this.props.invoiceDetail.Orders[0].PaymentDetails.length > 0) {
-                //let invoiceNos = this.props.invoiceDetail.Orders[0].PaymentDetails.map((payment) => payment.InvoiceNo);
-                //invoiceNos = [...new Set(invoiceNos)];
+                let invoiceNos = this.props.invoiceDetail.Orders[0].PaymentDetails.map((payment) => payment.InvoiceNo);
+                invoiceNos = [...new Set(invoiceNos)];
 
-                //invoiceNos.map((invoiceNo, index) => {
-                //    links.push(<a href={`/invoice/detail/${invoiceNo}`} key={index}><span className="highlight-text">{invoiceNo}</span></a>);
-                //    links.push(<span key={'comma-' + index}> , </span>);
-                //});
-
-                //ARC10131
-                let uniquePayments = this.getUnique(this.props.invoiceDetail.Orders[0].PaymentDetails, 'InvoiceNo');
-                if (uniquePayments) {
-                    uniquePayments.forEach(function (payment, index) {
-                        links.push(<a href={`/invoice/detail/${payment.InvoiceNo}`} key={index}><span className="highlight-text">{payment.CosmeticNo != null && payment.CosmeticNo != "" ? payment.CosmeticNo : payment.InvoiceNo}</span></a>);
-                        links.push(<span key={'comma-' + index}> , </span>);
-                    });
-                }
+                invoiceNos.map((invoiceNo, index) => {
+                    links.push(<a href={`/invoice/detail/${invoiceNo}`} key={index}><span className="highlight-text">{invoiceNo}</span></a>);
+                    links.push(<span key={'comma-' + index}> , </span>);
+                });
 
                 links.pop();
 
@@ -92,10 +69,10 @@ class FeatureCreateInvoiceB2bOrderTotalComponent extends React.Component {
             Orders.map(order => {
                 if (order.CartItemDetails && order.CartItemDetails.length > 0) {
                     const { CartItemDetails } = order;
-                     //ARC10053  the discountamount should not be round off to have the correct value.
-                    CartItemDetails.map(cart => subTotal += parseFloat(cart.ItemDetail.Price * cart.Quantity) - parseFloat(cart.DiscountAmountNotRoundOff || 0));
+                    CartItemDetails.map(cart => subTotal += parseFloat(cart.SubTotal) - parseFloat(cart.DiscountAmount || 0));
                 }
             });
+
         }
         return subTotal;
     }

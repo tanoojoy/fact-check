@@ -1,6 +1,5 @@
 'use strict';
 const React = require('react');
-const PermissionTooltip = require('../../../../../common/permission-tooltip');
 
 class CheckoutDetailsComponent extends React.Component {
 
@@ -8,13 +7,9 @@ class CheckoutDetailsComponent extends React.Component {
         let self = this;
         //Jquery from Bootstrap
         $(".openModalRemove").on("click", function () {
-            if (!self.props.pagePermissions.isAuthorizedToDelete) return;
             var $parent = $(this).parents(".parent-r-b");
-            self.props.validatePermissionToPerformAction('delete-consumer-checkout-api', () => {
-                $parent.addClass("modal-delete-open");
-                $("#modalRemove").modal("show");
-            });
-            
+            $parent.addClass("modal-delete-open");
+            $("#modalRemove").modal("show");
         });
         $("#modalRemove .btn-gray").on("click", function (e) {
             $(".parent-r-b").removeClass("modal-delete-open");
@@ -27,28 +22,16 @@ class CheckoutDetailsComponent extends React.Component {
     }
     
     showDeliveryModal() {
-        const self = this;
-        if (!this.props.pagePermissions.isAuthorizedToAdd) return;
-        this.props.validatePermissionToPerformAction('add-consumer-checkout-api', () => {
-            self.props.clearAddAddressModal();
-            $("#addDeliveryAddress .required").removeClass('error-con');
-            $('#addDeliveryAddress').modal('show');
-        });
-    }
-
-    setAddressToDelete(addressID) {
-        const self = this;
-        if (!this.props.pagePermissions.isAuthorizedToDelete) return;
-        this.props.validatePermissionToPerformAction('delete-consumer-checkout-api', () => {
-            self.props.addressToDelete(addressID);
-        });
+        this.props.clearAddAddressModal();
+        $("#addDeliveryAddress .required").removeClass('error-con');
+        $('#addDeliveryAddress').modal('show');
     }
 
     renderUserAddresses(isBillingAddress) {
         let self = this;
         const addresses = isBillingAddress ? this.props.buyerBillingAddresses : this.props.buyerAddresses;
         let ele = '';
-        const { isAuthorizedToDelete } = this.props.pagePermissions;
+
         if (addresses != null) {
             ele = addresses.map(function (address, index) {
                 let classNameToUse = "onboarder-address";
@@ -73,14 +56,7 @@ class CheckoutDetailsComponent extends React.Component {
                             <a onClick={() => self.props.updateSelectedAddress(address.ID, isBillingAddress)}
                                 className={classNameToUse} href="#">
                                 {address.Name + ", " + address.Line1 + ", " + address.Country + ", " + address.City + ", " + address.State + ", " + address.PostCode}
-                                <span 
-                                    id={address.ID}
-                                    className={`icon-delete openModalRemove ${isAuthorizedToDelete? '' : 'icon-grey'}`}
-                                    data-toggle={isAuthorizedToDelete ? '' : "tooltip"}
-                                    data-placement="left"
-                                    data-original-title="You need permission to perform this action">
-                                        <i onClick={(e) => self.setAddressToDelete(address.ID)} className="fa fa-trash" />
-                                </span>
+                                <span id={address.ID} className="icon-delete openModalRemove"><i onClick={(e) => self.props.addressToDelete(address.ID)} className="fa fa-trash" /></span>
                             </a>
                         </li>
                     );
@@ -104,8 +80,6 @@ class CheckoutDetailsComponent extends React.Component {
             $(".uncheck-listner  .btn-add-address").css("color", "#3c7d99");
         }
         this.props.updateIsSameBilingAndDelivery(e.target.checked)
-        const selectedAddress = this.props.buyerBillingAddresses.find(b => b.Selected == true);
-        this.props.updateSelectedAddress(selectedAddress.ID, false);
     }
 
     render() {
@@ -144,7 +118,6 @@ class CheckoutDetailsComponent extends React.Component {
             contactNumber = this.props.user.PhoneNumber;
             emailAddress = this.props.user.Email;
         }
-        const { isAuthorizedToAdd } = this.props.pagePermissions;
         return (
             <div className="panel-box active">
                 <div className="sc-upper panel-box-title">
@@ -193,9 +166,7 @@ class CheckoutDetailsComponent extends React.Component {
                                         {this.renderUserAddresses(true)}
                                     </ul>
                                 </div>
-                                <PermissionTooltip isAuthorized={isAuthorizedToAdd} extraClassOnUnauthorized="icon-grey">
-                                    <a className="top-title btn-add-address" onClick={(e) => this.showDeliveryModal()} data-toggle="modal" data-target="#editProject" href="#"><i className="fas fa-plus fa-fw" /> Add new address</a>
-                                </PermissionTooltip>
+                                <a className="top-title btn-add-address" onClick={(e) => this.showDeliveryModal()} data-toggle="modal" data-target="#editProject" href="#"><i className="fas fa-plus fa-fw" /> Add new address</a>
                             </div>
                         </div>
                         <div className="delivery-address-subtitle pull-left">Delivery Address</div>
@@ -215,9 +186,7 @@ class CheckoutDetailsComponent extends React.Component {
                                             {this.renderUserAddresses()}
                                         </ul>
                                     </div>
-                                    <PermissionTooltip isAuthorized={isAuthorizedToAdd} extraClassOnUnauthorized="icon-grey">
-                                        <a className="top-title btn-add-address" onClick={(e) => isSameAsBilling ? null : this.showDeliveryModal()} data-toggle="modal" data-target="#editProject" href="#"><i className="fas fa-plus fa-fw" /> Add new address</a>
-                                    </PermissionTooltip>
+                                    <a className="top-title btn-add-address" onClick={(e) => isSameAsBilling ? null : this.showDeliveryModal()} data-toggle="modal" data-target="#editProject" href="#"><i className="fas fa-plus fa-fw" /> Add new address</a>
                                 </div>
                             </div>
                         </div>

@@ -1,8 +1,6 @@
 'use strict';
 
 const React = require('react');
-const PermissionTooltip = require('../../common/permission-tooltip');
-
 if (typeof window !== 'undefined') { var $ = window.$; }
 
 class WorkflowList extends React.Component {
@@ -18,18 +16,14 @@ class WorkflowList extends React.Component {
     }
 
     handleDeleteWorkflow(id) {
-        if (!this.props.isAuthorizedToDelete) return;
-        const code = 'delete-consumer-approval-workflows-api';
-        this.props.validatePermissionToPerformAction(code, () => {
-            const target = $(".popup-area.item-remove-popup");
-            const cover = $("#cover");
+        const target = $(".popup-area.item-remove-popup");
+        const cover = $("#cover");
 
-            target.fadeIn();
-            cover.fadeIn();
+        target.fadeIn();
+        cover.fadeIn();
 
-            $(".my-btn.btn-saffron").attr('data-key', "item");
-            $(".my-btn.btn-saffron").attr('data-id', id);
-        });
+        $(".my-btn.btn-saffron").attr('data-key', "item");
+        $(".my-btn.btn-saffron").attr('data-id', id);
     }
     
     renderApprovalWorkflows() {
@@ -44,11 +38,9 @@ class WorkflowList extends React.Component {
                             <div className="item-actions action-inline text-center">
                                 <ul>
                                     <li>
-                                        <PermissionTooltip isAuthorized={this.props.isAuthorizedToDelete} extraClassOnUnauthorized="icon-grey">
-                                            <a href="#" className="delete_item" data-id={r.Id} onClick={() => this.handleDeleteWorkflow(r.Id)}>
-                                                <i className="fas fa-trash-alt" style={{ fontSize: '26px', color: '#999', textAlign: 'center' }}></i>
-                                            </a>
-                                        </PermissionTooltip>
+                                        <a href="#" className="delete_item" data-id={r.Id} onClick={() => this.handleDeleteWorkflow(r.Id)}>
+                                            <i className="fas fa-trash-alt" style={{ fontSize: '26px', color: '#999', textAlign: 'center' }}></i>
+                                        </a>
                                     </li>
                                 </ul>
                             </div>

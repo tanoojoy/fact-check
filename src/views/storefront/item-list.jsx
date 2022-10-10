@@ -1,6 +1,7 @@
 'use strict';
 const React = require('react');
 const BaseComponent = require('../shared/base');
+const CommonModule = require('../../public/js/common');
 
 class ItemList extends BaseComponent {
     componentDidMount() {
@@ -28,7 +29,7 @@ class ItemList extends BaseComponent {
 
         return (
             this.props.itemDetails.Records.map(function (itemDetail) {
-                let detailLink = "/items/" + self.generateSlug(itemDetail.Name) + '/' + itemDetail.ID;
+                let detailLink = CommonModule.getAppPrefix()+"/items/" + self.generateSlug(itemDetail.Name) + '/' + itemDetail.ID;
                 const { AverageRating } = itemDetail;
 
                 function renderFormatWrapper() {
@@ -74,7 +75,7 @@ class ItemList extends BaseComponent {
     }
 
     renderReviews() {
-        
+
         var self = this;
 
         if (!self.props.merchantFeedback || typeof self.props.merchantFeedback == 'undefined')
@@ -134,7 +135,7 @@ class ItemList extends BaseComponent {
     }
 
     doSearch() {
-        
+
         var self = this;
         self.props.searchStoreFront(self.props.keyword, self.props.merchantID, self.props.itemDetails.PageNumber)
         self.props.searchMerchantFeedback({
@@ -154,7 +155,7 @@ class ItemList extends BaseComponent {
     renderReviewReplies(replies) {
         const self = this;
         let elements = [];
-        
+
         if (replies != null && replies.length > 0) {
             elements.push(<div className="reply-divider"></div>);
 

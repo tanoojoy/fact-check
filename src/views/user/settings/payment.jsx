@@ -4,8 +4,7 @@ var EnumCoreModule = require('../../../../src/public/js/enum-core.js');
 var BootBox = require('bootbox')
 var BaseClassComponent = require('../../shared/base.jsx');
 var toastr = require('toastr');
-
-const PermissionTooltip = require('../../common/permission-tooltip');
+const CommonModule = require('../../../public/js/common');
 
 class PaymentComponent extends BaseClassComponent {
     constructor(props) {
@@ -78,9 +77,9 @@ class PaymentComponent extends BaseClassComponent {
 
 
 
-                //removing toolbar, 
+                //removing toolbar,
 
-                // { name: 'tools', items: [ 'Maximize', 'ShowBlocks' ] },  
+                // { name: 'tools', items: [ 'Maximize', 'ShowBlocks' ] },
 
                 // { name: 'others', items: [ '-' ] }
 
@@ -108,14 +107,14 @@ class PaymentComponent extends BaseClassComponent {
                     if (theConnection.PaymentGateway.Gateway == EnumCoreModule.GetGateways().Omise) {
                         return (
                             <div className="payment-text"> {theConnection.Account}
-                                <div className="verified"><div className="check-icon"><img src="/assets/images/done.svg" /></div> <span>Verified</span></div>
+                                <div className="verified"><div className="check-icon"><img src={CommonModule.getAppPrefix() + "/assets/images/done.svg"} /></div> <span>Verified</span></div>
                             </div>
                         )
                     }
                     else {
                         return (
                             <div className="payment-text"> {theConnection.Account}
-                                <div className="verified"><div className="check-icon"><img src="/assets/images/done.svg" /></div> <span>Verified</span></div>
+                                <div className="verified"><div className="check-icon"><img src={CommonModule.getAppPrefix() + "/assets/images/done.svg"} /></div> <span>Verified</span></div>
                             </div>
                         )
                     }
@@ -152,15 +151,15 @@ class PaymentComponent extends BaseClassComponent {
         if (this.props.paymentGateways && this.props.paymentGateways.length > 0) {
             return (
                 this.props.paymentGateways.map(function (payment, index) {
+
+
                     if (payment.Gateway == EnumCoreModule.GetGateways().Stripe) {
                         return (
                             <li className="Stripe" key={payment.Code}>
-                                <div className="payment-logo"> <img src="/assets/images/gateways/stripe_logo.svg" /> </div>
+                                <div className="payment-logo"> <img src={CommonModule.getAppPrefix() + "/assets/images/gateways/stripe_logo.svg"} /> </div>
                                 {self.showAccountLinkAndCompulsory(payment)}
                                 <div className="payment-note pull-right">
-                                    <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                        <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
-                                    </PermissionTooltip>
+                                    <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
                                 </div>
                             </li>
                         );
@@ -168,12 +167,10 @@ class PaymentComponent extends BaseClassComponent {
                     else if (payment.Gateway == EnumCoreModule.GetGateways().PayPal) {
                         return (
                             <li className="PayPal" key={payment.Code}>
-                                <div className="payment-logo"> <img src="/assets/images/gateways/paypal_icon.svg" /> </div>
+                                <div className="payment-logo"> <img src={CommonModule.getAppPrefix() + "/assets/images/gateways/paypal_icon.svg"} /> </div>
                                 {self.showAccountLinkAndCompulsory(payment)}
                                 <div className="payment-note pull-right">
-                                    <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                        <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
-                                    </PermissionTooltip>
+                                    <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
                                 </div>
                             </li>
                         );
@@ -181,12 +178,10 @@ class PaymentComponent extends BaseClassComponent {
                     else if (payment.Gateway == EnumCoreModule.GetGateways().Omise) {
                         return (
                             <li className="Omise" key={payment.Code}>
-                                <div className="payment-logo"> <img src="/assets/images/gateways/omise_logo.svg" /> </div>
+                                <div className="payment-logo"> <img src={CommonModule.getAppPrefix() + "/assets/images/gateways/omise_logo.svg"} /> </div>
                                 {self.showAccountLinkAndCompulsory(payment)}
                                 <div className="payment-note pull-right">
-                                    <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                        <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
-                                    </PermissionTooltip>
+                                    <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
                                 </div>
                             </li>
                         );
@@ -197,9 +192,7 @@ class PaymentComponent extends BaseClassComponent {
                                 <div className="payment-logo"> Cash on delivery </div>
                                 {self.showAccountLinkAndCompulsory(payment)}
                                 <div className="payment-note pull-right">
-                                    <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                        <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
-                                    </PermissionTooltip>
+                                    <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
                                 </div>
                             </li>
                         );
@@ -210,9 +203,7 @@ class PaymentComponent extends BaseClassComponent {
                                 <div className="payment-logo"> {payment.Gateway} </div>
                                 {self.showAccountLinkAndCompulsory(payment)}
                                 <div className="payment-note pull-right">
-                                    <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                        <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Setup</div>
-                                    </PermissionTooltip>
+                                    <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Setup</div>
                                 </div>
                             </li>
                         );
@@ -223,9 +214,7 @@ class PaymentComponent extends BaseClassComponent {
                                 <div className="payment-logo"> <img src={payment.Logo.MediaUrl} /> </div>
                                 {self.showAccountLinkAndCompulsory(payment)}
                                 <div className="payment-note pull-right">
-                                    <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                        <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
-                                    </PermissionTooltip>
+                                    <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
                                 </div>
                             </li>
                         );
@@ -239,19 +228,22 @@ class PaymentComponent extends BaseClassComponent {
 
     doLinkAccount(payment) {
         var self = this;
-        this.props.validatePermissionToPerformAction("edit-merchant-payment-methods-api", () => {
-            if (payment.Gateway == EnumCoreModule.GetGateways().Stripe) {
-                window.location.href = self.props.stripeLoginUrl
-            } else if (payment.Gateway == EnumCoreModule.GetGateways().PayPal) {
-                window.location.href = self.props.paypalLoginUrl
-            } else if (payment.Code.indexOf(EnumCoreModule.GetGateways().OfflinePayments) > 0) {
-                self.setState({
-                    showList: !self.state.showList,
-                    showOfflinePayment: !self.state.showOfflinePayment,
-                    selectedPayment: payment,
-                }, function () {
+        if (payment.Gateway == EnumCoreModule.GetGateways().Stripe) {
+            window.location.href = self.props.stripeLoginUrl
+        }
+        else if (payment.Gateway == EnumCoreModule.GetGateways().PayPal) {
+            window.location.href = self.props.paypalLoginUrl
+        }
+        else if (payment.Code.indexOf(EnumCoreModule.GetGateways().OfflinePayments) > 0) {
+            self.setState({
+                showList: !self.state.showList,
+                showOfflinePayment: !self.state.showOfflinePayment,
+                selectedPayment: payment,
+            }, function () {
+
                     if (self.props.paymentAcceptanceMethod && self.props.paymentAcceptanceMethod.length > 0) {
-                        let paymentTemp = self.props.paymentAcceptanceMethod.find(d => d.PaymentGateway.Code == payment.Code);
+
+                    let paymentTemp = self.props.paymentAcceptanceMethod.find(d => d.PaymentGateway.Code == payment.Code);
 
                         if (paymentTemp) {
                             CKEDITOR.instances['niceEditorTextareaPayment'].setData(paymentTemp.Description);
@@ -259,76 +251,77 @@ class PaymentComponent extends BaseClassComponent {
                         else {
                             CKEDITOR.instances['niceEditorTextareaPayment'].setData('');
                         }
-                    }
-                })
-            } else if (payment.Gateway == EnumCoreModule.GetGateways().Omise) {
-                self.setState({
-                    showList: !self.state.showList,
-                    showOmise: !self.state.showOmise
-                })
-            } else if (payment.Gateway == EnumCoreModule.GetGateways().CashOnDelivery) {
-                BootBox.confirm({
-                    message: "By verifying this payment method, all your buyers will be able to checkout your items using Cash on Delivery and settlement has to be handled by you manually if they were to use this payment method.",
-                    className: "my-confirmmodal",
-                    buttons: {
-                        confirm: {
-                            label: 'Okay',
-                            className: 'btn-success'
-                        },
-                        cancel: {
-                            label: 'Cancel',
-                            className: 'btn-danger'
-                        }
+                }
+            })
+        }
+        else if (payment.Gateway == EnumCoreModule.GetGateways().Omise) {
+            self.setState({
+                showList: !self.state.showList,
+                showOmise: !self.state.showOmise
+            })
+        }
+        else if (payment.Gateway == EnumCoreModule.GetGateways().CashOnDelivery) {
+            BootBox.confirm({
+                message: "By verifying this payment method, all your buyers will be able to checkout your items using Cash on Delivery and settlement has to be handled by you manually if they were to use this payment method.",
+                className: "my-confirmmodal",
+                buttons: {
+                    confirm: {
+                        label: 'Okay',
+                        className: 'btn-success'
                     },
-                    callback: function (result) {
-                        if (result == true) {
-                            self.createBasic_PaymentAcceptanceMethodAsync(payment);
-                        }
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn-danger'
                     }
-                });
+                },
+                callback: function (result) {
+                    if (result == true) {
+                        self.createBasic_PaymentAcceptanceMethodAsync(payment);
+                    }
+                }
+            });
 
-            } else {
-                BootBox.confirm({
-                    message: payment.Description,
-                    className: "my-confirmmodal",
-                    buttons: {
-                        confirm: {
-                            label: 'Okay',
-                            className: 'btn-success'
-                        },
-                        cancel: {
-                            label: 'Cancel',
-                            className: 'btn-danger'
-                        }
+        }
+        else {
+
+            BootBox.confirm({
+                message: payment.Description,
+                className: "my-confirmmodal",
+                buttons: {
+                    confirm: {
+                        label: 'Okay',
+                        className: 'btn-success'
                     },
-                    callback: function (result) {
-                        if (result == true) {
-                            self.createBasic_PaymentAcceptanceMethodAsync(payment);
-                        }
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn-danger'
                     }
-                });
-            }
-        });
+                },
+                callback: function (result) {
+                    if (result == true) {
+                        self.createBasic_PaymentAcceptanceMethodAsync(payment);
+                    }
+                }
+            });
+        }
     }
 
     createBasic_PaymentAcceptanceMethodAsync(payment) {
         var self = this;
 
-        this.props.validatePermissionToPerformAction("edit-merchant-payment-methods-api", () => {
-            self.props.createPaymentAcceptanceMethodAsync(JSON.stringify({
-                merchantId: self.props.user.ID,
-                Verified: true,
-                PaymentGateway: {
-                    Code: payment.Code
-                },
-                ClientID: '',
-                Account: self.props.user.Email,
-                BankAccountNumber: ''
-            }), function () {
-                self.props.getPaymentAcceptanceMethods(JSON.stringify({
-                    merchantId: self.props.user.ID
-                }), () => {
-                });
+        self.props.createPaymentAcceptanceMethodAsync(JSON.stringify({
+            merchantId: self.props.user.ID,
+            Verified: true,
+            PaymentGateway: {
+                Code: payment.Code
+            },
+            ClientID: '',
+            Account: self.props.user.Email,
+            BankAccountNumber: ''
+        }), function () {
+            self.props.getPaymentAcceptanceMethods(JSON.stringify({
+                merchantId: self.props.user.ID
+            }), () => {
             });
         });
     }
@@ -338,99 +331,95 @@ class PaymentComponent extends BaseClassComponent {
         var self = this;
         let hasError = false;
 
-        this.props.validatePermissionToPerformAction("edit-merchant-payment-methods-api", () => {
-            $('#bank-branch-code').removeClass('error-con');
-            $('#bank-account-number').removeClass('error-con');
-            $('#bank-account-name').removeClass('error-con');
+        $('#bank-branch-code').removeClass('error-con');
+        $('#bank-account-number').removeClass('error-con');
+        $('#bank-account-name').removeClass('error-con');
 
-            if (!self.state.omiseBankCode) {
-                $('#bank-branch-code').addClass('error-con');
-                hasError = true;
-            }
+        if (!this.state.omiseBankCode) {
+            $('#bank-branch-code').addClass('error-con');
+            hasError = true;
+        }
 
-            if (!self.state.omiseBankAccountNumber) {
-                $('#bank-account-number').addClass('error-con');
-                hasError = true;
-            }
+        if (!this.state.omiseBankAccountNumber) {
+            $('#bank-account-number').addClass('error-con');
+            hasError = true;
+        }
 
-            if (!self.state.omiseBankAccountName) {
-                $('#bank-account-name').addClass('error-con');
-                hasError = true;
-            }
+        if (!this.state.omiseBankAccountName) {
+            $('#bank-account-name').addClass('error-con');
+            hasError = true;
+        }
 
-            if (!hasError) {
-                self.setState({
-                    showOmise: false
-                }, function () {
-                    const { paymentGateways, user } = self.props;
-                    var paymentGateway = paymentGateways.find(d => d.Gateway == EnumCoreModule.GetGateways().Omise);
-                    if (paymentGateway && typeof paymentGateway !== 'undefined') {
-                        const options = {
-                            type: self.state.omiseType.toLowerCase(),
-                            taxId: self.state.omiseTaxNumber,
-                            bankAccountBrand: self.state.omiseBankCode,
-                            bankAccountNumber: self.state.omiseBankAccountNumber,
-                            bankAccountName: self.state.omiseBankAccountName
-                        };
+        if (!hasError) {
+            self.setState({
+                showOmise: false
+            }, function () {
+                const { paymentGateways, user } = this.props;
+                var paymentGateway = paymentGateways.find(d => d.Gateway == EnumCoreModule.GetGateways().Omise);
+                if (paymentGateway && typeof paymentGateway !== 'undefined') {
+                    const options = {
+                        type: self.state.omiseType.toLowerCase(),
+                        taxId: self.state.omiseTaxNumber,
+                        bankAccountBrand: self.state.omiseBankCode,
+                        bankAccountNumber: self.state.omiseBankAccountNumber,
+                        bankAccountName: self.state.omiseBankAccountName
+                    };
 
-                        self.props.saveOmiseAccount(JSON.stringify(options), (errorMessage, recipientId) => {
-                            if (!errorMessage) {
-                                self.props.createPaymentAcceptanceMethodAsync(JSON.stringify({
-                                    merchantId: user.ID,
-                                    Verified: true,
-                                    PaymentGateway: {
-                                        Code: paymentGateway.Code
-                                    },
-                                    ClientID: recipientId,
-                                    Account: user.Email,
-                                    BankAccountType: self.state.omiseType,
-                                    BankIdentifierCodes: self.state.omiseBankCode,
-                                    BankAccountName: self.state.omiseBankAccountName,
-                                    TaxID: self.state.omiseTaxNumber,
-                                    BankAccountNumber: self.state.omiseBankAccountNumber,
-                                }), function () {
-                                    self.props.getPaymentAcceptanceMethods(JSON.stringify({
-                                        merchantId: user.ID
-                                    }), () => {
-                                    });
+                    self.props.saveOmiseAccount(JSON.stringify(options), (errorMessage, recipientId) => {
+                        if (!errorMessage) {
+                            self.props.createPaymentAcceptanceMethodAsync(JSON.stringify({
+                                merchantId: user.ID,
+                                Verified: true,
+                                PaymentGateway: {
+                                    Code: paymentGateway.Code
+                                },
+                                ClientID: recipientId,
+                                Account: user.Email,
+                                BankAccountType: self.state.omiseType,
+                                BankIdentifierCodes: self.state.omiseBankCode,
+                                BankAccountName: self.state.omiseBankAccountName,
+                                TaxID: self.state.omiseTaxNumber,
+                                BankAccountNumber: self.state.omiseBankAccountNumber,
+                            }), function () {
+                                self.props.getPaymentAcceptanceMethods(JSON.stringify({
+                                    merchantId: user.ID
+                                }), () => {
                                 });
-                            } else {
-                                toastr.error('Failed to save the Omise bank details, please try again.', 'Oops! Something went wrong.');
-                                console.log(errorMessage);
-                            }
-                        });
-                    }
-                });
-            }
-        });
+                            });
+                        } else {
+                            toastr.error('Failed to save the Omise bank details, please try again.', 'Oops! Something went wrong.');
+                            console.log(errorMessage);
+                        }
+                    });
+                }
+            });
+        }
     }
 
     doSaveOfflinePayment() {
-        
-        var self = this;
-        this.props.validatePermissionToPerformAction("edit-merchant-payment-methods-api", () => {
-            self.setState({
-                showOfflinePayment: false
-            }, function () {
-                const { user } = self.props;
-                const { selectedPayment } = self.state;
 
-                self.props.createPaymentAcceptanceMethodAsync(JSON.stringify({
-                    merchantId: user.ID,
-                    Verified: true,
-                    PaymentGateway: {
-                        Code: selectedPayment.Code
-                    },
-                    Account: user.Email,
-                    Description: CKEDITOR.instances['niceEditorTextareaPayment'].getData(),
-                }), function () {
-                    self.props.getPaymentAcceptanceMethods(JSON.stringify({
-                        merchantId: user.ID
-                    }), () => {
-                    });
+        var self = this;
+        self.setState({
+            showOfflinePayment: false
+        }, function () {
+            const { user } = self.props;
+            const { selectedPayment } = self.state;
+
+            self.props.createPaymentAcceptanceMethodAsync(JSON.stringify({
+                merchantId: user.ID,
+                Verified: true,
+                PaymentGateway: {
+                    Code: selectedPayment.Code
+                },
+                Account: user.Email,
+                Description: CKEDITOR.instances['niceEditorTextareaPayment'].getData(),
+            }), function () {
+                self.props.getPaymentAcceptanceMethods(JSON.stringify({
+                    merchantId: user.ID
+                }), () => {
                 });
-            })
-        });
+            });
+        })
     }
 
     handleSave() {
@@ -460,7 +449,7 @@ class PaymentComponent extends BaseClassComponent {
         })
     }
 
-    render() {        
+    render() {
         var self = this;
 
         return (<React.Fragment>
@@ -473,7 +462,7 @@ class PaymentComponent extends BaseClassComponent {
                 <div className="seller-common-box pull-left" id="omiseConfirmSec" style={{ display: self.state.showOmise ? 'block' : 'none' }}>
                     <div className="pay-tab-container">
                         <div className="nav-breadcrumb"><i className="fa fa-angle-left" /><a href="#" onClick={(e) => self.hideOmise(e)} className="omise-back">Back</a></div>
-                        <p><img src="/assets/images/gateways/omise_logo.svg" alt="omise" width={150} /></p>
+                        <p><img src={CommonModule.getAppPrefix() + "/assets/images/gateways/omise_logo.svg"} alt="omise" width={150} /></p>
                         <h4 className="title">ACCOUNT CONFIGURATION</h4>
                         <p className="description">Your details entered here will be saved and verified by Omise. Money you earn from your sales will be accredited to your bank account directly</p>
                     </div>

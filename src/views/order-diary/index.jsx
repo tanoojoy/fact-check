@@ -29,9 +29,6 @@ class OrderDiaryComponent extends React.Component {
                         createEvent={this.props.createEvent}
                         showDropdownPlaceholder={this.props.showDropdownPlaceholder}
                         showBorder
-                        isAuthorizedToAdd={this.props.isAuthorizedToAdd}
-                        validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                        permissionCode={this.props.permissionCode}
                     />
                 </section>
                 <TabContentComponent

@@ -1,6 +1,7 @@
 'use strict';
 const React = require('react');
 const BaseComponent = require('../../shared/base');
+const CommonModule = require('../../../public/js/common');
 
 class FooterComponent extends BaseComponent {
     render() {
@@ -64,17 +65,17 @@ class FooterComponent extends BaseComponent {
                     </div>
                     <div className="footer-bot">
                         <div className="footer-bot-left">
-                            <p>Copyright © 2019 Trillia Pte Ltd. All rights reserved. For more corporate information, visit us at <a href="https://www.trillia.io" target="_blank">www.trillia.io</a></p>
+                            <p>Copyright ï¿½ 2019 Trillia Pte Ltd. All rights reserved. For more corporate information, visit us at <a href="https://www.trillia.io" target="_blank">www.trillia.io</a></p>
                         </div>
                         <ul className="footer-social-navigation">
                             <li>
                                 <a href="https://www.facebook.com/trillia" target="_blank" id="facebook">
-                                    <img src="/assets/images/fb.svg" alt="facboook" title="facebook" kasperskylab_antibanner="on" className="img-responsive" />
+                                    <img src={CommonModule.getAppPrefix() + "/assets/images/fb.svg"} alt="facboook" title="facebook" kasperskylab_antibanner="on" className="img-responsive" />
                                 </a>
                             </li>
                             <li>
                                 <a href="https://www.twitter.com/trilliahealth" target="_blank" id="twitter" className="img-responsive">
-                                    <img src="/assets/images/twitter.svg" alt="twitter" title="twitter" kasperskylab_antibanner="on" className="img-responsive" />
+                                    <img src={CommonModule.getAppPrefix() + "/assets/images/twitter.svg"} alt="twitter" title="twitter" kasperskylab_antibanner="on" className="img-responsive" />
                                 </a>
                             </li>
                         </ul>

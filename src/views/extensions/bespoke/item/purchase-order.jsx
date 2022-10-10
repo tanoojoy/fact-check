@@ -338,7 +338,7 @@ class PurchaseOrderComponent extends BaseComponent {
         $('.h-cart .h-dd-menu.add-cart.fadeout > .h-cart-mid > ul > .cart-item > .item-info > p').text(Name);
         $('.h-cart .h-dd-menu.add-cart.fadeout > .h-cart-mid > ul > .cart-item > .item-info > .item-price > .currency').text(`${CurrencyCode} ${Currency(CurrencyCode)}`);
         $('.h-cart .h-dd-menu.add-cart.fadeout > .h-cart-mid > ul > .cart-item > .item-info > .item-price > .value').text(cartSubTotal);
-        //this.props.updateSubTotal(0, this.getItemPrice());
+        this.props.updateSubTotal(0, this.getItemPrice());
         $('input[name="item-qty"]').val('');
 
         $('html, body').animate({

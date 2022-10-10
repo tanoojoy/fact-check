@@ -17,8 +17,7 @@ Orders.prototype.getHistory = function (options, callback) {
     const pageNumber = options.pageNumber;
     const status = options.status; // this is for invoice statuses
     const orderStatus = options.orderStatus;
-    const cartItemFulfilmentStatuses = options.cartItemFulfilmentStatuses && options.cartItemFulfilmentStatuses.length ? options.cartItemFulfilmentStatuses : undefined;
-    const merchantIds = options.supplier; 
+    const merchantIds = options.supplier;
     const startDate = options.startDate;
     const endDate = options.endDate;
     const paymentDues = options.paymentDues && options.paymentDues.length > 0 ? options.paymentDues : undefined;
@@ -33,7 +32,6 @@ Orders.prototype.getHistory = function (options, callback) {
                 pageNumber: pageNumber,
                 status: status,
                 orderStatus: orderStatus,
-                cartItemFulfilmentStatuses: cartItemFulfilmentStatuses,
                 merchantIds: merchantIds,
                 startDate: startDate,
                 endDate: endDate,
@@ -154,6 +152,7 @@ Orders.prototype.updateHistoryOrderStatus = function(options, callback) {
 
 Orders.prototype.updateOrderStatus = function(options, callback) {
     const self = this;
+
     const merchantId = options.userId;
     const invoiceNo = options.invoiceNo;
     const status = options.status;
@@ -281,34 +280,6 @@ Orders.prototype.updateOrderDetails = function (options, callback) {
         }
     });
 };
-Orders.prototype.updateBooking = function (options, callback) {
-    const self = this;
-    const Quantity = options.Quantity;
-    const Notes = options.Notes || null;;
-    const cartItemId = options.cartitemid;
-    const ItemDetailID = options.ItemDetailID || null;;
-    const BookingSlot = options.BookingSlot || null;;
-    const SubTotal = options.SubTotal || null;
-    const AddOns = options.AddOns || null;
-
-    self._acquireAdminAccessToken(function (err, data) {
-        if (!err) {
-            self._makeRequest({
-                method: 'Post',
-                path: '/api/v2/merchants/' + options.userId + '/carts/'+ cartItemId,
-                data: {
-                    ID: cartItemId,
-                    Notes: Notes,
-                    Quantity: Quantity,
-                    ItemDetailID: ItemDetailID,
-                    BookingSlot: BookingSlot,
-                    SubTotal: SubTotal,
-                    AddOns: AddOns
-                }
-            }, callback);
-        }
-    });
-};
 
 Orders.prototype.revertPayment = function(options, callback) {
     const self = this;
@@ -397,19 +368,6 @@ Orders.prototype.getFulfilmentStatuses = function (options, callback) {
             self._makeRequest({
                 method: 'GET',
                 path: '/api/v2/static/fulfilment-statuses',
-                params: {}
-            }, callback);
-        }
-    });
-};
-
-Orders.prototype.getBookingDuration = function (options, callback) {
-    const self = this;
-    self._acquireAdminAccessToken(function (err, data) {
-        if (!err) {
-            self._makeRequest({
-                method: 'GET',
-                path: '/api/v2/implementationbookings/',
                 params: {}
             }, callback);
         }

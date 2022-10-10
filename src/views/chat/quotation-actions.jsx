@@ -1,50 +1,30 @@
 ﻿'use strict';
 var React = require('react');
-const PermissionTooltip = require('../common/permission-tooltip');
 
 class ChatQuotationActionComponent extends React.Component {
     redirectCreateQuotation() {
-        const self = this;
-        if (!this.props.isAuthorizedToAdd) return;
-
-        this.props.validatePermissionToPerformAction('add-merchant-chat-details-api', () => {
-            $(".btn-loader").addClass('btn-loading');
-            window.location = '/chat/quotation?channelId=' + self.props.channelId;
-        });
+        window.location = '/chat/quotation?channelId=' + this.props.channelId;
     }
 
     redirectQuotationDetail(quotationId) {
-        if (!this.props.isAuthorizedToEdit) return;
-        const extraPath = this.props.showMerchantActions ? '/merchants' : '';
-
-        this.props.validatePermissionToPerformAction('edit-consumer-chat-details-api', () => window.location = `${extraPath}/quotation/detail?id=` + quotationId);
+        window.location = '/quotation/detail?id=' + quotationId;
     }
 
     renderCreateQuotationAction() {
-        const { isAuthorizedToAdd } = this.props;
         return (
             <div className="user-product-buttons">
                 <div className="btn-container">
-                    {
-                        isAuthorizedToAdd ?
-                            <button className={'green-btn btn-loader'} id="create-quotation-btn" onClick={(e) => this.redirectCreateQuotation()}>Create Quotation</button>
-                            :
-                            <button className={'green-btn btn-loader tool-tip icon-grey'} id="create-quotation-btn" onClick={(e) => e.preventDefault()} data-toggle="tooltip" data-placement={"auto top"} title="" data-original-title="You need permission to perform this action">Create Quotation</button>
-                    }
+                    <button className="green-btn" id="create-quotation-btn" onClick={(e) => this.redirectCreateQuotation()}>Create Quotation</button>
                 </div>
             </div>
         );
     }
 
     renderCheckQuotationAction(quotationId) {
-        const { isAuthorizedToEdit } = this.props;
-        const btnClass = `green-btn openModalRemove ${isAuthorizedToEdit ? '' : 'disabled'}`;
         return (
             <div className="user-product-buttons">
                 <div className="btn-container">
-                    <PermissionTooltip isAuthorized={isAuthorizedToEdit}>
-                        <button id="create-quotation-btn" className={btnClass} onClick={(e) => this.redirectQuotationDetail(quotationId)}>Check Quotation</button>
-                    </PermissionTooltip>
+                    <button id="create-quotation-btn" className="green-btn openModalRemove" onClick={(e) => this.redirectQuotationDetail(quotationId)}>Check Quotation</button>
                 </div>
             </div>
         );

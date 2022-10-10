@@ -1,6 +1,7 @@
 'use strict';
 var React = require('react');
 var BaseComponent = require('../../../../shared/base');
+const CommonModule = require('../../../../../public/js/common.js');
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -8,7 +9,7 @@ if (typeof window !== 'undefined') {
 
 class OrderListComponent extends BaseComponent {
     getItemUrl(itemName, itemId) {
-        return '/items/' + this.generateSlug(itemName) + '/' + itemId;
+        return CommonModule.getAppPrefix()+'/items/' + this.generateSlug(itemName) + '/' + itemId;
     }
 
     getLatestFulfillmentStatus(cartItem) {
@@ -125,7 +126,7 @@ class OrderListComponent extends BaseComponent {
             let comparisonDetail = this.props.comparison.ComparisonDetails.find(c => c.CartItemID == cartItemId);
 
             if (comparisonDetail != null && comparisonDetail.Offer != null && comparisonDetail.Offer.Accepted == true) {
-                buttons.push(<div key="btn-chat"><a href={'/chat?cartItemId=' + cartItemId} className="chat-log-btn" target="_blank">Audit Chat Log</a></div>);
+                buttons.push(<div key="btn-chat"><a href={CommonModule.getAppPrefix()+'/chat?cartItemId=' + cartItemId} className="chat-log-btn" target="_blank">Audit Chat Log</a></div>);
             }
 
             buttons.push(<div key="btn-comp"><a className="view-compare-btn" onClick={(e) => this.props.generateComparisonFile(this.props.orders[0].ID)}>Audit Comparison Table</a></div>);

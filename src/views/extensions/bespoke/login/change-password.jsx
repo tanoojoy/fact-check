@@ -3,21 +3,10 @@ var React = require('react');
 var ReactRedux = require('react-redux');
 var BaseComponent = require('../../../shared/base');
 var EnumCoreModule = require('../../../../public/js/enum-core');
-const PermissionTooltip = require('../../../common/permission-tooltip');
 
-var HeaderLayoutComponent = require('../../../layouts/header').HeaderLayoutComponent;
+var HeaderLayoutComponent = require('../../../layouts/header/index').HeaderLayoutComponent;
 var FooterLayoutComponent = require('../../../layouts/footer').FooterLayoutComponent;
 var AccountActions = require('../../../../redux/accountAction');
-
-const resetButtonBtnReset = {
-    background: "#000",
-    display: "block",
-    width: "100%",
-    padding: "10px 0",
-    color: "#fff",
-    fontWeight: "700",
-    cursor: "pointer"
-}
 
 class ChangePasswordComponent extends BaseComponent {
     constructor(props) {
@@ -103,12 +92,8 @@ class ChangePasswordComponent extends BaseComponent {
         });
     }
 
-    componentDidMount() {
-        $('[data-toggle="tooltip"]').tooltip()
-    }
-
     render() {
-        var self = this;        
+        var self = this;
         return (
             <React.Fragment>
                 <div className='page-reset' id='change-password-page'>
@@ -130,14 +115,7 @@ class ChangePasswordComponent extends BaseComponent {
                                 <div className="msg-error-sec hide"><span className="pass-not-match">Your passwords do not match</span></div>
                                 <div className='reset-button'>
                                     <div className='btn-cancel' onClick={(e) => self.cancelResetPassword()}>Cancel</div>
-                                    {this.props.isAuthorizedToEdit ?
-                                        (<div className='btn-reset' id='btnReset' onClick={(e) => self.changePassword(e)}>Save</div>) :
-                                        (<div className="pull-right" style={{ padding: "0" }}>
-                                            <span className="tool-tip" data-toggle="tooltip" data-placement="top" title="" data-original-title="You need permission to perform this action">
-                                                <div className="btn-reset disabled" id="btnReset" style={resetButtonBtnReset}>Save</div>
-                                            </span>
-                                        </div>)
-                                    }
+                                    <div className='btn-reset' id='btnReset' onClick={(e) => self.changePassword(e)}>Save</div>
                                 </div>
                             </div>
                             <div className={self.state.successfullyChanged == true ? 'reset-success ' : ' reset-success hide'}>
@@ -164,7 +142,6 @@ function mapStateToProps(state, ownProps) {
     return {
         success: state.changePasswordReducer.success,
         user: state.userReducer.user,
-        isAuthorizedToEdit: state.userReducer.isAuthorizedToEdit
     }
 }
 

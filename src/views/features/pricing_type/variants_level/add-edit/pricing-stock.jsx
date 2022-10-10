@@ -1,8 +1,7 @@
 'use strict';
 var React = require('react');
 var BaseComponent = require('../../../../shared/base');
-
-const PermissionTooltip = require('../../../../common/permission-tooltip');
+const CommonModule = require('../../../../../public/js/common.js');
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -14,21 +13,18 @@ class PricingStockComponent extends BaseComponent {
         this.addVariant = this.addVariant.bind(this);
         this.deleteVariant = this.deleteVariant.bind(this);
         this.sortVariants = this.sortVariants.bind(this);
-        this.onItemPriceChanged = this.onItemPriceChanged.bind(this);
     }
 
     browseFile(itemVariantId) {
-        this.props.validatePermissionToPerformAction("add-merchant-create-item-api", () => {
-            $(".tools").addClass("hide");
-            var canvas = document.getElementById("visbleCanvas");
+        $(".tools").addClass("hide");
+        var canvas = document.getElementById("visbleCanvas");
 
-            if ($(".imageBox").find(canvas).length !== 0) {
-                canvas.remove();
-            }
+        if ($(".imageBox").find(canvas).length !== 0) {
+            canvas.remove();
+        }
 
-            $(".upload-wapper > .upload-wrapper-container > input").val("");
-            $(".upload-wapper > .upload-wrapper-container > input").attr("data-variant-id", itemVariantId);
-        });
+        $(".upload-wapper > .upload-wrapper-container > input").val("");
+        $(".upload-wapper > .upload-wrapper-container > input").attr("data-variant-id", itemVariantId);
     }
 
     initializeTagsInput() {
@@ -178,9 +174,7 @@ class PricingStockComponent extends BaseComponent {
                                     <input type="text" defaultValue={""} name="option_choices" className="option_choices" placeholder="" />
                                 </div>
                                 <div className="options-cell option-actions">
-                                    <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToDelete} extraClassOnUnauthorized={'icon-grey'}>
-                                        <a href="#" onClick={(e) => e.preventDefault()}><i className="icon icon-dustbin hide" /></a>
-                                    </PermissionTooltip>
+                                    <a href="#" onClick={(e) => e.preventDefault()}><i className="icon icon-dustbin hide" /></a>
                                 </div>
                             </div>
                         )
@@ -234,12 +228,10 @@ class PricingStockComponent extends BaseComponent {
                             <tr key={index}>
                                 <td className="table-cell cell-image image-upload-container">
                                     <div>
-                                        <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                                            <a className="btn-varient-img model-btn image-placeholder" href="#" id={"btn-browse-" + itemVariant.id} data-toggle="modal" data-target="#myModal" data-width={600} data-height={600}
-                                                onClick={(e) => self.browseFile(itemVariant.id)}>
-                                                <img src={itemVariant.media ? itemVariant.media.MediaUrl : "/assets/images/image_add.svg"} alt="add" />
-                                            </a>
-                                        </PermissionTooltip>
+                                        <a className="btn-varient-img model-btn image-placeholder" href="#" id={"btn-browse-" + itemVariant.id} data-toggle="modal" data-target="#myModal" data-width={600} data-height={600}
+                                            onClick={(e) => self.browseFile(itemVariant.id)}>
+                                            <img src={itemVariant.media ? itemVariant.media.MediaUrl : CommonModule.getAppPrefix() + "/assets/images/image_add.svg"} alt="add" />
+                                        </a>
                                     </div>
                                     <div className="variant-img-bottom" style={{ display: 'block' }}>
                                         <span>
@@ -338,12 +330,6 @@ class PricingStockComponent extends BaseComponent {
         );
     }
 
-    onItemPriceChanged(e) {
-        if (e.target.value) {
-            this.props.onTextChange(e.target.value, "itemprice")
-        }        
-    }
-
     render() {
         return (
           <React.Fragment>
@@ -359,10 +345,8 @@ class PricingStockComponent extends BaseComponent {
                             <div className="item-form-group">
                                 <div className="col-md-6">
                                     <label>Price<span>*</span></label>
-                                        <input className="required numbersOnlyD validateZero" id="itemNewPrice" type="text" name="Price" step="0.25" value={this.props.itemModel.price}
-                                            oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/^0+/g, '').replace(/(?<!^)-/g, '');"
-                                            onChange={(e) => this.props.onTextChange(e.target.value, "itemprice")}
-                                            onBlur={this.onItemPriceChanged} />
+                                        <input className="required numbersOnlyD validateZero" id="itemNewPrice" type="number" name="Price" step="0.25" value={this.props.itemModel.price}
+                                        onChange={(e) => this.props.onTextChange(e.target.value, "itemprice")} />
                                 </div>
                                 <div className="col-md-6">
                                     <label>SKU</label>

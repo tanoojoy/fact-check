@@ -1,67 +1,15 @@
 'use strict';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
 
-
-function editCartItemBookingSlot(cart, callback) {
-    return function (dispatch, getSttate) {
-
-        $.ajax({
-            url: '/chat/edit-cart-item-booking-slot',
-            type: 'POST',
-            data: cart,
-            success: function (cartItem) {
-
-
-                var result = dispatch({
-                    type: actionTypes.UPDATE_BOOKING_SLOT,
-                    cartItem: cartItem
-                });
-
-                callback(cartItem);
-                return result
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log(textStatus, errorThrown);
-                callback();
-            }
-        });
-    }
-}
-
-
-function createCart(cart, callback) {
-    return function (dispatch, getSttate) {
-
-        $.ajax({
-            url: '/chat/create-cart',
-            type: 'POST',
-            data: cart,
-            success: function (cartItem) {
-
-                var result = dispatch({
-                    type: "",
-                    cartItem: cartItem
-                });
-
-                callback(cartItem);
-                return result
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log(textStatus, errorThrown);
-                callback();
-            }
-        });
-    }
-}
-
 function sendOffer(offer, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/chat/send-offer',
+            url: prefix+'/chat/send-offer',
             type: 'POST',
             data: offer,
             success: function (offer) {
@@ -83,7 +31,7 @@ function sendOffer(offer, callback) {
 function declineOffer(offer, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/chat/decline-offer',
+            url: prefix+'/chat/decline-offer',
             type: 'PUT',
             data: offer,
             success: function (result) {
@@ -106,7 +54,7 @@ function declineOffer(offer, callback) {
 function getUserChannels(options, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/chat/get-channels',
+            url: prefix+'/chat/get-channels',
             type: 'GET',
             data: {
                 pageSize: options.pageSize,
@@ -130,16 +78,13 @@ function getUserChannels(options, callback) {
 function createChannel(options, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/chat/create-channel',
+            url: prefix+'/chat/create-channel',
             type: 'POST',
             data: {
                 recipientId: options.recipientId,
                 itemId: options.itemId,
                 quantity: options.quantity,
-                createCartItem: options.createCartItem,
-                serviceBookingUnitGuid: options.serviceBookingUnitGuid || null,
-                bookingSlot: options.bookingSlot ? JSON.stringify(options.bookingSlot) : null,
-                addOns: options.addOns ? JSON.stringify(options.addOns) : null
+                createCartItem: options.createCartItem
             },
             success: function (result) {
                 callback(result);
@@ -158,7 +103,7 @@ function createChannel(options, callback) {
 function getRecipientAddresses(userId, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/chat/get-recipient-addresses',
+            url: prefix+'/chat/get-recipient-addresses',
             type: 'GET',
             data: {
                 recipientId: userId
@@ -180,7 +125,7 @@ function getRecipientAddresses(userId, callback) {
 function getOfferByCartItemId(cartItemId, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/chat/get-offer',
+            url: prefix+'/chat/get-offer',
             type: 'GET',
             data: { cartItemId: cartItemId },
             success: function (result) {
@@ -200,7 +145,7 @@ function getOfferByCartItemId(cartItemId, callback) {
 function getChatDetails(channelId, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/chat/get-chat-details',
+            url: prefix+'/chat/get-chat-details',
             type: 'GET',
             data: { channelId: channelId },
             success: function (result) {
@@ -220,7 +165,7 @@ function getChatDetails(channelId, callback) {
 function acceptOffer(options, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/chat/accept-offer',
+            url: prefix+'/chat/accept-offer',
             type: 'PUT',
             data: options,
             success: function (result) {
@@ -239,11 +184,8 @@ function acceptOffer(options, callback) {
 
 function updateMemberLastSeenMessage(memberId, messageId) {
     return function (dispatch, getState) {
-
-        
-
         $.ajax({
-            url: '/chat/update-member-last-seen-message',
+            url: prefix+'/chat/update-member-last-seen-message',
             type: 'PUT',
             data: {
                 memberId: memberId,
@@ -262,15 +204,16 @@ function updateMemberLastSeenMessage(memberId, messageId) {
     };
 }
 
-function addMember(channelId, callback) {
+function addMember(channelId, userId, callback) {
     return function (dispatch, getState) {
         let chatDetail = Object.assign({}, getState().chatReducer.chatDetail);
 
         $.ajax({
-            url: '/chat/add-channel-member',
+            url: prefix+'/chat/add-channel-member',
             type: 'POST',
             data: {
-                channelId: channelId
+                channelId: channelId,
+                userId: userId
             },
             success: function (result) {
                 callback();
@@ -301,7 +244,7 @@ function sendChatMessage(message, callback) {
         };
 
         $.ajax({
-            url: '/chat/send-message',
+            url: prefix+'/chat/send-message',
             type: 'POST',
             data: options,
             success: function (chatMessage) {
@@ -318,6 +261,127 @@ function sendChatMessage(message, callback) {
     };
 }
 
+function generateConversationToken(device, userid, callback) {
+    return function (dispatch, getState) {
+        $.ajax({
+            url: prefix + '/chat/generate-conversation-token',
+            data: {
+                device: device,
+                identity: userid
+            },
+            type: 'GET',
+            success: function (response) {
+                console.log('response', response);
+                if (callback) {
+                    callback(response);
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+            }
+        });
+    }    
+}
+
+function createChat(userClarivateId, arcadierUserId, twillioChatId, isInitiator, incomingCoId, outgoingCoId) {
+    return function (dispatch, getState) {
+        console.log('action createChat');
+        $.ajax({
+            url: prefix + '/chat/createChat',
+            data: {
+                userClarivateId,
+                arcadierUserId,
+                twillioChatId,
+                isInitiator,
+                incomingCoId,
+                outgoingCoId
+            },
+            type: 'POST',
+            success: function (response) {
+                if (response) {
+                    let chatId = response.chat.twillioChatId.split('|');
+                    const friendlyName = chatId[0];
+                    const sid = chatId[1];
+                    window.location = `${prefix}/chat/${friendlyName}?interlocutor=${response.chat.outgoingCoId}&sid=${sid}`;
+                }                
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+            }
+        });
+    }
+}
+
+
+
+function sendSystemMessage(channelName, sid, conversationData, senderName, message, callback) {
+    let chatData = null;
+    return function (dispatch, getState) {
+        $.getJSON(`${prefix}/product-profile/token/${senderName}`, function (chData) {
+            chatData = chData;
+            let dataToken = null;
+            if (sid) {
+                dataToken = conversationData;
+            }
+            else {
+                dataToken = chatData;
+            }
+
+            var accessManager = new window.Twilio.AccessManager(dataToken.token);
+            window.Twilio.Conversations.Client.create(dataToken.token).then(client => {
+                client.on("connectionStateChanged", (state) => {
+                    if (state === "connected") {
+                        client.getConversationByUniqueName(channelName).then(channel => {
+                            const modifiedMsg = `${message}|${senderName}`;
+                            channel.sendMessage(modifiedMsg);
+                            if (callback) {
+                                callback();
+                            }
+                        });
+                    }
+                    if (state === "disconnected") {
+
+                    }
+                    if (state === "denied") {
+
+                    }
+                });
+
+                accessManager.on('tokenUpdated', am => {
+                    // get new token from AccessManager and pass it to the library instance
+                    client.updateToken(am.token);
+                });
+
+            });
+        });
+    }
+}
+
+function updateRfqData(rfqData) {
+    return function (dispatch) {
+        console.log('action createChat');
+        $.ajax({
+            url: prefix + '/chat/chat-update-rfq/' + rfqData.id,
+            data: {
+                chatId: rfqData.chatId,
+                id: rfqData.id
+            },
+            type: 'PUT',
+            success: function (response) {
+                //if (response) {
+                //    let chatId = response.chat.twillioChatId.split('|');
+                //    const friendlyName = chatId[0];
+                //    const sid = chatId[1];
+                //    window.location = `${prefix}/chat/${friendlyName}?interlocutor=${response.chat.outgoingCoId}&sid=${sid}`;
+                //}
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+            }
+        });
+    }
+}
+
 module.exports = {
     sendOffer: sendOffer,
     declineOffer: declineOffer,
@@ -329,7 +393,9 @@ module.exports = {
     updateMemberLastSeenMessage: updateMemberLastSeenMessage,
     getChatDetails: getChatDetails,
     addMember: addMember,
-    sendChatMessage: sendChatMessage,
-    editCartItemBookingSlot: editCartItemBookingSlot,
-    createCart: createCart
+    sendChatMessage: sendChatMessage, 
+    generateConversationToken: generateConversationToken,
+    createChat: createChat,
+    sendSystemMessage: sendSystemMessage,
+    updateRfqData: updateRfqData
 }

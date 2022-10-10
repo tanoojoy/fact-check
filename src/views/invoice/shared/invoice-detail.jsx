@@ -1,6 +1,7 @@
 'use strict';
 const React = require('react');
 const BaseComponent = require('../../shared/base');
+const CommonModule = require('../../../public/js/common.js');
 
 const infoString = `This is not the same number as the system
 	generated invoice no.<br/> This is the invoice reference number
@@ -20,17 +21,7 @@ class InvoiceDetail extends BaseComponent {
         if (this.props.invoiceDetail && field) {
             const { invoiceDetail } = this.props;
             if (field == 'InvoiceNo') {
-                let cosmeticNo = "";
-                if (invoiceDetail.Orders[0].PaymentDetails) {
-                    invoiceDetail.Orders[0].PaymentDetails.forEach(function (payment, index) {
-                        if (payment.InvoiceNo === invoiceDetail.InvoiceNo) {
-                            if (payment.CosmeticNo != null && payment.CosmeticNo != "") {
-                                cosmeticNo = payment.CosmeticNo;
-                            }
-                        }
-                    });
-                }
-                return cosmeticNo != "" && cosmeticNo != null ? cosmeticNo : invoiceDetail.InvoiceNo || '';
+                return invoiceDetail.InvoiceNo || '';
             } else {
                 if (invoiceDetail && invoiceDetail.Orders) {
                     if (invoiceDetail.Orders[0] && invoiceDetail.Orders[0].PaymentDetails && invoiceDetail.Orders[0].PaymentDetails.length > 0) {
@@ -124,7 +115,7 @@ class InvoiceDetail extends BaseComponent {
                                             data-html="true"
                                             href=""
                                             data-original-title={infoString}>
-                                            <img src="/assets/images/info.svg" alt="" />
+                                            <img src={CommonModule.getAppPrefix() + "/assets/images/info.svg"} alt="" />
                                         </a>
                                     </label>
                                     <div>

@@ -9,5 +9,15 @@
             }
         ],
         "@babel/preset-react"
+    ],
+    "plugins": [
+        [
+            "@babel/plugin-transform-runtime",
+            {
+                "regenerator": true,
+                "corejs": 3
+            }
+        ],
+        "css-modules-transform"
     ]
 }

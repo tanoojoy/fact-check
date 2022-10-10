@@ -4,6 +4,7 @@ if (typeof window !== 'undefined') {
     var $ = window.$;
 }
 var moment = require('moment');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 
 function fetchEvents(page = null, selectedSection = '') {
     return function (dispatch, getState) {
@@ -21,7 +22,7 @@ function fetchEvents(page = null, selectedSection = '') {
         const user = getState().userReducer.user;
 
         $.ajax({
-            url: '/orderdiary/getEventCustomField',
+            url: prefix+'/orderdiary/getEventCustomField',
             type: 'GET',
             success: function (result) {
                 let events = [];
@@ -189,7 +190,7 @@ function createEvent(event, formData, page = null) {
             if (page == 'requisition-detail') updatedSection = 'Comments';
             if (page == 'receiving-note' || page == 'invoice-detail' || page == 'create-invoice') updatedSection = 'Comment';
             $.ajax({
-                url: '/orderdiary/createEvent',
+                url: prefix+'/orderdiary/createEvent',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(request),
@@ -217,7 +218,7 @@ function createEvent(event, formData, page = null) {
 function saveFile(uploadFile, isValid, formData, callback) {
     if (uploadFile !== '' && isValid === true) {
         $.ajax({
-            url: '/orderdiary/uploadFile',
+            url: prefix+'/orderdiary/uploadFile',
             type: 'POST',
             contentType: false,
             processData: false,

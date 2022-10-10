@@ -217,10 +217,11 @@
     <Compile Include="src\routes\items.js">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\routes\login.js">
+    <Compile Include="src\routes\index.js">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\routes\marketplace.js" />
+    <Compile Include="src\routes\merchants\activitylog.js" />
     <Compile Include="src\routes\merchants\dashboard.js">
       <SubType>Code</SubType>
     </Compile>
@@ -662,6 +663,7 @@
     <Content Include=".env" />
     <Content Include=".env.sample" />
     <Content Include="package.json" />
+    <Content Include="approval-tables.txt" />
     <Content Include="README.md" />
     <Content Include="sdk\resources\accounts.js">
       <SubType>Code</SubType>
@@ -669,12 +671,10 @@
     <Content Include="sdk\resources\addresses.js" />
     <Content Include="sdk\resources\chat.js" />
     <Content Include="sdk\resources\invoices.js" />
-    <Content Include="sdk\resources\permissionProfiles.js" />
     <Content Include="sdk\resources\quotations.js" />
     <Content Include="sdk\resources\payments.js" />
     <Content Include="sdk\resources\receivingNotes.js" />
     <Content Include="sdk\resources\requisitions.js" />
-    <Content Include="sdk\resources\userGroups.js" />
     <Content Include="src\public\css\bootstrap-datetimepicker.min.css">
       <SubType>Code</SubType>
     </Content>
@@ -690,7 +690,6 @@
     <Content Include="src\public\css\feature.css" />
     <Content Include="src\public\css\fa-all.css" />
     <Content Include="src\public\css\groupbuy.css" />
-    <Content Include="src\public\css\jquery-ui.min.css" />
     <Content Include="src\public\css\jquery.timepicker.css" />
     <Content Include="src\public\css\lightbox.min.css">
       <SubType>Code</SubType>
@@ -848,13 +847,10 @@
     <Content Include="src\public\images\country_flags\zh-TW.svg" />
     <Content Include="src\public\images\country_flags\zh.svg" />
     <Content Include="src\public\images\country_flags\zu.svg" />
-    <Content Include="src\public\images\default_user.svg" />
     <Content Include="src\public\images\delete_btn.svg" />
-    <Content Include="src\public\images\delete_button-white.svg" />
     <Content Include="src\public\images\done.svg" />
     <Content Include="src\public\images\delete_button.svg" />
     <Content Include="src\public\images\down_arrow.svg" />
-    <Content Include="src\public\images\drag_rank.svg" />
     <Content Include="src\public\images\edit_btn.svg" />
     <Content Include="src\public\images\edit_hover.svg" />
     <Content Include="src\public\images\email.svg" />
@@ -874,7 +870,6 @@
     <Content Include="src\public\images\image_add.svg" />
     <Content Include="src\public\images\image_add_white.svg" />
     <Content Include="src\public\images\image_delete.svg" />
-    <Content Include="src\public\images\img-placeholder.png" />
     <Content Include="src\public\images\Info.svg" />
     <Content Include="src\public\images\insta.svg" />
     <Content Include="src\public\images\insulinA.jpg" />
@@ -903,7 +898,6 @@
     <Content Include="src\public\images\recive-avatar.png" />
     <Content Include="src\public\images\send-btn-arrow.svg" />
     <Content Include="src\public\images\slickarrow.svg" />
-    <Content Include="src\public\images\soldout.svg" />
     <Content Include="src\public\images\star_ratting.svg" />
     <Content Include="src\public\images\star_ratting_black.svg" />
     <Content Include="src\public\images\store-thumb.png" />
@@ -925,85 +919,7 @@
     <Content Include="src\public\images\void_white.svg" />
     <Content Include="src\public\images\view_review.svg" />
     <Content Include="src\public\images\view_review_hover.svg" />
-    <Content Include="src\public\js\bootstrap-tagsinput-new.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales-all.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales-all.min.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\af.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ar-dz.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ar-kw.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ar-ly.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ar-ma.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ar-sa.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ar-tn.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ar.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\az.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\bg.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\bs.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ca.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\cs.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\da.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\de.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\el.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\en-au.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\en-gb.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\en-nz.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\es-us.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\es.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\et.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\eu.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\fa.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\fi.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\fr-ca.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\fr-ch.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\fr.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\gl.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\he.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\hi.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\hr.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\hu.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\id.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\is.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\it.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ja.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ka.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\kk.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ko.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\lb.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\lt.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\lv.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\mk.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ms.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\nb.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ne.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\nl.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\nn.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\pl.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\pt-br.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\pt.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ro.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ru.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\sk.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\sl.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\sq.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\sr-cyrl.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\sr.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\sv.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\th.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\tr.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\ug.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\uk.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\uz.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\vi.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\zh-cn.js" />
-    <Content Include="src\public\js\fullcalendar-v5\locales\zh-tw.js" />
-    <Content Include="src\public\js\fullcalendar-v5\main.css" />
-    <Content Include="src\public\js\fullcalendar-v5\main.js" />
-    <Content Include="src\public\js\fullcalendar-v5\main.min.css" />
-    <Content Include="src\public\js\fullcalendar-v5\main.min.js" />
-    <Content Include="src\public\js\jquery-ui.min.js" />
-    <Content Include="src\public\js\jquery-ui.sortable.min.js" />
     <Content Include="src\public\js\jquery.timepicker.min.js" />
-    <Content Include="src\public\js\page-activity.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="src\public\js\rating.js" />
@@ -1011,7 +927,6 @@
     <Content Include="src\redux\accountAction.js">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="src\redux\accountPermissionActions.js" />
     <Content Include="src\redux\approvalActions.js" />
     <Content Include="src\redux\categoryActions.js" />
     <Content Include="src\redux\invoiceActions.js" />
@@ -1019,14 +934,12 @@
     <Content Include="src\redux\chatActions.js" />
     <Content Include="src\redux\paymentTermActions.js" />
     <Content Include="src\redux\recevingNoteActions.js" />
-    <Content Include="src\redux\reducers\account-permissions.js" />
     <Content Include="src\redux\reducers\chat.js" />
     <Content Include="src\redux\reducers\invoice.js" />
     <Content Include="src\redux\reducers\quotations.js" />
     <Content Include="src\redux\reducers\receiving-notes.js" />
     <Content Include="src\redux\reducers\requisitions.js" />
     <Content Include="src\redux\reducers\search.js" />
-    <Content Include="src\redux\reducers\user-groups.js" />
     <Content Include="src\redux\requisitionActions.js" />
     <Content Include="src\redux\searchActions.js" />
     <Content Include="src\redux\panelAction.js">
@@ -1038,27 +951,22 @@
     <Content Include="src\redux\reducers\panels.js">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="src\redux\userGroupActions.js" />
-    <Content Include="src\routes\account-permissions.js" />
     <Content Include="src\routes\activity-log.js" />
     <Content Include="src\routes\merchants\invoice.js" />
-    <Content Include="src\routes\payment-gateway.js" />
     <Content Include="src\routes\quotation.js" />
     <Content Include="src\routes\receiving-note.js" />
     <Content Include="src\routes\requisition.js" />
-    <Content Include="src\routes\main-routes.js">
+    <Content Include="src\routes\main-page-params.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="src\routes\merchants\index.js">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="src\routes\merchants\sub-routes.js">
+    <Content Include="src\routes\merchants\sub-page-params.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="src\routes\chat.js" />
     <Content Include="src\routes\search.js" />
-    <Content Include="src\routes\user-groups.js" />
-    <Content Include="src\scripts\account-permission\index.jsx" />
     <Content Include="src\scripts\chat\index.js" />
     <Content Include="src\scripts\checkout\one-page-checkout.js">
       <SubType>Code</SubType>
@@ -1066,9 +974,8 @@
     <Content Include="src\scripts\comparison\detail.js" />
     <Content Include="src\scripts\delivery\add-edit.js" />
     <Content Include="src\scripts\approval\index.js" />
-    <Content Include="src\scripts\home\login.js" />
+    <Content Include="src\scripts\home\index.js" />
     <Content Include="src\scripts\invoice\index.js" />
-    <Content Include="src\scripts\payment-gateway\index.js" />
     <Content Include="src\scripts\quotation\index.js" />
     <Content Include="src\scripts\receiving-note\index.js" />
     <Content Include="src\scripts\requisition\index.js" />
@@ -1083,26 +990,12 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="src\scripts\shared\onboarded-merchant.js" />
-    <Content Include="src\scripts\shared\unauthorized-access.js" />
-    <Content Include="src\scripts\shared\user-permissions.js" />
     <Content Include="src\scripts\sub-account\index.js" />
-    <Content Include="src\scripts\user-group\index.jsx" />
-    <Content Include="src\views\account-permission\add-edit\form.jsx" />
-    <Content Include="src\views\account-permission\add-edit\index.jsx" />
-    <Content Include="src\views\account-permission\add-edit\permission-table.jsx" />
-    <Content Include="src\views\account-permission\add-edit\title.jsx" />
-    <Content Include="src\views\account-permission\list\filter.jsx" />
-    <Content Include="src\views\account-permission\list\index.jsx" />
-    <Content Include="src\views\account-permission\list\list.jsx" />
-    <Content Include="src\views\account-permission\list\title.jsx" />
     <Content Include="src\views\chat\index.jsx">
       <SubType>Code</SubType>
     </Content>
     <Content Include="src\views\chat\item-info.jsx" />
     <Content Include="src\views\chat\quotation-actions.jsx" />
-    <Content Include="src\views\common\permission-tooltip.jsx" />
-    <Content Include="src\views\common\unauthorized-access-with-sidebar.jsx" />
-    <Content Include="src\views\common\unauthorized-access.jsx" />
     <Content Include="src\views\comparison\comparison-detail\breadcrumb.jsx" />
     <Content Include="src\views\comparison\comparison-detail\detail.jsx" />
     <Content Include="src\views\comparison\comparison-detail\index.jsx" />
@@ -1232,42 +1125,29 @@
     <Content Include="src\views\features\checkout_flow_type\b2b\one-page-checkout\shared\review.jsx">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\detail\shipping_payment_detail.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\detail\table-items.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\detail\table.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\detail\transaction_summary.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\country_level\headeritem.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\country_level\table-items.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\country_level\transaction_summary.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\order-diary\event-form.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\order-diary\index-with-border.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\order-diary\index.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\order-diary\tab-content.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\service_level\headeritem.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\service_level\table-items.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\service_level\transaction_summary.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\variants_level\headeritem.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\variants_level\table-items.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\variants_level\transaction_summary.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\country_level\purchase_detail\table-items.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\country_level\order_detail\table-items.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\shipping_payment_detail.jsx">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\table-items.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\transaction_summary.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\variants_level\order_detail\table-items.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\order-diary\event-form.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\order-diary\index.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\order-diary\tab-content.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_list\index.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\purchase_order_list\index.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\shipping_payment_detail.jsx">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\transaction_summary.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2b\purchase_order\variants_level\purchase_detail\table-items.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\checkout-button\multiple_merchant\index.jsx">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2c\checkout-button\single_merchant\country_level\index.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\checkout-button\single_merchant\index.jsx">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2c\checkout-button\single_merchant\service_level\index.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\checkout-button\single_merchant\variants_level\index.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\invoice\add-edit\index.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\layouts\sidebar-nav.jsx">
       <SubType>Code</SubType>
@@ -1275,8 +1155,7 @@
     <Content Include="src\views\features\checkout_flow_type\b2c\one-page-checkout\country_level\main.jsx">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2c\one-page-checkout\service_level\main.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\one-page-checkout\service_level\review.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2c\checkout-complete\index.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\one-page-checkout\variants_level\main.jsx">
       <SubType>Code</SubType>
     </Content>
@@ -1295,133 +1174,26 @@
     <Content Include="src\views\features\checkout_flow_type\b2c\one-page-checkout\shared\review.jsx">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\country_level\table.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\service_level\table.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\shipping_payment_detail.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\table-items.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\table.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\transaction_summary.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\variants_level\table.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\country_level\headeritem.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\country_level\table-items.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\country_level\transaction_summary.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\modal-edit-booking.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\modal_confirm_cancel.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\order-diary\event-form.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\order-diary\index-with-border.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\order-diary\index.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\order-diary\tab-content.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\service_level\calendar.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\service_level\headeritem.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\service_level\shippingaddress.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\service_level\table-items.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\service_level\transaction_summary.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\variants_level\headeritem.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\variants_level\table-items.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\variants_level\transaction_summary.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\country_level\bookingheader.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\country_level\index.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\service_level\bookingheader.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\service_level\index.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\variants_level\bookingheader.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\variants_level\index.jsx" />
-    <Content Include="src\views\features\pricing_type\country_level\add-edit\add-button.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\country_level\add-edit\location-map.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\country_level\add-edit\location.jsx" />
-    <Content Include="src\views\features\pricing_type\country_level\add-edit\location-list.jsx" />
-    <Content Include="src\views\features\pricing_type\country_level\add-edit\schedule.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\country_level\add-edit\tab-links.jsx" />
-    <Content Include="src\views\features\pricing_type\country_level\add-edit\variant.jsx" />
-    <Content Include="src\views\features\pricing_type\country_level\cart\custom.jsx" />
-    <Content Include="src\views\features\pricing_type\country_level\header\search.jsx" />
-    <Content Include="src\views\features\pricing_type\country_level\home\item-price.jsx" />
-    <Content Include="src\views\features\pricing_type\country_level\item-details\moq.jsx" />
-    <Content Include="src\views\features\pricing_type\country_level\item-details\original-price.jsx" />
-    <Content Include="src\views\features\pricing_type\country_level\user-settings\preferred-location.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\add-edit\add-button.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\service_level\add-edit\calendar-view.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\service_level\add-edit\index.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\add-edit\location-map.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\service_level\add-edit\negotiate.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\add-edit\pricing-stock.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\service_level\add-edit\schedule.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\service_level\add-edit\tab-links.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\cart\custom.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\header\search.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\home\item-price.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\item-details\calendar.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\item-details\index.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\item-details\purchase-order.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\item-details\seller-info.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\item-list\index.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\search\empty-result.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\search\item-view.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\search\main.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\search\map.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\search\sort-view-options.jsx" />
-    <Content Include="src\views\features\pricing_type\service_level\user-settings\preferred-location.jsx" />
-    <Content Include="src\views\features\pricing_type\variants_level\add-edit\add-button.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\variants_level\add-edit\location-map.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\variants_level\add-edit\schedule.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\features\pricing_type\variants_level\add-edit\tab-links.jsx" />
-    <Content Include="src\views\features\pricing_type\variants_level\cart\custom.jsx" />
-    <Content Include="src\views\features\pricing_type\variants_level\header\search.jsx" />
-    <Content Include="src\views\features\pricing_type\variants_level\home\item-price.jsx" />
-    <Content Include="src\views\features\pricing_type\variants_level\item-details\moq.jsx" />
-    <Content Include="src\views\features\pricing_type\variants_level\item-details\original-price.jsx" />
-    <Content Include="src\views\features\pricing_type\variants_level\user-settings\preferred-location.jsx" />
-    <Content Include="src\views\item\item-info.jsx" />
-    <Content Include="src\views\item\purchase-order.jsx" />
-    <Content Include="src\views\item\reviews.jsx" />
-    <Content Include="src\views\item\seller-info.jsx" />
-    <Content Include="src\views\layouts\search-category.jsx" />
-    <Content Include="src\views\payment-gateway\cancel\index.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\country_level\purchase_detail\table-items.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\country_level\order_detail\table-items.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\shipping_payment_detail.jsx">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\transaction_summary.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\variants_level\order_detail\table-items.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\order-diary\event-form.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\order-diary\index.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\order-diary\tab-content.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\index.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\purchase_order_list\country_level\index.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\purchase_order_list\service_level\index.jsx" />
-    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\purchase_order_list\variants_level\index.jsx" />
     <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\purchase_order_list\index.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\shipping_payment_detail.jsx">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\transaction_summary.jsx" />
+    <Content Include="src\views\features\checkout_flow_type\b2c\purchase_order\variants_level\purchase_detail\table-items.jsx" />
     <Content Include="src\views\features\checkout_flow_type\modal-success-change.jsx" />
+    <Content Include="src\views\features\pricing_type\country_level\add-edit\availability.jsx" />
+    <Content Include="src\views\features\pricing_type\country_level\add-edit\country.jsx" />
     <Content Include="src\views\features\pricing_type\country_level\add-edit\index.jsx">
       <SubType>Code</SubType>
     </Content>
@@ -1432,6 +1204,10 @@
     <Content Include="src\views\features\pricing_type\country_level\add-edit\pricing.jsx" />
     <Content Include="src\views\features\pricing_type\country_level\item-details\bulk-pricing.jsx" />
     <Content Include="src\views\features\pricing_type\country_level\item-details\index.jsx" />
+    <Content Include="src\views\features\pricing_type\country_level\item-details\item-info.jsx" />
+    <Content Include="src\views\features\pricing_type\country_level\item-details\purchase-order.jsx" />
+    <Content Include="src\views\features\pricing_type\country_level\item-details\reviews.jsx" />
+    <Content Include="src\views\features\pricing_type\country_level\item-details\seller-info.jsx" />
     <Content Include="src\views\features\pricing_type\country_level\item-list\index.jsx">
       <SubType>Code</SubType>
     </Content>
@@ -1449,6 +1225,10 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="src\views\features\pricing_type\variants_level\item-details\index.jsx" />
+    <Content Include="src\views\features\pricing_type\variants_level\item-details\item-info.jsx" />
+    <Content Include="src\views\features\pricing_type\variants_level\item-details\purchase-order.jsx" />
+    <Content Include="src\views\features\pricing_type\variants_level\item-details\reviews.jsx" />
+    <Content Include="src\views\features\pricing_type\variants_level\item-details\seller-info.jsx" />
     <Content Include="src\views\features\pricing_type\variants_level\item-list\index.jsx">
       <SubType>Code</SubType>
     </Content>
@@ -1576,39 +1356,7 @@
     <Content Include="src\views\search\index.jsx" />
     <Content Include="src\views\search\result-header.jsx" />
     <Content Include="src\views\shared\base.jsx" />
-    <Content Include="src\views\storefront\storefront-google-analytics.jsx" />
     <Content Include="src\views\sub-account\registration\index.jsx" />
-    <Content Include="src\views\user-group\add-edit\form.jsx" />
-    <Content Include="src\views\user-group\add-edit\index.jsx" />
-    <Content Include="src\views\user-group\add-edit\title.jsx" />
-    <Content Include="src\views\user-group\list\filter.jsx" />
-    <Content Include="src\views\user-group\list\index.jsx" />
-    <Content Include="src\views\user-group\list\list.jsx" />
-    <Content Include="src\views\user-group\list\title.jsx" />
-    <Content Include="src\views\user\custom-fields\checkbox-component.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\user\custom-fields\date-component.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\user\custom-fields\dropdown-component.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\user\custom-fields\hyperlink-component.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\user\custom-fields\image-component.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\user\custom-fields\input-container-component.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\user\custom-fields\pdf-component.jsx">
-      <SubType>Code</SubType>
-    </Content>
-    <Content Include="src\views\user\custom-fields\text-component.jsx">
-      <SubType>Code</SubType>
-    </Content>
     <Content Include="src\views\user\settings\image-modal-view.jsx">
       <SubType>Code</SubType>
     </Content>
@@ -1619,8 +1367,6 @@
     <Folder Include="src\public\css\bespoke\" />
     <Folder Include="src\public\images\country_flags\" />
     <Folder Include="src\public\images\gateways\" />
-    <Folder Include="src\public\js\fullcalendar-v5\" />
-    <Folder Include="src\public\js\fullcalendar-v5\locales\" />
     <Folder Include="src\public\js\static\" />
     <Folder Include="src\redux\" />
     <Folder Include="src\public\fonts\" />
@@ -1628,7 +1374,6 @@
     <Folder Include="src\public\js\" />
     <Folder Include="src\redux\reducers\" />
     <Folder Include="src\routes\merchants\" />
-    <Folder Include="src\scripts\account-permission\" />
     <Folder Include="src\scripts\activity-log\" />
     <Folder Include="src\scripts\home\" />
     <Folder Include="src\" />
@@ -1646,7 +1391,6 @@
     <Folder Include="src\scripts\delivery\" />
     <Folder Include="src\scripts\chat\" />
     <Folder Include="src\scripts\cart\" />
-    <Folder Include="src\scripts\payment-gateway\" />
     <Folder Include="src\scripts\receiving-note\" />
     <Folder Include="src\scripts\invoice\" />
     <Folder Include="src\scripts\quotation\" />
@@ -1655,15 +1399,11 @@
     <Folder Include="src\scripts\storefront\" />
     <Folder Include="src\scripts\purchase\" />
     <Folder Include="src\scripts\merchant\" />
-    <Folder Include="src\scripts\user-group\" />
     <Folder Include="src\scripts\user\" />
     <Folder Include="src\scripts\search\" />
     <Folder Include="src\scripts\shared\" />
     <Folder Include="src\scripts\requisition\" />
     <Folder Include="src\views\" />
-    <Folder Include="src\views\account-permission\" />
-    <Folder Include="src\views\account-permission\add-edit\" />
-    <Folder Include="src\views\account-permission\list\" />
     <Folder Include="src\views\approval\settings\" />
     <Folder Include="src\views\approval\department\" />
     <Folder Include="src\views\approval\workflow\" />
@@ -1751,49 +1491,8 @@
     <Folder Include="src\views\features\checkout_flow_type\b2b\checkout-button\multiple_merchant" />
     <Folder Include="src\views\features\checkout_flow_type\b2b\checkout-button\single_merchant" />
     <Folder Include="src\views\features\checkout_flow_type\b2b\invoice\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\detail\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\country_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\service_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\order-diary\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_detail\variants_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\checkout-button\single_merchant\country_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\checkout-button\single_merchant\service_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\checkout-button\single_merchant\variants_level\" />
     <Folder Include="src\views\features\checkout_flow_type\b2c\invoice\" />
     <Folder Include="src\views\features\checkout_flow_type\b2c\invoice\add-edit\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\one-page-checkout\service_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\country_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\service_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\detail\variants_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\country_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\order-diary\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\variants_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_detail\service_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\country_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\variants_level\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\service_level\" />
-    <Folder Include="src\views\features\pricing_type\country_level\cart\" />
-    <Folder Include="src\views\features\pricing_type\country_level\home\" />
-    <Folder Include="src\views\features\pricing_type\country_level\header\" />
-    <Folder Include="src\views\features\pricing_type\country_level\user-settings\" />
-    <Folder Include="src\views\features\pricing_type\service_level\" />
-    <Folder Include="src\views\features\pricing_type\service_level\add-edit\" />
-    <Folder Include="src\views\features\pricing_type\service_level\cart\" />
-    <Folder Include="src\views\features\pricing_type\service_level\item-details\" />
-    <Folder Include="src\views\features\pricing_type\service_level\item-list\" />
-    <Folder Include="src\views\features\pricing_type\service_level\home\" />
-    <Folder Include="src\views\features\pricing_type\service_level\header\" />
-    <Folder Include="src\views\features\pricing_type\service_level\search\" />
-    <Folder Include="src\views\features\pricing_type\service_level\user-settings\" />
-    <Folder Include="src\views\features\pricing_type\variants_level\cart\" />
-    <Folder Include="src\views\features\pricing_type\variants_level\home\" />
-    <Folder Include="src\views\features\pricing_type\variants_level\header\" />
-    <Folder Include="src\views\features\pricing_type\variants_level\user-settings\" />
-    <Folder Include="src\views\payment-gateway\" />
-    <Folder Include="src\views\payment-gateway\cancel\" />
     <Folder Include="src\views\features\pricing_type\country_level\search\" />
     <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\" />
     <Folder Include="src\views\features\checkout_flow_type\b2b\checkout-complete\" />
@@ -1801,10 +1500,19 @@
     <Folder Include="src\views\features\checkout_flow_type\b2b\one-page-checkout\country_level\" />
     <Folder Include="src\views\features\checkout_flow_type\b2b\one-page-checkout\shared\" />
     <Folder Include="src\views\features\checkout_flow_type\b2b\one-page-checkout\variants_level\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\country_level\" />
     <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\country_level\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\country_level\order_detail\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\variants_level\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\country_level\purchase_detail\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\variants_level\order_detail\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\variants_level\order_history_list\" />
     <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\order-diary\" />
     <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\merchant\order_history_list\" />
     <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\purchase_order_list\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\variants_level\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2b\purchase_order\variants_level\purchase_detail\" />
     <Folder Include="src\views\features\checkout_flow_type\b2c\" />
     <Folder Include="src\views\features\checkout_flow_type\b2c\checkout-complete\" />
     <Folder Include="src\views\features\checkout_flow_type\b2c\layouts\" />
@@ -1817,13 +1525,22 @@
     <Folder Include="src\views\features\checkout_flow_type\b2c\one-page-checkout\shared\" />
     <Folder Include="src\views\features\checkout_flow_type\b2c\one-page-checkout\variants_level\" />
     <Folder Include="src\views\features\checkout_flow_type\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\country_level\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\country_level\purchase_order_list\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\country_level\purchase_detail\" />
     <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\country_level\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\country_level\order_history_list\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\country_level\order_detail\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\variants_level\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\variants_level\order_history_list\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\variants_level\order_detail\" />
     <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\order-diary\" />
     <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\merchant\order_history_list\" />
     <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\purchase_order_list\" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\purchase_order_list\country_level" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\purchase_order_list\service_level" />
-    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\purchase_order_list\variants_level" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\variants_level\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\variants_level\purchase_detail\" />
+    <Folder Include="src\views\features\checkout_flow_type\b2c\purchase_order\variants_level\purchase_order_list\" />
     <Folder Include="src\views\features\pricing_type\" />
     <Folder Include="src\views\features\pricing_type\country_level\" />
     <Folder Include="src\views\features\pricing_type\country_level\add-edit\" />
@@ -1886,11 +1603,7 @@
     <Folder Include="src\views\merchant\settings\" />
     <Folder Include="src\views\search\" />
     <Folder Include="src\views\sub-account\registration\" />
-    <Folder Include="src\views\user-group\" />
-    <Folder Include="src\views\user-group\add-edit\" />
-    <Folder Include="src\views\user-group\list\" />
     <Folder Include="src\views\user\" />
-    <Folder Include="src\views\user\custom-fields\" />
     <Folder Include="src\views\user\settings\" />
   </ItemGroup>
   <!-- Do not delete the following Import Project.  While this appears to do nothing it is a marker for setting TypeScript properties before our import that depends on them. -->

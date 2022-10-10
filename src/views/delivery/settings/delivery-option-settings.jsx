@@ -1,10 +1,10 @@
 ﻿'use strict';
 var React = require('react');
-const BaseComponent = require('../../shared/base');
+var Currency = require('currency-symbol-map');
+const CommonModule = require('../../../public/js/common.js');
 
-const PermissionTooltip = require('../../common/permission-tooltip');
+class DeliverySettingsComponent extends React.Component {
 
-class DeliverySettingsComponent extends BaseComponent {
     constructor(props) {
         super(props);
 
@@ -89,61 +89,59 @@ class DeliverySettingsComponent extends BaseComponent {
 
     onExcludeDeliveryOption() {
         var self = this;
+        var cf = self.props.user.CustomFields;
+        var deliveryAvailabilityCustomFieldDef = self.props.customFieldDefinition.find(el => el.Name == 'DeliveryMethodAvailability');
+        if (typeof cf !== 'undefined' && cf !== null && cf.length > 0) {
+            var theShippingMethodObject = cf.find(function (element) {
+                return element.Name == "DeliveryMethodAvailability";
+            });
 
-        this.props.validatePermissionToPerformAction('edit-merchant-delivery-methods-api', () => {
-            var cf = self.props.user.CustomFields;
-            var deliveryAvailabilityCustomFieldDef = self.props.customFieldDefinition.find(el => el.Name == 'DeliveryMethodAvailability');
-            if (typeof cf !== 'undefined' && cf !== null && cf.length > 0) {
-                var theShippingMethodObject = cf.find(function (element) {
-                    return element.Name == "DeliveryMethodAvailability";
-                });
+            if (typeof theShippingMethodObject != 'undefined') {
+                var theValue = JSON.parse(theShippingMethodObject.Values[0]);
 
-                if (typeof theShippingMethodObject != 'undefined') {
-                    var theValue = JSON.parse(theShippingMethodObject.Values[0]);
+                if (typeof theValue.UnavailableDeliveryMethods != 'undefined') {
 
-                    if (typeof theValue.UnavailableDeliveryMethods != 'undefined') {
+                    var unAvailability = theValue.UnavailableDeliveryMethods;
 
-                        var unAvailability = theValue.UnavailableDeliveryMethods;
+                    //remove the array first
+                    unAvailability = [];
 
-                        //remove the array first
-                        unAvailability = [];
+                    $('.delivery-option-checkbox:checkbox:not(:checked)').each(function(index, element) {
+                        var theObject = {
+                            ShippingMethodGuid: $(element).attr('data-id')
+                        };
 
-                        $('.delivery-option-checkbox:checkbox:not(:checked)').each(function (index, element) {
-                            var theObject = {
-                                ShippingMethodGuid: $(element).attr('data-id')
-                            };
+                        unAvailability.push(theObject);
+                    });
+                    theValue.UnavailableDeliveryMethods = unAvailability;
+                    theShippingMethodObject.Values[0] = JSON.stringify(theValue);
 
-                            unAvailability.push(theObject);
-                        });
-                        theValue.UnavailableDeliveryMethods = unAvailability;
-                        theShippingMethodObject.Values[0] = JSON.stringify(theValue);
-
-                        self.props.updateUserInfo({ 'CustomFields': [theShippingMethodObject] }, 'delivery-option-settings');
+                    self.props.updateUserInfo({ 'CustomFields': [theShippingMethodObject] }, 'delivery-option-settings');
+                }
+            } else {
+                if (deliveryAvailabilityCustomFieldDef) {
+                    const value = { UnavailableDeliveryMethods: [] };
+                    $('.delivery-option-checkbox:checkbox:not(:checked)').each(function(index, element) {
+                        value.UnavailableDeliveryMethods.push({ ShippingMethodGuid: $(element).attr('data-id') });
+                    });
+                    const deliveryAvailCustomField = {
+                        Code: deliveryAvailabilityCustomFieldDef.Code,
+                        Values: [JSON.stringify(value)],
+                        DataFieldType: 'string'
                     }
-                } else {
-                    if (deliveryAvailabilityCustomFieldDef) {
-                        const value = { UnavailableDeliveryMethods: [] };
-                        $('.delivery-option-checkbox:checkbox:not(:checked)').each(function (index, element) {
-                            value.UnavailableDeliveryMethods.push({ ShippingMethodGuid: $(element).attr('data-id') });
-                        });
-                        const deliveryAvailCustomField = {
-                            Code: deliveryAvailabilityCustomFieldDef.Code,
-                            Values: [JSON.stringify(value)],
-                            DataFieldType: 'string'
-                        }
-                        const user = self.props.user;
-                        user.CustomFields.push(deliveryAvailCustomField);
-                        self.props.updateUserInfo(user);
-                    }
+                    const user = self.props.user;
+                    user.CustomFields.push(deliveryAvailCustomField);
+                    self.props.updateUserInfo(user);
                 }
             }
-        });
+        }
     }
 
     showDeliveryAdminOptionList() {
         var self = this;
 
         if (this.props.shippingOptionsAdmin && this.props.shippingOptionsAdmin.length > 0) {
+
             return (
                 this.props.shippingOptionsAdmin.map(function(shippingOptions) {
                     if (typeof shippingOptions.CustomFields != 'undefined' && shippingOptions.CustomFields && shippingOptions.CustomFields != null) {
@@ -156,12 +154,10 @@ class DeliverySettingsComponent extends BaseComponent {
                                         <i className="fa fa-ellipsis-h"/>
                                     </span>
                                     <span>
-                                        <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                            <div className="onoffswitch">
-                                                <input type="checkbox" onChange={(e) => self.onExcludeDeliveryOption()} name="onoffswitch" data-id={shippingOptions.ID} className="onoffswitch-checkbox delivery-option-checkbox" id={'deliveryOption' + shippingOptions.ID} defaultChecked={self.checkIfExcluded(shippingOptions.ID)} />
-                                                <label className="onoffswitch-label" htmlFor={'deliveryOption' + shippingOptions.ID}> <span className="onoffswitch-inner" /> <span className="onoffswitch-switch" /> </label>
-                                            </div>
-                                        </PermissionTooltip>
+                                        <div className="onoffswitch">
+                                            <input type="checkbox" onChange={(e) => self.onExcludeDeliveryOption()} name="onoffswitch" data-id={shippingOptions.ID} className="onoffswitch-checkbox delivery-option-checkbox" id={'deliveryOption' + shippingOptions.ID} defaultChecked={self.checkIfExcluded(shippingOptions.ID)}/>
+                                            <label className="onoffswitch-label" htmlFor={'deliveryOption' + shippingOptions.ID}> <span className="onoffswitch-inner"/> <span className="onoffswitch-switch"/> </label>
+                                        </div>
                                     </span>
                                 </td>
                             </tr>
@@ -171,32 +167,30 @@ class DeliverySettingsComponent extends BaseComponent {
                     }
                 })
             );
+
         } else
             return null;
     }
 
     showDeleteModal(deleteObjectId) {
         var self = this;
-
-        this.props.validatePermissionToPerformAction("delete-merchant-delivery-methods-api", () => {
-            self.setState({
+        self.setState(
+            {
                 deleteObjectId: deleteObjectId
-            }, function () {
+            }, function() {
                 $('#modalRemove').modal('show');
             });
-        });
     }
 
     doDelete() {
         var self = this;
+        $('#modalRemove').modal('hide');
 
-        this.props.validatePermissionToPerformAction("delete-merchant-delivery-methods-api", () => {
-            $('#modalRemove').modal('hide');
-            self.props.deleteShippingMethod(self.props.user.ID, self.state.deleteObjectId);
-        });
+        self.props.deleteShippingMethod(self.props.user.ID, self.state.deleteObjectId);
     }
 
     showDeliveryMerchantOptionList() {
+
         var self = this;
         if (this.props.shippingOptionsMerchant && this.props.shippingOptionsMerchant.length > 0) {
             return (
@@ -212,23 +206,17 @@ class DeliverySettingsComponent extends BaseComponent {
                                         <i className="fa fa-ellipsis-h"/>
                                     </span>
                                     <span className="delivery-option-edit-img">
-                                        <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                            <img src="/assets/images/edit_btn.svg" onClick={(e) =>  self.props.validatePermissionToPerformAction('edit-merchant-delivery-methods-api', () => location.href = '/delivery/add-edit?shippingmethodid=' + shippingOptions.ID)} />
-                                        </PermissionTooltip>
+                                        <img src={CommonModule.getAppPrefix() + "/assets/images/edit_btn.svg"} onClick={(e) => { location.href = '/delivery/add-edit?shippingmethodid=' + shippingOptions.ID; }}/>
                                     </span>
                                     <span>
-                                        <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                            <div className="onoffswitch">
-                                                <input type="checkbox" onChange={(e) => self.onExcludeDeliveryOption()} name="onoffswitch" data-id={shippingOptions.ID} className="onoffswitch-checkbox delivery-option-checkbox" id={'deliveryOption' + shippingOptions.ID} defaultChecked={self.checkIfExcluded(shippingOptions.ID)} />
-                                                <label className="onoffswitch-label" htmlFor={'deliveryOption' + shippingOptions.ID}> <span className="onoffswitch-inner" /> <span className="onoffswitch-switch" /> </label>
-                                            </div>
-                                        </PermissionTooltip>
+                                        <div className="onoffswitch">
+                                            <input type="checkbox" onChange={(e) => self.onExcludeDeliveryOption()} name="onoffswitch" data-id={shippingOptions.ID} className="onoffswitch-checkbox delivery-option-checkbox" id={'deliveryOption' + shippingOptions.ID} defaultChecked={self.checkIfExcluded(shippingOptions.ID)}/>
+                                            <label className="onoffswitch-label" htmlFor={'deliveryOption' + shippingOptions.ID}> <span className="onoffswitch-inner"/> <span className="onoffswitch-switch"/> </label>
+                                        </div>
                                     </span>
-                                    <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToDelete} extraClassOnUnauthorized={'icon-grey'}>
-                                        <span className="pickup-remove openModalRemove pull-right" onClick={(e) => self.showDeleteModal(shippingOptions.ID)}>
-                                            <i className="fa fa-times" />
-                                        </span>
-                                    </PermissionTooltip>
+                                    <span className="pickup-remove openModalRemove pull-right" onClick={(e) => self.showDeleteModal(shippingOptions.ID)}>
+                                        <i className="fa fa-times"/>
+                                    </span>
                                 </td>
                             </tr>
                         );
@@ -289,7 +277,7 @@ class DeliverySettingsComponent extends BaseComponent {
                         <tr key={rate.Name + index++}>
                             <td>{rate.Name}</td>
                             <td>{self.showMaxRange(rate)}</td>
-                            <td>{self.formatMoney(currencyCode, rate.Cost)}</td>
+                            <td>{[currencyCode, Currency(currencyCode), parseFloat(rate.Cost).toFixed(2)].join(' ')}</td>
                         </tr>
                     );
                 })
@@ -300,7 +288,6 @@ class DeliverySettingsComponent extends BaseComponent {
 
     render() {
         var self = this;
-
         return (
             <React.Fragment>
                 {self.toTrigger()}
@@ -311,11 +298,7 @@ class DeliverySettingsComponent extends BaseComponent {
                                 <span className="dsct-text">Shipping Options</span>
                             </div>
                             <div className="pull-right">
-                                <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                                    <div className="dsct-btn" onClick={(e) => this.props.validatePermissionToPerformAction('add-merchant-delivery-methods-api', () => location.href = "/delivery/add-edit")}>
-                                        <a>Add Shipping Option</a>
-                                    </div>
-                                </PermissionTooltip>
+                                <div className="dsct-btn"><a href="/delivery/add-edit">Add Shipping Option</a></div>
                             </div>
                         </div>
                         <div className="ph-t-table">

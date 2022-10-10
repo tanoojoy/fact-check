@@ -1,6 +1,7 @@
 'use strict';
 var actionTypes = require('./actionTypes');
 var toastr = require('toastr');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -8,7 +9,7 @@ if (typeof window !== 'undefined') {
 function createInvoice(options, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/merchants/invoice/create',
+            url: prefix+'/merchants/invoice/create',
             type: 'POST',
             data: options,
             success: function (result) {               
@@ -28,7 +29,7 @@ function filterInvoices(filters) {
         const { isUserMerchant = false } = getState().invoiceReducer;
 
         $.ajax({
-            url: `${isUserMerchant ? '/merchants' : ''}/invoice/filter`,
+            url: prefix+`${isUserMerchant ? '/merchants' : ''}/invoice/filter`,
             type: 'GET',
             data: filters,
             success: function (result) {
@@ -47,7 +48,7 @@ function filterInvoices(filters) {
 function updateInvoiceStatus(invoiceNo, status) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/merchants/invoice/update-invoice-status',
+            url: prefix+'/merchants/invoice/update-invoice-status',
             type: 'PUT',
             data: {
                 invoiceNo,
@@ -89,7 +90,7 @@ function processPayment(options, callback) {
         const { InvoiceNo } = getState().invoiceReducer.invoiceDetail;
 
         $.ajax({
-            url: '/invoice/process-payment',
+            url: prefix+'/invoice/process-payment',
             type: 'POST',
             data: Object.assign(options, {
                 invoiceNo: InvoiceNo

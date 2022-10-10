@@ -24,20 +24,24 @@
         "ecmaVersion": 2018
     },
     "plugins": [
-        "react"
+        "react",
+        "react-hooks"
     ],
     "rules": {
         "eqeqeq": "off",
         "curly": "error",
         "quotes": [ "error", "single" ],
         "jsx-quotes": [ "error", "prefer-single" ],
-        "no-debugger": "error",
+        "no-debugger": "warn",
         "no-alert": "error",
         "semi": [ 1, "always" ],
         "no-extra-semi": "error",
         "no-mixed-spaces-and-tabs": "error",
         "indent": [ "error", 4 ],
+        "react/jsx-indent" : ["error", 4],
+        "react/jsx-indent-props" : ["error", 4],
         "space-before-function-paren": [ "error", "never" ],
-        "linebreak-style": [ "error", "windows" ]
+        "linebreak-style": [ "error", "unix" ],
+        "react-hooks/exhaustive-deps": "warn"
     }
 }

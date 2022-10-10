@@ -18,9 +18,7 @@ class SellerLoginComponent extends BaseComponent {
             var $ = window.$;
         }
 
-        if (this.props.error && this.props.error === '5') {
-            this.showMessage(EnumCoreModule.GetToastStr().Error.UNREGISTERED_LOGIN_ACCOUNT);
-        } else if (this.props.error && this.props.error === '2') {
+        if (this.props.error && this.props.error === '2') {
             this.showMessage(EnumCoreModule.GetToastStr().Error.INVALID_TOKEN);
         } else if (this.props.error) {
             this.showMessage(EnumCoreModule.GetToastStr().Error.INVALID_LOGIN_CREDENTIALS);
@@ -217,7 +215,7 @@ class SellerLoginComponent extends BaseComponent {
             }
 
         }
-    } 
+    }
 
     render() {
         const self = this;
@@ -229,7 +227,7 @@ class SellerLoginComponent extends BaseComponent {
                     <div className="login-box">
                         <div className="lb-head full-width head-seller">
                             <a href="/">
-                                <img src="/assets/images/back.svg"></img>
+                                <img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"}></img>
                             </a>
                             <span>Login as a Seller</span></div>
                         <div className="lb-body full-width"><span className="b-gray">Sign In</span>
@@ -252,8 +250,6 @@ class SellerLoginComponent extends BaseComponent {
     }
 }
 function mapStateToProps(state, ownProps) {
-
-
     return {
         type: state.type,
         host: state.host,

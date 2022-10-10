@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="19px" height="17px" viewBox="0 0 19 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Group 17</title>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-16" transform="translate(1.000000, 0.625000)">
+            <polyline id="Path" stroke="#65A4E0" stroke-width="2" points="14 10.375 14 14.375 0 14.375 0 3.375 7 3.375"></polyline>
+            <path d="M4,11.25 C4.9375,9.9140625 6.02148438,8.94140625 7.25195312,8.33203125 C8.48242188,7.72265625 10.0234375,7.41796875 11.875,7.41796875 L11.875,7.41796875 L11.875,10.5117188 L17.5,5.34375 L11.875,0 L11.875,2.98828125 C7.5859375,3.59765625 4.9609375,6.3515625 4,11.25 Z" id="" fill="#65A4E0" fill-rule="nonzero"></path>
+        </g>
+    </g>
+</svg>

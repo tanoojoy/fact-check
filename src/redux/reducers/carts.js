@@ -3,9 +3,7 @@ var actionTypes = require('../actionTypes');
 
 const initialState = {
     cartList: [],
-    cartPageModel: [],
-    processing: false,
-
+    cartPageModel: []
 };
 
 function cartReducer(state = initialState, action) {
@@ -20,12 +18,6 @@ function cartReducer(state = initialState, action) {
             return Object.assign({}, state, {
                 cartPageModel: action.cartPageModel
             });
-        }
-
-        case actionTypes.PROCESSING: {
-            return Object.assign({}, state, {
-                processing: action.processing
-            })
         }
        
         default:

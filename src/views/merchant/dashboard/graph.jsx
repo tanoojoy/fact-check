@@ -70,17 +70,17 @@ class Graph extends React.Component {
 
     doDrawChart(type, e) {
         var self = this;
-        let pageSize = 100
+
         $('.saleGraph').prop('checked', false)
         $(e.target).prop('checked', true)
         if (type == 'Day') {
-            self.props.getSaleGraphs(this.props.user.ID, 'transactions', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', pageSize, 1)
+            self.props.getSaleGraphs(this.props.user.ID, 'transactions', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', 10000000, 1)
         }
         else if (type == 'Week') {
-            self.props.getSaleGraphs(this.props.user.ID, 'transactions', moment(new Date()).add(-7, 'week').unix(), moment(new Date()).unix(), 'week', pageSize, 1)
+            self.props.getSaleGraphs(this.props.user.ID, 'transactions', moment(new Date()).add(-7, 'week').unix(), moment(new Date()).unix(), 'week', 10000000, 1)
         }
         else if (type == 'Month') {
-            self.props.getSaleGraphs(this.props.user.ID, 'transactions', moment(new Date()).add(-30, 'month').unix(), moment(new Date()).unix(), 'month', pageSize, 1)
+            self.props.getSaleGraphs(this.props.user.ID, 'transactions', moment(new Date()).add(-30, 'month').unix(), moment(new Date()).unix(), 'month', 10000000, 1)
         }
 
     }

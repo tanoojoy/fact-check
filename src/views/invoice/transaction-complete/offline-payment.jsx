@@ -20,7 +20,7 @@ class InvoiceOfflinePaymentComponent extends BaseComponent {
                 </div>
                 <div className="tccc-bot">
                     <span className="title">Your Invoice ID is: </span>
-                    <span className="inv-text">{invoiceDetail.Orders[0].PaymentDetails[0].CosmeticNo != null && invoiceDetail.Orders[0].PaymentDetails[0].CosmeticNo != "" ? invoiceDetail.Orders[0].PaymentDetails[0].CosmeticNo : invoiceDetail.InvoiceNo}</span>
+                    <span className="inv-text">{invoiceDetail.InvoiceNo}</span>
                     <span className="title">Total Cost : </span>
                     <span className="inv-text cost">
                         <div className="item-price">{this.renderFormatMoney(CurrencyCode, invoiceDetail.Total)}</div>

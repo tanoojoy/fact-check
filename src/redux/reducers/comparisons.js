@@ -60,11 +60,6 @@ function comparisonReducer(state = initialState, action) {
                 comparison: action.comparison
             });
         }
-        case actionTypes.UPDATE_COMPARISON_DETAIL: {
-            return Object.assign({}, state, {
-                comparison: action.comparison
-            });
-        }
         case actionTypes.SET_PROCESSING_COMPARISONDETAILS: {
             return Object.assign({}, state, {
                 processing: action.processing

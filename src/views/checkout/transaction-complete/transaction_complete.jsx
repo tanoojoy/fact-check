@@ -3,8 +3,9 @@ let React = require('react');
 var ReactRedux = require('react-redux');
 
 let FooterLayout = require('../../layouts/footer').FooterLayoutComponent;
-let HeaderLayout = require('../../layouts/header').HeaderLayoutComponent;
+let HeaderLayout = require('../../layouts/header/index').HeaderLayoutComponent;
 var ChatActions = require('../../../redux/chatActions');
+let CommonModule = require('../../../public/js/common.js');
 var TwilioChat = require('twilio-chat');
 
 class TransactionCompleteComponent extends React.Component {
@@ -16,7 +17,7 @@ class TransactionCompleteComponent extends React.Component {
             isGuest = "";
         }
 
-        let urlAction = "/accounts/non-private/sign-in";
+        let urlAction = CommonModule.getAppPrefix()+"/accounts/non-private/sign-in";
 
         return (
             <React.Fragment>
@@ -37,7 +38,7 @@ class TransactionCompleteComponent extends React.Component {
                                 </div>
                                 <div className="tccc-bot">
                                     <span className="title">Your Invoice Id is:</span>
-                                    <span className="inv-text">{this.props.invoiceDetails.CosmeticNo != null && this.props.invoiceDetails.CosmeticNo != "" ? this.props.invoiceDetails.CosmeticNo : this.props.invoiceDetails.InvoiceNo}</span>
+                                    <span className="inv-text">{this.props.invoiceDetails.InvoiceNo}</span>
                                     <span className="inv-desc">You will receive an order confirmation email shortly. If you have any enquiry, please contact our staff.</span>
                                     <div className={"tccct-btn " + isGuest}>
                                         <div className="btn-black"><a href="/purchase/history">Purchase History</a></div>

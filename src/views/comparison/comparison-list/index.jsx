@@ -3,7 +3,7 @@
 let React = require('react');
 let ReactRedux = require('react-redux');
 
-let HeaderLayoutComponent = require('../../layouts/header').HeaderLayoutComponent;
+let HeaderLayoutComponent = require('../../layouts/header/index').HeaderLayoutComponent;
 let FooterLayoutComponent = require('../../layouts/footer').FooterLayoutComponent;
 
 let ListComponent = require('../comparison-list/list');
@@ -12,8 +12,7 @@ let ModalDeleteComponent = require('../comparison-list/modal-delete');
 let PaginationComponent = require('../../common/pagination');
 
 let ComparisonActions = require('../../../redux/comparisonActions');
-const PermissionTooltip = require('../../common/permission-tooltip');
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
+const CommonModule = require('../../../public/js/common');
 
 let Moment = require('moment');
 
@@ -25,34 +24,27 @@ class ComparisonListComponent extends React.Component {
     }
 
     showComparisonAddEdit(comparisonId, comparisonName) {
-        let code = 'add-consumer-comparison-tables-api';
-        let editMode =  comparisonId !== "undefined" ? true: false;
-        if (editMode === true) {
-            code = 'edit-consumer-comparison-tables-api';
+        const self = this;
+        var $form = $('#frm-comparison');
+        var $name = $form.find('#list_name');
+        $name.val('');
+        if (typeof comparisonId !== 'undefined') {
+            self.props.setEvaluationToUpdate(comparisonId, comparisonName);
         }
-        this.props.validatePermissionToPerformAction(code, () => {
-            const self = this;
-            var $form = $('#frm-comparison');
-            var $name = $form.find('#list_name');
-            $name.val('');
-            if (typeof comparisonId !== 'undefined') {
-                self.props.setEvaluationToUpdate(comparisonId, comparisonName);
-            }
 
-            $('#modal-add-comparison-list').modal('show');
-        });
+        $('#modal-add-comparison-list').modal('show');
     }
     showDeleteModalDialog(comparisonId, name) {
-        this.props.validatePermissionToPerformAction("delete-consumer-comparison-tables-api", () => {
-            const self = this;
-            if (typeof comparisonId !== 'undefined')
-                self.props.setEvaluationToUpdate(comparisonId, name);
+        const self = this;
+        if (typeof comparisonId !== 'undefined')
+            self.props.setEvaluationToUpdate(comparisonId, name);
 
-            $('#modalRemove').modal('show');
-        });
+        $('#modalRemove').modal('show');
+
     }
 
     render() {
+
         // const  comparisonToUpdate = this.props.comparisonToUpdate;
         const self = this;
 
@@ -72,7 +64,7 @@ class ComparisonListComponent extends React.Component {
                     <div className="orderlist-container">
                         <div className="container">
                             <div className="h-parent-child-txt full-width">
-                                <p><a href="/">Home</a></p>
+                                <p><a href={CommonModule.getAppPrefix()+"/"}>Home</a></p>
                                 <i className="fa fa-angle-right"></i>
                                 <p className="active">My Comparison Table</p>
                             </div>
@@ -83,22 +75,21 @@ class ComparisonListComponent extends React.Component {
                                     </div>
                                     <div className="clearfix"></div>
                                     <div className="pull-left">
-                                        <PermissionTooltip isAuthorized={this.props.permissions.isAuthorizedToAdd} extraClassOnUnauthorized="icon-grey">
-                                            <div className="status-btn-pr">
-                                                <button className="status-btn btn-modal-comparison-list" onClick={(e) => self.showComparisonAddEdit('undefined', '')}><i className="fa fa-plus" ></i> Add New List</button>
-                                            </div>
-                                        </PermissionTooltip>
+                                        <div className="status-btn-pr">
+                                            <button className="status-btn btn-modal-comparison-list" onClick={(e) => self.showComparisonAddEdit('undefined', '')}><i className="fa fa-plus" ></i> Add New List</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="oreder-data-table">
+
                                 <ListComponent
                                     comparisons={self.props.comparisons.Records}
                                     showComparisonAddEdit={this.showComparisonAddEdit}
                                     editEvaluationList={this.props.editEvaluationList}
                                     showDeleteModalDialog={this.showDeleteModalDialog}
-                                    setEvaluationToUpdate={this.props.setEvaluationToUpdate}
-                                    permissions={this.props.permissions} />
+                                    setEvaluationToUpdate={this.props.setEvaluationToUpdate} />
+
                                 <PaginationComponent
                                     totalRecords={self.props.comparisons.TotalRecords}
                                     pageNumber={self.props.comparisons.PageNumber}
@@ -114,8 +105,8 @@ class ComparisonListComponent extends React.Component {
                 <ModalAddEditComponent addEvaluationList={this.props.addEvaluationList}
                     editEvaluationList={this.props.editEvaluationList}
                     comparisonList={this.props.comparisonToUpdate}
-                    setEvaluationToUpdate={this.props.setEvaluationToUpdate}
-                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction} />
+
+                    setEvaluationToUpdate={this.props.setEvaluationToUpdate} />
                 <ModalDeleteComponent
                     reloadEvaluationListPage={this.props.reloadEvaluationListPage}
                     comparisonList={this.props.comparisonToUpdate}
@@ -129,8 +120,7 @@ function mapStateToProps(state, ownProps) {
     return {
         comparisons: state.comparisonReducer.comparisonList,
         comparisonToUpdate: state.comparisonReducer.comparisonToUpdate,
-        currentUser: state.userReducer.user,
-        permissions: state.userReducer.permissions
+        currentUser: state.userReducer.user
     }
 }
 
@@ -141,8 +131,8 @@ function mapDispatchToProps(dispatch, ownProps) {
         addEvaluationList: (name) => dispatch(ComparisonActions.createEvaluation(name)),
         editEvaluationList: (id, name) => dispatch(ComparisonActions.editEvaluation(id, name)),
         deleteEvaluationList: (id, callback) => dispatch(ComparisonActions.deleteEvaluation(id, callback)),
-        goToPage: (pageNo) => dispatch(ComparisonActions.goToPage(pageNo)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
+        goToPage: (pageNo) => dispatch(ComparisonActions.goToPage(pageNo))
+
     }
 }
 

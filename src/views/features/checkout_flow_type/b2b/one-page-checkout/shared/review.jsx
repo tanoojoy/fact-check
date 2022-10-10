@@ -37,7 +37,7 @@ class ReviewComponent extends BaseComponent {
         $(`.deliver-method[order-id=${order.ID}]`).find('.surcharge').html(surcharge);
         $(`.deliver-method[order-id=${order.ID}]`).find('.lead-time').html(time);
 
-        this.props.deliveryChanged(selectedDelOption, order.ID)    
+        this.props.deliveryChanged(selectedDelOption, order.ID)
     }
 
     calculateDeliveryCost() {
@@ -74,11 +74,9 @@ class ReviewComponent extends BaseComponent {
     }
 
     renderAdditionalAttr(variants) {
-        const { locationVariantGroupId = null } = this.props;
-
         return (
             <div className="item-field">
-                {variants.filter(v => v.GroupID != locationVariantGroupId).map(v =>
+                {variants.map(v =>
                     <span key={v.ID} className="if-txt">
                         <span>{`${v.GroupName}: `}</span>
                         <span>{v.Name}</span>
@@ -98,7 +96,7 @@ class ReviewComponent extends BaseComponent {
             return (
                 <div key={ItemDetail.ID + i} className="flex-wrap">
                     <div className="thumb-group">
-                        <img src={ItemDetail.Media? ItemDetail.Media[0].MediaUrl:''} style={{ maxWidth: '64px' }}/>                                   
+                        <img src={ItemDetail.Media? ItemDetail.Media[0].MediaUrl:''} style={{ maxWidth: '64px' }}/>
                     </div>
                     <div>
                         <span>
@@ -114,15 +112,15 @@ class ReviewComponent extends BaseComponent {
             return(
                 <div key={ItemDetail.ID + i} className="thumb-group">
                     <img src={ItemDetail.Media ? ItemDetail.Media[0].MediaUrl : ''} style={{ maxWidth: '64px' }}/>
-                    <span>{ItemDetail.Name} </span>                                   
+                    <span>{ItemDetail.Name} </span>
                 </div>
             );
         }
     }
-     
+
     renderCartItem(cartItem, i) {
         const { ItemDetail } = cartItem;
-        const cartSubTotal = parseFloat(cartItem.ItemDetail.Price * cartItem.Quantity) - parseFloat(cartItem.DiscountAmountNotRoundOff || 0);
+        const cartSubTotal = parseFloat(cartItem.ItemDetail.Price * cartItem.Quantity) - parseFloat(cartItem.DiscountAmount || 0);
         const itemQty = (cartItem.Quantity * 1).toLocaleString();
         return (
             <tr key={cartItem.ID + i}>
@@ -148,7 +146,7 @@ class ReviewComponent extends BaseComponent {
             const arr = OfferDetails.slice(1);
             return (
                 <tfoot>
-                    {arr.map(detail => 
+                    {arr.map(detail =>
                         <tr key={detail.ID} className="border-top">
                             <td data-th="Item Description">
                                 <div className="thumb-group">
@@ -171,11 +169,11 @@ class ReviewComponent extends BaseComponent {
                         </tr>
                     )}
                 </tfoot>
-            )            
+            )
         }
         return;
     }
-       
+
     renderCartContents() {
         const { CartItemDetails } = this.props.orderDetails;
         let self = this;
@@ -224,14 +222,11 @@ class ReviewComponent extends BaseComponent {
     renderDeliveryOptions() {
         const order = this.props.orderDetails;
         const { shippingOptions, pickupOptions } = this.props;
-
-        var correctShippingMethod = shippingOptions.filter(so => so.ShouldShow && so.ShouldShow === true);
-
         return (
             <React.Fragment>
                 <option data-surcharge="-" data-time="-" data-cost="0.00" value="">Select your shipping method.</option>
                 {
-                    correctShippingMethod && correctShippingMethod.map(del =>
+                    shippingOptions && shippingOptions.map(del =>
                         <option
                             key={`${order.ID}|||${del.ShippingData.ID}`}
                             data-surcharge={`${del.CurrencyCode} ${Currency(del.CurrencyCode)}${parseFloat(del.ShippingCost || 0).toFixed(2)}`}
@@ -240,7 +235,7 @@ class ReviewComponent extends BaseComponent {
                             value={del.ShippingData.ID}
                         >
                             {del.ShippingData.Description}
-                            ({`${del.CurrencyCode} ${Currency(del.CurrencyCode)}${parseFloat(del.ShippingCost || 0).toFixed(2)}`})
+                            ({this.renderFormatMoney(del.CurrencyCode, del.ShippingCost)})
                         </option>
                     )
                 }
@@ -339,7 +334,7 @@ class ReviewComponent extends BaseComponent {
                     {this.renderDeliveryReview()}
                 </React.Fragment>
             )
-        } 
+        }
         return "";
     }
 
@@ -363,7 +358,7 @@ class ReviewComponent extends BaseComponent {
             </div>
         );
     }
-   
+
 }
 
 module.exports = ReviewComponent;

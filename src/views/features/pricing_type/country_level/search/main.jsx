@@ -2,6 +2,7 @@
 const React = require('react');
 const SearchFilter = require('../../../../search/filters');
 const SearchResultHeader = require('../../../../search/result-header');
+const CommonModule = require('../../../../../public/js/common');
 
 class SearchMain extends React.Component {
     constructor(props) {
@@ -9,7 +10,7 @@ class SearchMain extends React.Component {
         this.setCategoryBreadcrumb = this.setCategoryBreadcrumb.bind(this);
         this.renderBreadcrumbTrail = this.renderBreadcrumbTrail.bind(this);
     }
-    
+
     getItemPrices() {
         const self = this;
         let prices = [];
@@ -42,7 +43,7 @@ class SearchMain extends React.Component {
     renderBreadcrumbTrail() {
         return (
             <React.Fragment>
-                <p><a href="/">Home</a></p>
+                <p><a href={CommonModule.getAppPrefix()+"/"}>Home</a></p>
                 <i className="fa fa-angle-right" />
                 <p className="active">Search</p>
                 <i className="fa fa-angle-right package-breadcrum-text hide"></i>
@@ -58,6 +59,7 @@ class SearchMain extends React.Component {
 					categories={this.props.categories}
 					manimumPrice={0}
                     maximumPrice={0}
+                    customFields={{}}
                     searchByFilters={this.props.searchByFilters}
                     searchByCategory={this.props.searchByCategory}
                     totalRecords={this.props.totalRecords}
@@ -67,7 +69,7 @@ class SearchMain extends React.Component {
                     user={this.props.user}
                     currencyCode={this.props.currencyCode}
 				/>
-				<div className="search-container">
+				<div className="search-container open-sidebar">
                     <div className="container">
                         <SearchResultHeader totalRecords={this.props.totalRecords}
                             resultDisplayBehavior={this.props.resultDisplayBehavior}

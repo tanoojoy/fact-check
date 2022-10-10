@@ -1,5 +1,6 @@
 ﻿'use strict';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -16,7 +17,7 @@ function updateKeyWord(keyword) {
 function searchStoreFront(keyword, sellerid, pageNo) {
     return function (dispatch) {
         $.ajax({
-            url: "/storefront/" + sellerid +'/storefrontsearch',
+            url: prefix+"/storefront/" + sellerid +'/storefrontsearch',
             type: "get",
             data: {
                 "keyword": keyword,
@@ -40,7 +41,7 @@ function searchStoreFront(keyword, sellerid, pageNo) {
 function getMerchantFeedback(options) {
     return function (dispatch) {
         $.ajax({
-            url: "/storefront/getMerchantFeedback",
+            url: prefix+"/storefront/getMerchantFeedback",
             type: "post",
             data: {
                 "keyword": options.keyword,

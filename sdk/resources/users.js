@@ -27,33 +27,26 @@ Users.prototype.getCurrentUser = function(token, callback) {
 Users.prototype.getUserDetails = function(options, callback) {
     const self = this;
 
-    const excludeToken = options.excludeToken || false;
-    const token = !excludeToken ? options.token : null;
+    const token = options.token;
     const userId = options.userId;
     const includes = options.includes || '';
-    const includeUserCustomFields = options.includeUserCustomFields || false;
-    const includePermissions = options.includePermissions || false;
-    
-    if (token || excludeToken) {
+
+    if (token) {
         this.setAccessToken(token);
         self._makeRequest({
             method: 'GET',
             path: '/api/v2/users/' + userId,
             params: {
-                includes: includes,
-                includeUserCustomFields: includeUserCustomFields,
-                includePermissions: includePermissions
+                includes: includes
             }
         }, callback);
     } else {
-        self._acquireAdminAccessToken(function () {
+        self._acquireAdminAccessToken(function() {
             self._makeRequest({
                 method: 'GET',
                 path: '/api/v2/users/' + userId,
                 params: {
-                    includes: includes,
-                    includeUserCustomFields: includeUserCustomFields,
-                    includePermissions: includePermissions
+                    includes: includes
                 }
             }, callback);
         });
@@ -73,7 +66,7 @@ Users.prototype.getUserLogins = function(userId, callback) {
     });
 };
 
-Users.prototype.updateUser = function (userId, userInfo, callback) {
+Users.prototype.updateUser = function(userId, userInfo, callback) {
     const self = this;
     self._acquireAdminAccessToken(function() {
         self._makeRequest({
@@ -167,7 +160,6 @@ Users.prototype.getSubAccounts = function (options, callback) {
     const pageSize = options.pageSize;
     const pageNumber = options.pageNumber;
     const keyword = options.keyword;
-    const includes = options.includes || ''
 
     self._acquireAdminAccessToken(function () {
         self._makeRequest({
@@ -178,7 +170,7 @@ Users.prototype.getSubAccounts = function (options, callback) {
                 pageNumber: pageNumber,
                 keyword: keyword,
                 sort: 'username',
-                includes: includes
+                includes: 'AccountOwner'
             }
         }, callback);
     });
@@ -214,22 +206,5 @@ Users.prototype.getAllUsers = function (options, callback) {
         }, callback);
     });
 }
-
-Users.prototype.getUserPermissions = function (options, callback) {
-    const self = this;
-
-    const { userId, permissionName, permissionType } = options;
-
-    self._acquireAdminAccessToken(function () {
-        self._makeRequest({
-            method: 'GET',
-            path: '/api/v2/users/' + userId + '/get-user-permissions',
-            params: {
-                permissionName,
-                permissionType
-            }
-        }, callback);
-    });
-};
 
 module.exports = Users;

@@ -1,5 +1,6 @@
 'use strict';
 const actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 
 if (typeof window !== 'undefined') { var $ = window.$; }
 
@@ -74,7 +75,7 @@ function savePaymentTerms(callback) {
         const paymentTerms = Object.assign([], getState().settingsReducer.paymentTerms);
 
         $.ajax({
-            url: '/merchants/settings/savePaymentTerms',
+            url: prefix+'/merchants/settings/savePaymentTerms',
             type: 'POST',
             data: {
                 paymentTerms: JSON.stringify(paymentTerms)

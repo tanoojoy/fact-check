@@ -3,18 +3,16 @@ var React = require('react');
 var BaseClassComponent = require('../../shared/base.jsx');
 var EnumCoreModule = require('../../../../src/public/js/enum-core.js');
 var AddressSettingsButton = require(`./address-settings-button`);
-const PermissionTooltip = require('../../common/permission-tooltip');
+const CommonModule = require('../../../public/js/common');
 
 class AddressSettingsComponent extends BaseClassComponent {
     constructor(props) {
         super(props);
         this.state = {};
         this.onChange = this.onChange.bind(this);
-        this.permissionPageType = props.componentType != 'merchant' ? 'consumer' : 'merchant';
     }
 
     componentDidMount() {
-        $('[data-toggle="tooltip"]').tooltip();
     }
 
     constants() {
@@ -46,64 +44,59 @@ class AddressSettingsComponent extends BaseClassComponent {
     }
 
     hideElement(element) {
-        this.props.validatePermissionToPerformAction(`add-${this.permissionPageType}-addresses-api`, () => {
-            $('#encodeContainer').removeClass('hide-me');
-            $('#boxContainer').removeClass('hide-me');
+        $('#encodeContainer').removeClass('hide-me');
+        $('#boxContainer').removeClass('hide-me');
 
-            if (element == "AddressTab") {
-                $('#encodeContainer').addClass('hide-me');
-            } else {
-                $('#boxContainer').addClass('hide-me');
-            }
-        });
+        if (element == "AddressTab") {
+            $('#encodeContainer').addClass('hide-me');
+        } else {
+            $('#boxContainer').addClass('hide-me');
+        }
     }
 
     addAddress(e) {
-        const self = this;
-        const target = e.target;
+        var self = this;
+        self.validateFields();
+        var $this = $(e.target);
+        var $parent = $this.parents(".address-tab");
+        if (!$parent.find(".error-con").length) {
+            var newAddress = Object.assign({}, self.state, {
+                "Name": self.state['FirstName'] + ' ' + self.state['LastName'],
+                Delivery: true,
+                Pickup: false
+            });
+            self.props.createAddress((newAddress));
 
-        this.props.validatePermissionToPerformAction(`edit-${this.permissionPageType}-addresses-api`, () => {
-            self.validateFields('.address-tab');
-            var $this = $(target);
-            var $parent = $this.parents(".address-tab");
-            if (!$parent.find(".error-con").length && $parent.length) {
-                var newAddress = Object.assign({}, self.state, {
-                    "Name": self.state['FirstName'] + ' ' + self.state['LastName'],
-                    Delivery: true,
-                    Pickup: false
-                });
-                self.props.createAddress((newAddress));
+            self.setState({
+                FirstName: '',
+                LastName: '',
+                Line1: '',
+                CountryCode: '',
+                State: '',
+                City: '',
+                PostCode: '',
+            }, function () {
 
-                self.setState({
-                    FirstName: '',
-                    LastName: '',
-                    Line1: '',
-                    CountryCode: '',
-                    State: '',
-                    City: '',
-                    PostCode: '',
-                }, function () {
+            });
 
-                });
 
-                self.hideElement('AddressTab');
-            }
-        })
+            self.hideElement('AddressTab');
+        }
     }
 
     showDeleteAddress(id) {
-        const self = this;
-        this.props.validatePermissionToPerformAction(`delete-${this.permissionPageType}-addresses-api`, () => {
-            $('#modalRemove').modal('show');
-            self.setState({
-                selectedAddressToDelete: id
-            });
+
+        $('#modalRemove').modal('show');
+
+        this.setState({
+            selectedAddressToDelete: id
+        }, function () {
         });
     }
 
 
     showAddressList() {
-        const self = this;
+
         function showFirst(name) {
 
 
@@ -136,15 +129,10 @@ class AddressSettingsComponent extends BaseClassComponent {
             if (index == 0)
                 return ''
             else
-                return (
-                    <span className="icon-delete openModalRemove">
-                        <PermissionTooltip isAuthorized={self.props.addressPermissions.isAuthorizedToDelete} extraClassOnUnauthorized={'icon-grey'}>
-                            <i className="fa fa-trash" onClick={(e) => self.showDeleteAddress(addressID)} />
-                        </PermissionTooltip>
-                    </span>
-                )
+                return (<span className="icon-delete openModalRemove"><i className="fa fa-trash" onClick={(e) => self.showDeleteAddress(addressID)} /></span>)
         }
 
+        var self = this;
         if (this.props.addresses && this.props.addresses.length > 0) {
             return (
                 this.props.addresses.map(function (addr, index) {
@@ -165,7 +153,7 @@ class AddressSettingsComponent extends BaseClassComponent {
                             {
                                 showHideDeleteAddress(index, addr.ID)
                             }
-                            
+
                         </div >
                     );
                 })
@@ -176,10 +164,8 @@ class AddressSettingsComponent extends BaseClassComponent {
 
     doAddressDelete(e) {
         var self = this;
-        this.props.validatePermissionToPerformAction(`delete-${this.permissionPageType}-addresses-api`, () => {
-            self.props.deleteAddress(self.state.selectedAddressToDelete);
-            $('#modalRemove').modal('hide');
-        });
+        self.props.deleteAddress(self.state.selectedAddressToDelete);
+        $('#modalRemove').modal('hide');
     }
 
     renderCountry() {
@@ -217,6 +203,7 @@ class AddressSettingsComponent extends BaseClassComponent {
                         </div>
                     </div>
                 </div>
+
                 <div id="Address" className="tab-pane fade">
                     <div className={self.hideShowAddressTabContainer()} id="encodeContainer">
                         <div className="set-content">
@@ -255,27 +242,11 @@ class AddressSettingsComponent extends BaseClassComponent {
                                         <input type="text" className="input-text get-text required" name="postal_code" data-react-state-name="PostCode" data-react-state-component-name="Address" defaultValue={self.state.PostCode} value={self.state.PostCode} onChange={self.onChange} />
                                     </div>
                                 </div>
-                                <div className={"back-to-address " + ((!this.props.addresses || this.props.addresses.length == 0) ? 'hide' : '')} onClick={() => this.hideElement('AddressTab')}>
-                                    <svg width="8px" height="12px" viewBox="0 0 8 12" version="1.1" xmlns="http://www.w3.org/2000/svg">
-                                        <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                                            <g id="Group-4" transform="translate(-208.000000, -691.000000)" fill="#4D4D4D" fill-rule="nonzero">
-                                                <g id="Group-3" transform="translate(200.000000, 686.000000)">
-                                                    <polygon id="" points="14.016 17.072 15.432 15.68 10.824 11.072 15.432 6.488 14.016 5.072 8.016 11.072"></polygon>
-                                                </g>
-                                            </g>
-                                        </g>
-                                    </svg>&nbsp;&nbsp; Cancel new address
-                                </div>
                             </div>
                         </div>
                         <div className="settings-button">
                             <div className="btn-previous pull-left" onClick={(e) => { $('.nav-pills a:first').tab('show'); }}>Previous</div>
-                            {
-                                !self.props.addressPermissions.isAuthorizedToEdit ?
-                                    <div id="addAddress" className="tool-tip btn-add pull-right icon-grey" data-toggle="tooltip" data-placement={"auto top"} title="" data-original-title="You need permission to perform this action">Add</div>
-                                    :
-                                    <div id="addAddress" className="btn-add pull-right" onClick={(e) => self.addAddress(e)}>Add</div>
-                            }
+                            <div className="btn-add pull-right" id="addAddress" onClick={(e) => self.addAddress(e)}>Add</div>
                         </div>
                     </div>
                     <div className={self.hideShowAddressBoxContainer()} id="boxContainer">
@@ -283,29 +254,9 @@ class AddressSettingsComponent extends BaseClassComponent {
                             {
                                 self.showAddressList()
                             }
-                            {
-                                this.props.addressPermissions.isAuthorizedToAdd ?
-                                    <div className="pdcb-address-box btn-add-adress" id="btnAddDeliveryAddress" style={{ height: '210px' }} onClick={(e) => self.hideElement('AddresBox')}>
-                                        <span className="icon-address"> 
-                                            <img src={`/assets/images/add_address${process.env.TEMPLATE == 'bespoke' ? '_black' : ''}.svg`} />
-                                        </span>
-                                        <span>Add Delivery Address</span>
-                                    </div>
-                                : 
-                                    <div 
-                                        data-toggle="tooltip"
-                                        data-placement="top"
-                                        data-original-title="You need permission to perform this action" className="pdcb-address-box btn-add-adress icon-grey"
-                                        id="btnAddDeliveryAddress" style={{ height: '210px' }}
-                                    >
-                                        <span className="icon-address">
-                                            <img src={`/assets/images/add_address${process.env.TEMPLATE == 'bespoke' ? '_black' : ''}.svg`} />
-                                        </span>
-                                        <span>Add Delivery Address</span>
-                                    </div>
-                            }
+                            <div className="pdcb-address-box btn-add-adress" id="btnAddDeliveryAddress" style={{ height: '210px' }} onClick={(e) => self.hideElement('AddresBox')}> <span className="icon-address"> <img src={`${CommonModule.getAppPrefix()}/assets/images/add_address${process.env.TEMPLATE == 'bespoke' ? '_black' : ''}.svg`} /> </span> <span>Add Delivery Address</span> </div>
                         </div>
-                        <AddressSettingsButton addressPermissions={this.props.addressPermissions} updateUserToOnboard={this.props.updateUserToOnboard} user={this.props.user}/>
+                        <AddressSettingsButton updateUserToOnboard={this.props.updateUserToOnboard} user={this.props.user}/>
                     </div>
                 </div>
             </React.Fragment>

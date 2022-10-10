@@ -2,31 +2,44 @@
 var React = require('react');
 import Currency from 'currency-symbol-map';
 import BaseComponent from '../../../../../shared/base';
-const PermissionTooltip = require('../../../../../common/permission-tooltip');
+const CommonModule = require('../../../../../../public/js/common.js');
 
 class OrderTotalComponent extends BaseComponent {
-    constructor(props) {
-        super(props);
-        this.state = {
-            isProcessing: false
-        };
-    }
     getSubTotal() {
         const { invoiceDetails } = this.props;
         let subTotal = 0;
         if (invoiceDetails && invoiceDetails.Orders.length > 0) {
-            const { charges, discount } = this.getChargesAndDiscounts();
-            subTotal = invoiceDetails.Total - charges + discount
-        }   
+            const { Orders } = invoiceDetails;
+            Orders.map(o =>
+                o.CartItemDetails.map(cart =>
+                    subTotal += parseFloat(cart.SubTotal) - parseFloat(cart.DiscountAmount || 0)
+                )
+            );
+        }
         return subTotal;
     }
 
-    getChargesAndDiscounts() {
+    getTotal() {
+        const { invoiceDetails } = this.props;
+        //let discount  = 0;
+        //if (invoiceDetails && invoiceDetails.Orders.length > 0) {
+        //    const { Orders } = invoiceDetails;
+        //    Orders.map(o =>
+        //        o.CartItemDetails.map(cart =>
+        //            discount += parseFloat(cart.DiscountAmount || 0)
+        //        )
+        //    );
+        //}
+        return invoiceDetails.Total;
+    }
+
+    renderChargesAndDiscounts() {
         let charges = 0;
         let discount = 0;
         const ChargeReasons = ['Bank Charges', 'Custom Duties', 'Taxes', 'Late Delivery', 'Freight Costs', 'Price Change', 'Others'];
         const QuantityOptions = ['Fixed', 'Percentage'];
-        const { pendingOffer } = this.props;
+        const { pendingOffer, invoiceDetails } = this.props;
+        const currencyCode = invoiceDetails.CurrencyCode;
         if (pendingOffer) {
             const { OfferDetails } = pendingOffer;
             if (OfferDetails && OfferDetails.length > 1) {
@@ -43,61 +56,13 @@ class OrderTotalComponent extends BaseComponent {
                 }
             }
         }
-        return { charges, discount };
-    }
-
-    getTotal() {
-        const { invoiceDetails } = this.props;
-        return invoiceDetails.Total;
-    }
-    
-    cancelCheckout() {
-        if (this.state.isProcessing) return;
-        this.setState({ isProcessing: true });
-        if (this.props.invoiceDetails) {
-            const { invoiceDetails } = this.props;
-            if (invoiceDetails && invoiceDetails.Orders && invoiceDetails.Orders.length > 0) {
-                const { Orders } = invoiceDetails;
-                if (Orders && Orders[0] && Orders[0].CartItemDetails) {
-                    const { CartItemDetails } = Orders[0];
-                    if (CartItemDetails && CartItemDetails[0]) {
-                        const options = {
-                            itemID: CartItemDetails[0].ItemDetail.ID,
-                            userID: CartItemDetails[0].User.ID,
-                            cartID: CartItemDetails[0].ID,
-                            quantity: CartItemDetails[0].Quantity,
-                            discountAmount: CartItemDetails[0].DiscountAmount
-                        }
-                        this.props.setCartToPending(options, () => {
-                            this.setState({ isProcessing: false });
-                            history.back()
-                        });
-                    }
-                } 
-            }
-        }
-        this.setState({ isProcessing: false });
-    }
-
-
-    renderChargesAndDiscounts() {
-        const { charges, discount } = this.getChargesAndDiscounts();
-        let currencyCode = '';
-        if (this.props.invoiceDetails) {
-            const { currencyCode } = this.props.invoiceDetails;
-        }
-        const isServiceLevel = process.env.PRICING_TYPE == 'service_level';
         return (
             <React.Fragment>
                 <span>
                     <span className="title">Charge(s)</span>
                     <div className="item-price deliveryCost">
                         <span className="item-price">
-                            {
-                                this.props.pendingOffer || !isServiceLevel ? 
-                                    this.renderFormatMoney(currencyCode, charges)
-                                : '-'
-                            }
+                            {this.renderFormatMoney(currencyCode, charges)}
                         </span>
                     </div>
                 </span>
@@ -105,12 +70,7 @@ class OrderTotalComponent extends BaseComponent {
                     <span className="title">Discount(s)</span>
                     <div className="item-price deliveryCost">
                         <span className="item-price">
-                            - 
-                            {                                
-                                this.props.pendingOffer || !isServiceLevel ? 
-                                    this.renderFormatMoney(currencyCode, discount)
-                                : ''
-                            }
+                            - {this.renderFormatMoney(currencyCode, discount)}
                         </span>
                     </div>
                 </span>
@@ -137,7 +97,7 @@ class OrderTotalComponent extends BaseComponent {
             <div className="pcc-rigth pull-right">
                 <div className="cbcir-box mobile_layout">
                     <div className="mobile-only text-center "> <span className="toggle_data">Click here for detail</span></div>
-                    <div className="mobile-only   text-right"><img src="/assets/images/toggle_close.svg" className="closer hide" /></div>
+                    <div className="mobile-only   text-right"><img src={CommonModule.getAppPrefix() + "/assets/images/toggle_close.svg"} className="closer hide" /></div>
                     <div className="toggler_area">
                         <span className="cbcir-title">Order Total</span>
                         <div className="cbcir-text">
@@ -145,7 +105,7 @@ class OrderTotalComponent extends BaseComponent {
                                 <span>
                                     <span className="title">Subtotal</span>
                                     <div className="item-price subTotal">
-                                        {this.renderFormatMoney(this.props.invoiceDetails.CurrencyCode, this.getSubTotal())}
+                                        {this.renderFormatMoney(this.props.invoiceDetails.CurrencyCode, this.getTotal())}
                                     </div>
                                 </span>
                                 {this.renderChargesAndDiscounts()}
@@ -168,10 +128,8 @@ class OrderTotalComponent extends BaseComponent {
                             </span>
                         </div>
                         <div className="pccr-btn">
-                            {this.props.permissions.isAuthorizedToAdd ? 
-                                (<div className="btn-green full-btn-procced btn-loader disable" onClick={(e) => this.props.handleProceedButton()} id="btnProceedPayment">Pay Now</div>): 
-                                (<div className="btn-green full-btn-procced btn-loader disable" tabindex="0" data-toggle="tooltip" data-placement="top" title="" data-original-title="You need permission to perform this action" id="btnProceedPayment">Pay Now</div>)}                            
-                            <div className="btn-white desktop-only"><a href={null} onClick={(e) => this.cancelCheckout()}>Cancel</a></div>
+                            <div className="btn-green full-btn-procced disable" onClick={(e) => this.props.handleProceedButton()} id="btnProceedPayment">Pay Now</div>
+                            <div className="btn-white desktop-only"><a href={null} onClick={() => history.back()}>Cancel</a></div>
                         </div>
                     </div>
                 </div>

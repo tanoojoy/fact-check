@@ -134,20 +134,8 @@ ApiClient.prototype._makeRequest = function(options, callback) {
 
             if (statusType == 4 || statusType == 5) {
                 var err = payload;
-                console.log('error from _makeRequest', err);
-
-                let error = new Error(err.Message + " Error Code: " + err.Code);
-
-                if (err.error) {
-                    error = new Error(err.error + " Error Code: " + err.error_description);
-                }
-
-                let innerErrors = [];
-                if (err.InnerErrors) {
-                    innerErrors = err.InnerErrors.map(e => e.Message);
-                    error = new Error(err.Message +  " Error Code: " + err.Code + " InnerErrors: " + innerErrors.join(','));
-                }
-                callback(error, null);
+                console.log(err);
+                callback(new Error(err.Message + " Error Code: " + err.Code), null);
             } else if (statusType == 2) {
                 if (payload != null) {
                     callback(null, payload.data || payload);

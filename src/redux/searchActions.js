@@ -1,53 +1,66 @@
-﻿'use strict';
-var actionTypes = require('./actionTypes');
+﻿import axios from 'axios';
+import actionTypes from './actionTypes';
+import { getAppPrefix } from '../public/js/common';
+import { Search as searchCategories } from '../consts/search-categories';
+import { getProductTabsValues, getSearchResultsPageRedirectUrl, getProductType } from '../utils';
+import { productTabs } from '../consts/product-tabs';
+import values from 'lodash/values';
+
+const prefix = getAppPrefix();
+const { SEARCH_BY } = searchCategories;
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
 
 function goToPage(pageNumber, filters) {
-    return function (dispatch, getState) {
+    return function(dispatch, getState) {
         const state = getState().searchReducer;
 
         const user = getState().userReducer;
+        //ARC8983 should still pass 1 country so that it will not be empty search.
+        let tags = 'PH';
+        if (!jQuery.isEmptyObject(user)) {
+            tags = state.tags;
+        }
+        if (process.env.PRICING_TYPE === 'variants_level') {
+            tags = '';
+        }
+
         const categoryIds = [];
-        if (state.selectedCategories && state.selectedCategories.length > 0)
-        Array.from(state.selectedCategories).map(function (category, index) {
-            categoryIds.push(category.ID);
-            if (category.ParentId) {
-                categoryIds.push(category.ParentId);
-            };
-        });
+        if (state.categories && state.categories.length > 0) {
+            Array.from(state.categories).map(function(category, index) {
+                categoryIds.push(category.ID);
+                if (category.ParentId) {
+                    categoryIds.push(category.ParentId);
+                }
+                ;
+            });
+        }
 
         $.ajax({
-            url: "/search/items/ajax",
-            type: "GET",
+            url: prefix + '/search/items/ajax',
+            type: 'GET',
             data: {
                 pageSize: state.pageSize,
                 pageNumber: pageNumber,
-                tags: '',
+                tags: tags,
                 withChildItems: state.withChildItems,
                 sort: state.sort,
                 keywords: state.keywords,
                 minPrice: state.minimumPrice,
                 maxPrice: state.maximumPrice,
                 categories: categoryIds,
-                customFields: state.customfields,
-                location: state.location,
-                startTimestamp: state.startTimestamp,
-                endTimestamp: state.endTimestamp,
-                userLatitude: state.userLatitude,
-                userLongitude: state.userLongitude,
-                isAllDates: state.isAllDates
+                customFields: state.customfields
             },
-            success: function (items) {
+            success: function(items) {
                 return dispatch({
                     type: actionTypes.GO_TO_PAGE,
                     items: items,
                     pageNumber: pageNumber
                 });
             },
-            error: function (jqXHR, textStatus, errorThrown) {
+            error: function(jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
             }
         });
@@ -55,32 +68,35 @@ function goToPage(pageNumber, filters) {
 }
 
 function sortResult(sort) {
-    return function (dispatch, getState) {
+    return function(dispatch, getState) {
         const state = getState().searchReducer;
 
         const user = getState().userReducer;
+        //ARC8983 should still pass 1 country so that it will not be empty search.
+        let tags = 'PH';
+        if (!jQuery.isEmptyObject(user)) {
+            tags = state.tags;
+        }
+        if (process.env.PRICING_TYPE === 'variants_level') {
+            tags = '';
+        }
         $.ajax({
-            url: '/search/items/ajax',
+            url: prefix + '/search/items/ajax',
             type: 'GET',
             data: {
                 pageSize: state.pageSize,
                 pageNumber: state.pageNumber,
-                tags: [],
+                tags: tags,
                 withChildItems: state.withChildItems,
                 sort: sort,
                 keywords: state.keywords,
                 minPrice: state.minimumPrice,
                 maxPrice: state.maximumPrice,
-                categories: state.selectedCategories ? state.selectedCategories.map(c => c.ID) : [],
+                categories: state.categories ? state.categories.map(c => c.ID) : [],
+                customFields: state.customfields,
                 customValues: state.customValues,
-                location: state.location,
-                startTimestamp: state.startTimestamp,
-                endTimestamp: state.endTimestamp,
-                userLatitude: state.userLatitude,
-                userLongitude: state.userLongitude,
-                isAllDates: state.isAllDates
             },
-            success: function (result) {
+            success: function(result) {
                 return dispatch({
                     type: actionTypes.SORT_SEARCH_RESULT,
                     items: result,
@@ -88,7 +104,7 @@ function sortResult(sort) {
                 });
             },
 
-            error: function (jqXHR, textStatus, errorThrown) {
+            error: function(jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
             }
         });
@@ -103,86 +119,68 @@ function changeResultDisplay(resultDisplayBehavior) {
 }
 
 function searchByCategory(categories) {
-    let categoryIds = [];
-
     function getCustomFields(categoryIds, callback) {
         $.ajax({
-            url: '/search/items/custom-fields',
+            url: prefix + '/search/items/custom-fields',
             type: 'GET',
             data: {
                 categoryIds: categoryIds
             },
-            success: function (result) {
+            success: function(result) {
                 callback(result);
             },
 
-            error: function (jqXHR, textStatus, errorThrown) {
+            error: function(jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
             }
         });
     }
 
-    function getCategoryHierarchy(category, hierarchy, hierarchyCount) {
-        if (hierarchy) {
-            if (hierarchy.indexOf(category.ID) >= 0 || hierarchyCount > hierarchy.length) {
-                if (category.ChildCategories) {
-                    hierarchyCount = hierarchyCount + 1;
-                    category.ChildCategories.forEach(function (c) {
-                        getCategoryHierarchy(c, hierarchy, hierarchyCount);
-                    });
-                }
+    const categoryIds = [];
+    Array.from(categories).map(function(category, index) {
+        categoryIds.push(category.ID);
+        if (category.ParentId) categoryIds.push(category.ParentId);
+    });
 
-                categoryIds.push(category.ID);
-            }
-        } else {
-            if (category.ChildCategories) {
-                category.ChildCategories.forEach(function (c) {
-                    getCategoryHierarchy(c);
-                });
-            }
-
-            categoryIds.push(category.ID);
+    return function(dispatch, getState) {
+        const state = getState().searchReducer;
+        const user = getState().userReducer;
+        //ARC8983 should still pass 1 country so that it will not be empty search.
+        let tags = 'PH';
+        if (!jQuery.isEmptyObject(user)) {
+            tags = state.tags;
         }
-    }
-
-    return function (dispatch, getState) {
-        const state = getState().categoryReducer;
-
-        Array.from(categories).map(function (category, index) {
-            if (category.Hierarchy) {
-                getCategoryHierarchy(state.categories.find(c => c.ID == category.ParentId), category.Hierarchy, 1);
-            } else {
-                getCategoryHierarchy(state.categories.find(c => c.ID == category.ID));
-            }
-        });
-
+        if (process.env.PRICING_TYPE === 'variants_level') {
+            tags = '';
+        }
         $.ajax({
-            url: '/search/items/ajax',
+            url: prefix + '/search/items/ajax',
             type: 'GET',
             data: {
-                pageSize: getState().searchReducer.pageSize,
+                pageSize: state.pageSize,
                 pageNumber: 1,
-                tags: '',
-                withChildItems: getState().searchReducer.withChildItems,
-                sort: process.env.PRICING_TYPE != 'service_level' ? 'item_desc' : 'nearest',
-                //keywords: state.keywords,
-                //minPrice: state.minimumPrice,
-                //maxPrice: state.maximumPrice,
+                tags: tags,
+                withChildItems: state.withChildItems,
+                sort: state.sort,
+                keywords: state.keywords,
+                minPrice: state.minimumPrice,
+                maxPrice: state.maximumPrice,
                 categories: categoryIds,
-                customValues: null
+                customFields: state.customfields,
+                customValues: null,
             },
-            success: function (promiseItemsResult) {
-                getCustomFields(categoryIds, function (result) {
+            success: function(promiseItemsResult) {
+                getCustomFields(categoryIds, function(result) {
                     const items = promiseItemsResult;
                     return dispatch({
                         type: actionTypes.SEARCH_BY_CATEGORY,
                         items: items,
-                        selectedCategories: categories,
+                        categories: categories,
                         customFilters: result,
                     });
                 });
             },
-            error: function (jqXHR, textStatus, errorThrown) {
+            error: function(jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
             }
         });
@@ -190,97 +188,243 @@ function searchByCategory(categories) {
 }
 
 function searchByFilters(filters) {
-    return function (dispatch, getState) {
+    return function(dispatch, getState) {
         const state = getState().searchReducer;
+        //let searchQuerystring = "?pageSize=" + state.pageSize;
+        //searchQuerystring += "&pageNumber=" + state.pageNumber;
+        //searchQuerystring += "&tags=" + state.tags;
+        //searchQuerystring += "&withChildItems=" + state.withChildItems;
+        //searchQuerystring += "&sort=" + state.sort;
+        //searchQuerystring += "&keywords=" + state.keywords;
+        //searchQuerystring += "&minPrice=" + filters.minimumPrice;
+        //searchQuerystring += "&maxPrice=" + filters.maximumPrice;
+        //searchQuerystring += "&categories=" + state.categories;
+        //searchQuerystring += "&customFields=" + filters.customfields;
+        //searchQuerystring += "&resultDisplayBehavior=" + state.resultDisplayBehavior;
 
+        const user = getState().userReducer;
+        //ARC8983 should still pass 1 country so that it will not be empty search.
+        let tags = 'PH';
+        if (!jQuery.isEmptyObject(user)) {
+            tags = state.tags;
+        }
+        if (process.env.PRICING_TYPE === 'variants_level') {
+            tags = '';
+        }
         $.ajax({
-            url: '/search/items/ajax',
+            url: prefix + '/search/items/ajax',
             type: 'GET',
             data: {
                 pageSize: state.pageSize,
                 pageNumber: 1,
-                tags: '',
+                tags: tags,
                 withChildItems: state.withChildItems,
                 sort: state.sort,
                 keywords: state.keywords,
                 minPrice: filters.minimumPrice,
                 maxPrice: filters.maximumPrice,
-                categories: state.selectedCategories && state.selectedCategories.length > 0 ? state.selectedCategories.map(cat => cat.ID) : state.selectedCategories,
+                categories: state.categories && state.categories.length > 0 ? state.categories.map(cat => cat.ID) : state.categories,
+                customFields: filters.customfields,
                 customValues: filters.customValues,
-                sellerId: filters.sellerId,
-                location: state.location,
-                startTimestamp: state.startTimestamp,
-                endTimestamp: state.endTimestamp,
-                userLatitude: state.userLatitude,
-                userLongitude: state.userLongitude,
-                isAllDates: state.isAllDates
+                sellerId: filters.sellerId
             },
-            success: function (result) {
-
+            success: function(result) {
                 return dispatch({
                     type: actionTypes.SEARCH_BY_FILTERS,
                     items: result,
                     minimumPrice: filters.minimumPrice,
                     maximumPrice: filters.maximumPrice,
+                    customfields: filters.customfields,
                     customValues: filters.customValues,
-                    reviewAndRating: state.reviewAndRating
                 });
             },
 
-            error: function (jqXHR, textStatus, errorThrown) {
+            error: function(jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
             }
         });
     };
 }
 
-function searchGooglePlaces(keyword, callback) {
-    return function (dispatch, getState) {
-        $.ajax({
-            url: '/search/google-places',
-            type: 'GET',
+function getAutoSuggestResults(searchString, searchBy, productType, callback) {
+    if (searchBy === SEARCH_BY.COMPANIES) {
+        axios({
+            url: prefix + '/autosuggest/by-companies',
+            params: { searchString }
+        })
+            .then((companiesData) => {
+                callback({
+                    searchResults: companiesData.data,
+                    searchString
+                });
+            });
+    } else {
+        const recordTypes = productType
+            ? Object.values(productTabs).find(value => value?.productType === productType)?.recordType
+            : getProductTabsValues('recordType');
+
+        const normalizeData = (data = {}) => {
+            const result = {
+                products: [],
+                count: data?.products?.info?.totalHits
+            };
+
+            result.products = data?.products?.hits?.map((hit) => {
+                return {
+                    uid: hit.id,
+                    name: hit.fields.recordName.join(','),
+                    recordType: hit.fields.recordType[0],
+                    dictId: hit.fields.dictId[0],
+                    productType: getProductType(hit, productType)
+                };
+            });
+
+            return result;
+        };
+
+        axios({
+            url: prefix + '/autosuggest/srp-find',
+            params: {
+                searchString,
+                category: searchBy,
+                recordType: recordTypes
+            }
+        })
+            .then((productsData) => {
+                callback({
+                    searchResults: normalizeData(productsData.data),
+                    searchString
+                });
+            });
+    }
+}
+
+function getSearchResults(searchString, searchBy, productType, callback) {
+    return function(dispatch) {
+        getAutoSuggestResults(searchString, searchBy, productType, (data) => {
+            callback(data);
+            return dispatch({ type: '' });
+        });
+    }
+}
+
+function setSearchString(searchString, searchBy,  productType, stringCountToTriggerSearch = 3) {
+    return function(dispatch) {
+        if (searchString.length < stringCountToTriggerSearch) {
+            return dispatch({
+                type: actionTypes.SET_SEARCH_RESULTS,
+                searchResults: {},
+                searchString
+            });
+        }
+
+        getAutoSuggestResults(searchString, searchBy, productType, (data) => {
+            return dispatch({
+                type: actionTypes.SET_SEARCH_RESULTS,
+                ...data
+            });
+        })
+    };
+}
+
+const gotoSearchResultsPage = (searchString, searchBy) => {
+    return function(dispatch) {
+        dispatch({ type: ''});
+        window.location.href = getSearchResultsPageRedirectUrl(searchString, searchBy);
+    }
+};
+
+const setSearchCategory = (category) => {
+    return function(dispatch) {
+        return dispatch({
+            type: actionTypes.SET_SEARCH_CATEGORY,
+            category
+        });
+    };
+};
+
+const setSearchResultsItems = (items, totalRecords) => {
+    return function(dispatch) {
+        return dispatch({
+            type: actionTypes.SET_SEARCH_RESULTS_ITEMS,
+            items,
+            totalRecords
+        });
+    };
+};
+
+const sortSearchResults = sortByColumn => {
+    return function(dispatch, getState) {
+        const { searchReducer } = getState();
+        const {
+            searchId: id,
+            categories,
+            keywords,
+            appliedFilters: filters,
+            sortBy,
+            sortDirection
+        } = searchReducer;
+        let newSortDirection;
+
+        if (sortBy && sortBy === sortByColumn) {
+            newSortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            newSortDirection = 'asc';
+        }
+        axios({
+            url: prefix + '/search/cgi-search/apply-filters',
+            method: 'POST',
             data: {
-                keyword: keyword
-            },
-            success: function (result) {
-                callback(result);
-
-                return dispatch({
-                    type: ''
-                });
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log(textStatus, errorThrown);
+                id,
+                categories,
+                keywords,
+                filters,
+                sortByColumn,
+                sortDirection: newSortDirection
             }
+        }).then(response => {
+            const { items, totalRecords } = response.data;
+            dispatch(setSearchResultsItems(items, totalRecords));
+        });
+
+        return dispatch({
+            type: actionTypes.SET_SEARCH_RESULTS_SORTING,
+            filters,
+            sortByColumn,
+            sortDirection: newSortDirection
         });
     };
 }
 
-function searchSuggestedItems(lat, lng, callback) {
-    return function (dispatch, getState) {
-        const state = getState().searchReducer;
+const updateSearchResultsFilters = (filters, sortByColumn) => {
+    return function(dispatch, getState) {
+        const { searchReducer } = getState();
+        const {
+            searchId: id,
+            categories,
+            keywords
+        } = searchReducer;
 
-        $.ajax({
-            url: '/search/suggested-items',
-            type: 'GET',
+        axios({
+            url: prefix + '/search/cgi-search/apply-filters',
+            method: 'POST',
             data: {
-                userLatitude: lat,
-                userLongitude: lng
-            },
-            success: function (result) {
-                callback(result);
-
-                return dispatch({
-                    type: ''
-                });
-            },
-
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log(textStatus, errorThrown);
+                id,
+                categories,
+                keywords,
+                filters
             }
+        }).then(response => {
+            const { items, totalRecords } = response.data;
+            dispatch(setSearchResultsItems(items, totalRecords));
+        });
+
+        return dispatch({
+            type: actionTypes.SET_SEARCH_RESULTS_FILTERS,
+            filters
         });
     };
-}
+};
 
 module.exports = {
     sortResult,
@@ -288,6 +432,10 @@ module.exports = {
     goToPage,
     searchByCategory,
     searchByFilters,
-    searchGooglePlaces,
-    searchSuggestedItems
-}
+    setSearchString,
+    gotoSearchResultsPage,
+    setSearchCategory,
+    updateSearchResultsFilters,
+    sortSearchResults,
+    getSearchResults,
+};

@@ -34,7 +34,7 @@ class RequisitionComponent extends BaseComponent {
                                 const metadata = JSON.parse(requisition.MetaData);
                                 return (
                                     <tr key={requisition.ID} className="account-row " data-key="item" data-id={requisition.ID}>
-                                        <td><a href={`/requisition/detail?id=${requisition.ID}`}>{requisition.CosmeticNo != null && requisition.CosmeticNo != "" ? requisition.CosmeticNo : requisition.RequisitionOrderNo}</a></td>
+                                        <td><a href={`/requisition/detail?id=${requisition.ID}`}>{requisition.RequisitionOrderNo}</a></td>
                                         <td><a href={`/requisition/detail?id=${requisition.ID}`} style={{fontWeight: '400'}}>{self.formatDateTime(requisition.CreatedDateTime)}</a></td>
                                         <td><a href={`/requisition/detail?id=${requisition.ID}`} style={{fontWeight: '400'}}>{requisition.Status}</a></td>
                                         <td><a href={`/requisition/detail?id=${requisition.ID}`} style={{fontWeight: '400'}}>{requisition.RequestorName}</a></td>

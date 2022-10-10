@@ -9,6 +9,7 @@ var EdmStaticModule = require('./static/edm');
 var PolicyStaticModule = require('./static/policy');
 var CustomFieldStaticModule = require('./static/custom-field.js');
 var GatewaysModule = require('./static/gateways.js');
+var HorizonEdmStaticModule = require('./static/horizon-edm');
 
 var EnumCoreModule = (function () {
 
@@ -30,6 +31,18 @@ var EnumCoreModule = (function () {
         },
         GetItemActivityLogTypes: function () {
             return ActivityStaticModule.GetTypes()
+        },
+        GetHorizonEdmTemplateTypes: function() {
+            return HorizonEdmStaticModule.GetTemplateTypes();
+        },
+        GetHorizonEdmTemplates: function () {
+            return HorizonEdmStaticModule.GetTemplates();
+        },
+        MapDataToHorizonEdmParameters: function(type, data) {
+            return HorizonEdmStaticModule.MapDataToHorizonEdmParameters(type, data);
+        },
+        MapCustomEmailTemplateDataToTemplate: function (data) {
+            return HorizonEdmStaticModule.MapCustomEmailTemplateDataToTemplate(data);
         },
         GetEdmParameters: function () {
             return EdmStaticModule.GetParameters()

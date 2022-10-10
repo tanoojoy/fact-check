@@ -3,19 +3,17 @@ const React = require('react');
 const ReactRedux = require('react-redux');
 const Entities = require('html-entities').XmlEntities;
 const BaseComponent = require('../../shared/base');
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 const OrderDiary = require('../../order-diary/index');
 const OrderDiaryWithBorder = require('../../order-diary/index-with-border');
-const PermissionTooltip = require('../../common/permission-tooltip');
+
 const InvoiceDetail = require('../shared/invoice-detail');
 const OrderDetail = require('../shared/order-detail');
 const OrderItems = require('../shared/order-items');
 const OrderTotal = require('../shared/order-total');
 const InvoiceActions = require('../../../redux/invoiceActions');
 const OrderDiaryActions = require('../../../redux/orderDiaryActions');
-
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
 
 const sections = [
     { key: 'Comment', value: 'Comment' },
@@ -53,14 +51,8 @@ class InvoiceDetailsComponent extends React.Component {
 
         return isUserMerchant;
     }
-
-    onPayBtnClick(invoiceNo) {
-        if (!this.props.isAuthorizedToEdit) return;
-        this.props.validatePermissionToPerformAction('edit-consumer-invoice-details-api', () => window.location.href = `/invoice/payment/${invoiceNo}`);
-    }
-
     renderPay() {
-        const { invoiceDetail, isAuthorizedToEdit } = this.props;
+        const { invoiceDetail } = this.props;
         let isMerchant = this.isUserMerchant();
         if (!isMerchant) {
             const { Orders } = invoiceDetail;
@@ -72,12 +64,9 @@ class InvoiceDetailsComponent extends React.Component {
                     || payment.Status.toLowerCase() === 'processing'
                     || payment.Status.toLowerCase() === 'pending'
                     || payment.Status.toLowerCase() === 'failed') || (payment.Status && payment.Status.toLowerCase() === "success" && payment.GatewayPayKey === null && payment.DateTimePaid === null)) {
-                    const btnClass = `sassy-btn sassy-btn-bg ${!isAuthorizedToEdit ? 'disabled' : ''}`;
                     return (
-                        <section className="sassy-box no-border">
-                            <PermissionTooltip isAuthorized={isAuthorizedToEdit}>
-                                <a href="#" onClick={() => this.onPayBtnClick(invoiceDetail.InvoiceNo)} className={btnClass}>Pay this Invoice</a>
-                            </PermissionTooltip>
+                        <section class="sassy-box no-border">
+                            <a href={`/invoice/payment/${invoiceDetail.InvoiceNo}`} className="sassy-btn sassy-btn-bg">Pay this Invoice</a>
                         </section>
                     );
                 }
@@ -141,13 +130,8 @@ class InvoiceDetailsComponent extends React.Component {
                                 <OrderDetail
                                     invoiceDetail={this.props.invoiceDetail}
                                     isUserMerchant={this.isUserMerchant()}
-                                    updateInvoiceStatus={this.props.updateInvoiceStatus} 
-                                    isAuthorizedToEdit={this.props.isAuthorizedToEdit}
-                                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                />
-                                <OrderItems
-                                    invoiceDetail={this.props.invoiceDetail}
-                                    locationVariantGroupId={this.props.locationVariantGroupId} />
+                                    updateInvoiceStatus={this.props.updateInvoiceStatus} />
+                                <OrderItems invoiceDetail={this.props.invoiceDetail} />
                                 <OrderTotal
                                     invoiceDetail={this.props.invoiceDetail}
                                     isUserMerchant={this.isUserMerchant()} />
@@ -167,12 +151,9 @@ class InvoiceDetailsComponent extends React.Component {
                                     setUploadFile={this.props.setUploadFile}
                                     createEvent={this.props.createEvent}
                                     showDropdownPlaceholder={false}
-                                    isAuthorizedToAdd={this.props.isAuthorizedToAdd}
-                                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                    permissionCode={`add-${this.isUserMerchant() ? 'merchant' : 'consumer'}-invoice-details-api`}
                                 />
                             </div>
-                            <section className="sassy-box no-border">
+                            <section class="sassy-box no-border">
                                 {this.renderPay()}
                             </section>
                         </div>
@@ -191,9 +172,6 @@ function mapStateToProps(state, ownProps) {
         invoiceDetail: state.invoiceReducer.invoiceDetail,
         paymentMethods: state.invoiceReducer.paymentMethods,
         isUserMerchant: state.invoiceReducer.isUserMerchant,
-        locationVariantGroupId: state.marketplaceReducer.locationVariantGroupId,
-        isAuthorizedToAdd: state.userReducer.pagePermissions.isAuthorizedToAdd,
-        isAuthorizedToEdit: state.userReducer.pagePermissions.isAuthorizedToEdit,
         // Order Diary
         eventCustomField: state.orderDiaryReducer.eventCustomField,
         events: state.orderDiaryReducer.events,
@@ -209,7 +187,6 @@ function mapStateToProps(state, ownProps) {
 function mapDispatchToProps(dispatch) {
     return {
         updateInvoiceStatus: (invoiceNo, status) => dispatch(InvoiceActions.updateInvoiceStatus(invoiceNo, status)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
         // Order Diary
         fetchEvents: (page) => dispatch(OrderDiaryActions.fetchEvents(page, 'Comment')),
         updateSelectedSection: (section) => dispatch(OrderDiaryActions.updateSelectedSection(section)),

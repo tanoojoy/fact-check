@@ -2,6 +2,7 @@
 var React = require('react');
 var toastr = require('toastr');
 var BaseComponent = require('../../../../shared/base');
+var CommonModule = require('../../../../../public/js/common.js');
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -24,21 +25,21 @@ class OrderListComponent extends BaseComponent {
             if (hasFeedback == '0') {
 
                 target.fadeIn();
-                cover.fadeIn();    
+                cover.fadeIn();
 
                 $('body').addClass('modal-open');
                 const itemUrl = $(this).attr('item-url');
                 const itemImgUrl = $(this).attr('item-image-url');
                 const itemName = $(this).attr('item-name');
                 const cartItemID = $(this).attr('cart-item-id');
-                self.setState({ selectedCartItemID: cartItemID });     
+                self.setState({ selectedCartItemID: cartItemID });
                 $('.ordr-dtls-item-iteminfo .item-img a').attr('href', itemUrl)
                 $('.ordr-dtls-item-iteminfo .item-img a img').attr('src', itemImgUrl);
                 $('.ordr-dtls-item-iteminfo .item-info-text div a').attr('href', itemUrl);
                 $('.ordr-dtls-item-iteminfo .item-info-text div a').text(itemName);
             } else {
                 toastr.warning('You already posted a review.', 'Failed in Posting Review')
-            }            
+            }
         });
 
         $('#stars').on('starrr:change', function(e, value){
@@ -54,7 +55,7 @@ class OrderListComponent extends BaseComponent {
             $('.content-area .quote').remove();
             $('textarea[name=feedbackText]').val('');
             $('body').removeClass('modal-open');
-            self.setState({ selectedCartItemID: null });                    
+            self.setState({ selectedCartItemID: null });
         });
 
         $('body').on('mouseout','#stars .glyphicon',function(){
@@ -67,7 +68,7 @@ class OrderListComponent extends BaseComponent {
                 $this.parent('.starrr').next('.quote').text(self.getQuote(rating) );
 
         });
-    
+
         $('body').on('mouseenter','#stars .glyphicon',function(){
             var $this = $(this);
             var rating = parseInt($this.parent('.starrr').find('.glyphicon-star').length);
@@ -82,7 +83,7 @@ class OrderListComponent extends BaseComponent {
             const feedback = $('textarea[name=feedbackText]').val();
             if (rating === null || typeof rating === 'undefined' || rating == '') {
                 toastr.warning('You forgot to select your star rating.', 'Oops! Something went wrong.');
-            } else {    
+            } else {
                 self.submitFeedback(rating, feedback);
                 target.hide();
                 cover.hide();
@@ -92,7 +93,7 @@ class OrderListComponent extends BaseComponent {
                 $('.content-area .quote').remove();
                 $('textarea[name=feedbackText]').val('');
                 $('body').removeClass('modal-open');
-                self.setState({ selectedCartItemID: null });    
+                self.setState({ selectedCartItemID: null });
             }
         });
     }
@@ -102,7 +103,7 @@ class OrderListComponent extends BaseComponent {
         switch(rating) {
             case 1 :
                 quote = 'Unsatisfied.';
-                break;            
+                break;
             case 2 :
                 quote = 'Okay.';
                 break;
@@ -132,7 +133,7 @@ class OrderListComponent extends BaseComponent {
     }
 
     getItemUrl(itemName, itemId) {
-        return '/items/' + this.generateSlug(itemName) + '/' + itemId;
+        return CommonModule.getAppPrefix()+'/items/' + this.generateSlug(itemName) + '/' + itemId;
     }
 
     getLatestFulfillmentStatus(cartItem) {
@@ -151,7 +152,7 @@ class OrderListComponent extends BaseComponent {
         let shippingMethod = '';
         let shippingMethodMinimumLeadTime = 'N/A';
         let shippingMethodID = null;
-        
+
         if (order.CartItemDetails) {
             const cartItem = order.CartItemDetails[0];
             if (cartItem.PickupAddress) {
@@ -200,7 +201,7 @@ class OrderListComponent extends BaseComponent {
         } else {
             return '';
         }
-        
+
     }
 
     renderItem(cartItem) {
@@ -220,7 +221,7 @@ class OrderListComponent extends BaseComponent {
                     <div className="item-detail">
                         {
                             item.Variants && item.Variants.length > 0 &&
-                                item.Variants.map(v => 
+                                item.Variants.map(v =>
                                     <div key={v.ID} className="oscctbc-d">
                                         <span className="title">{v.GroupName}</span>
                                         <span>{v.Name}</span>
@@ -229,7 +230,7 @@ class OrderListComponent extends BaseComponent {
                         }
                     </div>
                 </div>
-                <div className="oscctbc-e">                   
+                <div className="oscctbc-e">
                     <div className="oscctbc-d">
                         <a href={itemUrl}>
                             <span className="title">Price</span> <span className="item-price">{self.renderFormatMoney(item.CurrencyCode, item.Price)}</span>
@@ -246,7 +247,7 @@ class OrderListComponent extends BaseComponent {
                                 {
                                     cartItem.Feedback && cartItem.Feedback.FeedbackID > 0?
                                         <div className="check-icon">
-                                            <img src="/assets/images/done.svg"/>
+                                            <img src={CommonModule.getAppPrefix() + "/assets/images/done.svg"} />
                                         </div>
                                     : <i className="icon feedback"/>
                                 }
@@ -258,13 +259,13 @@ class OrderListComponent extends BaseComponent {
                                     : 'Leave a feedback'
                                 }
                             </span>
-                        </span> 
+                        </span>
                     </div>
                  </div>
             </React.Fragment>
         );
     }
-        
+
     render() {
         const self = this;
         const orders = this.props.orders;
@@ -301,7 +302,7 @@ class OrderListComponent extends BaseComponent {
                             <div className="pull-left">LEAVE A FEEDBACK FOR:</div>
                             <div className="pull-right">
                                 <a href={'#'} className="close-popup-icon">
-                                    <img src="/assets/images/icon-cross-black.png"/>
+                                    <img src={CommonModule.getAppPrefix() + "/assets/images/icon-cross-black.png"} />
                                 </a>
                             </div>
                             <div className="clearfix"/>

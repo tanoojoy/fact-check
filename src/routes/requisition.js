@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 const express = require('express');
 const React = require('react');
 const reactDom = require('react-dom/server');
@@ -13,34 +15,9 @@ const template = require('../views/layouts/template');
 const RequisitionDetailComponent = require('../views/requisition/detail/index').RequisitionDetailComponent;
 var RequisitionListComponent = require('../views/requisition/list/index').RequisitionListComponent;
 
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../scripts/shared/user-permissions');
-const editRequisitionDetailsCode = 'edit-consumer-requisition-order-details-api';
+requisitionRouter.get('/detail', authenticated, authorizedUser, function (req, res) {
+  if (redirectUnauthorizedUser(req, res)) return;
 
-function getRequisitions(userID, filters, callback) {
-    const options = {
-        userID: userID,
-        filterVm: filters
-    }
-
-    const promiseRequisitions = new Promise((resolve, reject) => {
-        client.Requisitions.getUserRequisitions(options, function (err, requisitions) {
-            resolve(requisitions);
-        });
-    });
-
-    Promise.all([promiseRequisitions]).then((responses) => {
-        const requisitionList = responses[0];
-        callback(requisitionList);
-    });
-}
-
-const viewRequisitionOrderDetailsData = {
-    code: 'view-consumer-requisition-order-details-api',
-    seoTitle: 'Requisition Details',
-    renderSidebar: true,
-};
-
-requisitionRouter.get('/detail', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewRequisitionOrderDetailsData), function (req, res) {
 	const requisitionId = req.query['id'];
 	const { user } = req;
 	if (!requisitionId || typeof requisitionId == 'undefined') return res.send('Requisition ID not found.');
@@ -50,7 +27,7 @@ requisitionRouter.get('/detail', authenticated, authorizedUser, isAuthorizedToAc
             resolve(result);
         });
     });
-    
+
     const promiseRequisitionApprovals = new Promise((resolve, reject) => {
         const pluginId = process.env.APPROVAL_PLUGIN;
         const query = [{
@@ -77,7 +54,7 @@ requisitionRouter.get('/detail', authenticated, authorizedUser, isAuthorizedToAc
             if (meta.Workflow) {
                 const { Workflow } = meta;
                 const flows = JSON.parse(Workflow.Values || {});
-                const orderTotal = parseFloat(requisitionDetail.Orders[0].GrandTotal);
+                const orderTotal = parseFloat(requisitionDetail.Orders[0].Total);
                 for (let i = 0; i < flows.length; i++) {
                     let flow = flows[i];
                     const isUnlimited = flow && flow.MaximumPurchase.Unlimited;
@@ -85,7 +62,7 @@ requisitionRouter.get('/detail', authenticated, authorizedUser, isAuthorizedToAc
                     if (isUnlimited || (!isUnlimited && isAmountValid)) {
                         matchedFlow = flow;
                         break;
-                    } 
+                    }
                 }
                 if (matchedFlow) {
                     const userID = user.AccountOwnerID && user.SubBuyerID? user.SubBuyerID : user.ID;
@@ -101,11 +78,11 @@ requisitionRouter.get('/detail', authenticated, authorizedUser, isAuthorizedToAc
                         const arr = approvalRecords.filter(a => a.Status == 'Approved');
                         let approvedRecords = [];
                         arr.reverse().map(el => {
-                            if (!approvedRecords.find(a => a.UserID == el.UserID)) { 
+                            if (!approvedRecords.find(a => a.UserID == el.UserID)) {
                                 approvedRecords.push(arr[arr.findIndex(u => u.UserID == el.UserID)]);
                             }
                         });
-                        
+
                         if (hasApprovedOrRejected || ApprovalsNeeded == 0) {
                             isApprover = false;
                         }
@@ -115,15 +92,15 @@ requisitionRouter.get('/detail', authenticated, authorizedUser, isAuthorizedToAc
         }
 
         let cartItemId = null;
-        const cartIdExists = requisitionDetail 
+        const cartIdExists = requisitionDetail
             && requisitionDetail.Orders
             && requisitionDetail.Orders[0]
             && requisitionDetail.Orders[0].CartItemDetails
             && requisitionDetail.Orders[0].CartItemDetails[0]
             && requisitionDetail.Orders[0].CartItemDetails[0].ID;
         cartItemId =  cartIdExists ? requisitionDetail.Orders[0].CartItemDetails[0].ID : null;
-        const promiseOffer = cartItemId ? 
-            new Promise((resolve, reject) => 
+        const promiseOffer = cartItemId ?
+            new Promise((resolve, reject) =>
                 client.Chat.getOfferByCartItemId( {
                     userId: user.ID,
                     cartItemId: cartItemId,
@@ -135,60 +112,67 @@ requisitionRouter.get('/detail', authenticated, authorizedUser, isAuthorizedToAc
             ) : null
         Promise.all([promiseOffer]).then(responses => {
             const pendingOffer = responses[0];
-            getUserPermissionsOnPage(user, "Requisition Order Details", "Consumer", (pagePermissions) => {
-                const appString = 'requisition-detail';
-                const s = Store.createRequisitionStore({
-                    userReducer: {
-                        user,
-                        pagePermissions: pagePermissions
-                    },
-                    requisitionReducer: {
-                        requisitionDetail,
-                        isApprover,
-                        hasApprovedOrRejected,
-                        flow: matchedFlow,
-                        pendingOffer
-                    },
-                    orderDiaryReducer: {
-                        selectedSection: 'Comments',
-                    },
-                    marketplaceReducer: {
-                        locationVariantGroupId: req.LocationVariantGroupId
-                    }
-                });
-                const reduxState = s.getState();
-                const requisitionDetailApp = reactDom.renderToString(
-                    <RequisitionDetailComponent 
-                        requisitionDetail={requisitionDetail}
-                        isApprover={isApprover}
-                        hasApprovedOrRejected={hasApprovedOrRejected}
-                        user={user}
-                        selectedSection={'Comments'}
-                        flow={matchedFlow}
-                        pendingOffer={pendingOffer}
-                        locationVariantGroupId={req.LocationVariantGroupId}
-                        pagePermissions={pagePermissions}
-                    />
-                );
-
-                let seoTitle = 'Requisition Detail';
-                if (req.SeoTitle) {
-                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            const appString = 'requisition-detail';
+            const s = Store.createRequisitionStore({
+                userReducer: {
+                    user,
+                },
+                requisitionReducer: {
+                    requisitionDetail,
+                    isApprover,
+                    hasApprovedOrRejected,
+                    flow: matchedFlow,
+                    pendingOffer
+                },
+                orderDiaryReducer: {
+                    selectedSection: 'Comments',
                 }
+            });
+            const reduxState = s.getState();
+            const requisitionDetailApp = reactDom.renderToString(
+                <RequisitionDetailComponent
+                    requisitionDetail={requisitionDetail}
+                    isApprover={isApprover}
+                    hasApprovedOrRejected={hasApprovedOrRejected}
+                    user={user}
+                    selectedSection={'Comments'}
+                    flow={matchedFlow}
+                    pendingOffer={pendingOffer}
+                />
+            );
 
-                res.send(template('page-seller page-requisition-detail page-sidebar', seoTitle, requisitionDetailApp, appString, reduxState));
-            });          
+            let seoTitle = 'Requisition Detail';
+            if (req.SeoTitle) {
+                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            }
+
+            res.send(template('page-seller page-requisition-detail page-sidebar', seoTitle, requisitionDetailApp, appString, reduxState));
         });
     });
 });
 
-const viewRequisitionOrdersData = {
-    code: 'view-consumer-requisition-orders-api',
-    seoTitle: 'Requisition List',
-    renderSidebar: true,
-};
 
-requisitionRouter.get('/list', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewRequisitionOrdersData), (req, res) => {
+function getRequisitions(userID, filters, callback) {
+    const options = {
+        userID: userID,
+        filterVm: filters
+    }
+
+    const promiseRequisitions = new Promise((resolve, reject) => {
+        client.Requisitions.getUserRequisitions(options, function(err, requisitions) {
+            resolve(requisitions);
+        });
+    });
+
+    Promise.all([promiseRequisitions]).then((responses) => {
+        const requisitionList = responses[0];
+        callback(requisitionList);
+    });
+}
+
+requisitionRouter.get('/list', authenticated, authorizedUser, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
 
     const promiseCategories = new Promise((resolve, reject) => {
@@ -228,7 +212,7 @@ requisitionRouter.get('/list', authenticated, authorizedUser, isAuthorizedToAcce
                     statuses: data.Statuses.map((item) => {
                         item.isChecked = false;
                         return item;
-                    }), 
+                    }),
                     suppliers: data.Suppliers.map((item) => {
                         item.isChecked = false;
                         return item;
@@ -244,7 +228,7 @@ requisitionRouter.get('/list', authenticated, authorizedUser, isAuthorizedToAcce
                     statuses={data.Statuses.map((item, index) => {
                         item.isChecked = false;
                         return item;
-                    })} 
+                    })}
                     suppliers={data.Suppliers.map((item) => {
                         item.isChecked = false;
                         return item;
@@ -264,6 +248,8 @@ requisitionRouter.get('/list', authenticated, authorizedUser, isAuthorizedToAcce
 });
 
 requisitionRouter.get('/filter', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const filters = req.query;
     getRequisitions(user.ID, filters, function (requisitionList) {
@@ -296,7 +282,7 @@ requisitionRouter.put('/update-requisition', authenticated, function (req, res) 
     });
 });
 
-requisitionRouter.put('/add-requisition-approval', authenticated, isAuthorizedToPerformAction(editRequisitionDetailsCode), function (req, res) {
+requisitionRouter.put('/add-requisition-approval', authenticated, function (req, res) {
     const { user } = req;
     if (!user) return res.send('User not found.')
     const requisitionId = req.body['requisitionId'];
@@ -344,32 +330,32 @@ requisitionRouter.put('/add-requisition-approval', authenticated, isAuthorizedTo
                 const workflow = JSON.parse(flow);
                 const { ApprovalsNeeded, Approvers } = workflow;
                 const arr = approvals.Records.filter(a => a.Status == 'Approved');
-                
+
                 // filter in case of duplicate entries from same user
                 let approvedRecords = [];
                 arr.reverse().map(el => {
-                    if (!approvedRecords.find(a => a.UserID == el.UserID)) { 
+                    if (!approvedRecords.find(a => a.UserID == el.UserID)) {
                         approvedRecords.push(arr[arr.findIndex(u => u.UserID == el.UserID)]);
                     }
                 });
-    
+
                 const compulsoryApprovers = Approvers.filter(a => a.IsCompulsory == true).map(u => u.UserID);
                 const hasAnyCompulsoryRejected = approvals.Records.filter(r => compulsoryApprovers.includes(r.UserID) && r.Status == 'Rejected').length > 0;
                 const hasAllCompulsoryTookAction = compulsoryApprovers.every(user => approvals.Records.findIndex(a => a.UserID == user) !== -1);
                 const hasAllCompulsoryApproved = compulsoryApprovers.every(user => approvedRecords.findIndex(a => a.UserID == user) !== -1);
                 const hasAllTookAction = (Approvers.every(a => approvals.Records.findIndex(r => r.UserID == a.UserID) !== -1)) && hasAllCompulsoryTookAction;
-    
+
                 let toUpdateRequisitionStatus = false;
                 const toRejectRequisition = hasAnyCompulsoryRejected || (hasAllTookAction && approvedRecords.length < ApprovalsNeeded);
                 const toApproveRequisition = hasAllCompulsoryApproved && approvedRecords.length >= ApprovalsNeeded;
-                
+
                 if (toRejectRequisition || toApproveRequisition) {
                     toUpdateRequisitionStatus = true;
                     statusUpdate = toApproveRequisition ? 'Approved' : 'Rejected';
                 }
 
                 promiseUpdateRequisitionStatus = toUpdateRequisitionStatus && statusUpdate !== null ?
-                    new Promise((resolve, reject) => 
+                    new Promise((resolve, reject) =>
                         client.Requisitions.updateRequisition({
                             userId: user.ID,
                             ID: requisitionId,
@@ -386,5 +372,7 @@ requisitionRouter.put('/add-requisition-approval', authenticated, isAuthorizedTo
         });
     });
 });
+
+
 
 module.exports = requisitionRouter;

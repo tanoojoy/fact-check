@@ -3,13 +3,14 @@ var React = require('react');
 
 var UserMenuComponentTemplate = require('./user-menu')
 var LanguageMenuComponentTemplate = require('../../layouts/language-menu');
+const CommonModule = require('../../../../../public/js/common');
 
 class HeaderMenuComponentTemplate extends React.Component {
     renderSubAccount() {
 
         if (typeof this.props.merchantSubAccountActive != 'undefined' && this.props.merchantSubAccountActive && this.props.merchantSubAccountActive == true) {
             return (
-                <li className="h-user"> <a href="/subaccount/list">Sub-Accounts</a> </li>
+                <li className="h-user"> <a href={CommonModule.getAppPrefix()+"/subaccount/list"}>Sub-Accounts</a> </li>
             )
         }
 
@@ -19,7 +20,7 @@ class HeaderMenuComponentTemplate extends React.Component {
     componentDidMount() {
 
         if (typeof window !== 'undefined') {
-            let self = this;            
+            let self = this;
             if (typeof self.props.user != 'undefined' && self.props.user.Onboarded === false && window.location.href.indexOf('/merchants/settings') < 1) {
                 let redirectToOnboardSetting = true;
                 if (self.props.user.Roles) {
@@ -30,8 +31,8 @@ class HeaderMenuComponentTemplate extends React.Component {
                     });
                 }
                 if (redirectToOnboardSetting === true) {
-                    window.location.href = '/merchants/settings?error=onBoardInComplete';
-                }              
+                    window.location.href = CommonModule.getAppPrefix()+'/merchants/settings?error=onBoardInComplete';
+                }
             }
         }
     }
@@ -47,10 +48,10 @@ class HeaderMenuComponentTemplate extends React.Component {
                     <span></span>
                 </div>
                 <ul className="header-menus tog">
-                    <li className="h-user"> <a href="/merchants/dashboard">Dashboard</a> </li>
-                    <li className="h-user"> <a href="/merchants/items">Your Item</a> </li>
-                    <li className="h-user"> <a href="/merchants/upload">Add Item</a> </li>
-                    <li className="h-user"> <a href="/merchants/order/history">Orders</a> </li>
+                    <li className="h-user"> <a href={CommonModule.getAppPrefix()+"/merchants/dashboard"}>Dashboard</a> </li>
+                    <li className="h-user"> <a href={CommonModule.getAppPrefix()+"/merchants/items"}>Your Item</a> </li>
+                    <li className="h-user"> <a href={CommonModule.getAppPrefix()+"/merchants/upload"}>Add Item</a> </li>
+                    <li className="h-user"> <a href={CommonModule.getAppPrefix()+"/merchants/order/history"}>Orders</a> </li>
                     {this.renderSubAccount()}
                 </ul>
                 <ul className="header-menus usr">

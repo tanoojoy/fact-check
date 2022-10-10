@@ -3,13 +3,14 @@ var React = require('react');
 
 var UserMenuComponentTemplate = require('./user-menu')
 var LanguageMenuComponentTemplate = require('../../layouts/language-menu');
+const CommonModule = require('../../../../../public/js/common.js');
 
 class HeaderMenuComponentTemplate extends React.Component {
     renderSubAccount() {
 
         if (typeof this.props.merchantSubAccountActive != 'undefined' && this.props.merchantSubAccountActive && this.props.merchantSubAccountActive == true) {
             return (
-                <li className="h-user"> <a href="/subaccount/list">Sub Account</a> </li>
+                <li className="h-user"> <a href={CommonModule.getAppPrefix()+"/subaccount/list"}>Sub Account</a> </li>
             )
         }
 
@@ -25,10 +26,10 @@ class HeaderMenuComponentTemplate extends React.Component {
                     <span></span>
                 </div>
                 <ul className="header-menus tog">
-                    <li className="h-user"> <a href="/merchants/dashboard">Dashboard</a> </li>
-                    <li className="h-user"> <a href="/merchants/items">Inventory</a> </li>
-                    <li className="h-user"> <a href="/merchants/upload">Add Item</a> </li>
-                    <li className="h-user"> <a href="/merchants/order/history">Orders</a> </li>
+                    <li className="h-user"> <a href={CommonModule.getAppPrefix()+"/merchants/dashboard"}>Dashboard</a> </li>
+                    <li className="h-user"> <a href={CommonModule.getAppPrefix()+"/merchants/items"}>Inventory</a> </li>
+                    <li className="h-user"> <a href={CommonModule.getAppPrefix()+"/merchants/upload"}>Add Item</a> </li>
+                    <li className="h-user"> <a href={CommonModule.getAppPrefix()+"/merchants/order/history"}>Orders</a> </li>
                     {this.renderSubAccount()}
                 </ul>
                 <ul className="header-menus usr">

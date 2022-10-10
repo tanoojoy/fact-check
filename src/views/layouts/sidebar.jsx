@@ -5,8 +5,7 @@ const marketplaceActions = require('../../redux/marketplaceActions');
 const approvalActions = require('../../redux/approvalActions');
 const commonModule = require('../../public/js/common');
 //const SidebarNav = require(`../features/checkout_flow_type/${process.env.CHECKOUT_FLOW_TYPE}/layouts/sidebar-nav`);
-
-const SidebarNav = require("../features/checkout_flow_type/" + process.env.CHECKOUT_FLOW_TYPE + "/layouts/sidebar-nav");
+const CommonModule = require('../../public/js/common');
 if (typeof window !== 'undefined') {
     const $ = window.$;
 }
@@ -14,8 +13,8 @@ if (typeof window !== 'undefined') {
 class SidebarLayoutComponent extends React.Component {
 
 	componentWillMount() {
-		if (typeof this.props.loadApprovalSettings == 'function' 
-			&& (typeof this.props.approvalSettings == 'undefined' 
+		if (typeof this.props.loadApprovalSettings == 'function'
+			&& (typeof this.props.approvalSettings == 'undefined'
 				|| !this.props.approvalSettings || !this.props.approvalSettings.ID)
 		) {
 			this.props.loadApprovalSettings();
@@ -23,11 +22,11 @@ class SidebarLayoutComponent extends React.Component {
 	}
 
 	componentDidMount() {
-		if ((this.props.logoUrl == '' || typeof this.props.logoUrl == 'undefined' || !this.props.logoUrl) && typeof this.props.loadMarketplaceInfo == 'function') {
+		if ((this.props.logoUrl == `${commonModule.getAppPrefix()}` || typeof this.props.logoUrl == 'undefined' || !this.props.logoUrl) && typeof this.props.loadMarketplaceInfo == 'function') {
 			const self = this;
 			this.props.loadMarketplaceInfo();
 		}
-		
+
 	}
 
 	componentDidUpdate() {
@@ -36,8 +35,8 @@ class SidebarLayoutComponent extends React.Component {
 			const path = $(anchor).attr('href');
 			const routesIncluded = $(anchor).attr('active-on-route');
 			if (window && window.location) {
-				const isHome = (path === "/" && window.location.pathname == path)
-				if (isHome || (path !== "/" && (window.location.pathname.startsWith(path) 
+				const isHome = (path === `${CommonModule.getAppPrefix()}/` && window.location.pathname == path)
+				if (isHome || (path !== `${CommonModule.getAppPrefix()}/` && (window.location.pathname.startsWith(path)
 					|| (routesIncluded && window.location.pathname.startsWith(routesIncluded))))
 				) {
 					$(anchor).parent().addClass('active');
@@ -48,10 +47,10 @@ class SidebarLayoutComponent extends React.Component {
 			}
 		});
 	}
-	
+
     isMerchant() {
-    	return this.props.user 
-    		&& this.props.user.Roles && this.props.user.Roles.length > 0 
+    	return this.props.user
+    		&& this.props.user.Roles && this.props.user.Roles.length > 0
 			&& (this.props.user.Roles.includes('Submerchant') || this.props.user.Roles.includes('Merchant'));
     }
 
@@ -65,12 +64,12 @@ class SidebarLayoutComponent extends React.Component {
             return process.env.PROTOCOL + '://' + this.props.homepageUrl;
         }
 
-        return '/';
+        return `${CommonModule.getAppPrefix()}/`;
     }
 
     renderTagline() {
     	if (this.isMerchant()) {
-			return (<div className="site-tagline"><a href="/merchants/dashboard">Supplier Portal</a></div>);
+			return (<div className="site-tagline"><a href={`${CommonModule.getAppPrefix()}/merchants/dashboard`}>Supplier Portal</a></div>);
     	}
     	return '';
     }
@@ -92,7 +91,6 @@ class SidebarLayoutComponent extends React.Component {
 		                    {this.renderTagline()}
 		                </div>
 		                <div>
-							<SidebarNav isMerchant={isMerchant} isMerchantSubAccountActive={this.props.merchantSubAccountActive} approvalSettings={this.props.approvalSettings} />
 		                </div>
 		            </div>
 		        </div>

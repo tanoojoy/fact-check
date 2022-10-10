@@ -2,6 +2,7 @@
 const React = require('react');
 const SearchFilter = require('../../../search/filters');
 const SearchResultHeader = require('../../../search/result-header');
+const CommonModule = require('../../../../public/js/common');
 
 class SearchMain extends React.Component {
     constructor(props) {
@@ -9,7 +10,7 @@ class SearchMain extends React.Component {
         this.setCategoryBreadcrumb = this.setCategoryBreadcrumb.bind(this);
         this.renderBreadcrumbTrail = this.renderBreadcrumbTrail.bind(this);
     }
-    
+
 	getItemPrices() {
         let prices = [];
         if (this.props.totalRecords > 0) {
@@ -41,7 +42,7 @@ class SearchMain extends React.Component {
     renderBreadcrumbTrail() {
         return (
             <React.Fragment>
-                <p><a href="/">Home</a></p>
+                <p><a href={CommonModule.getAppPrefix()+"/"}>Home</a></p>
                 <i className="fa fa-angle-right" />
                 <p className="active">Search</p>
                 <i className="fa fa-angle-right package-breadcrum-text hide"></i>

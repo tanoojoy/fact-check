@@ -3,7 +3,7 @@ const React = require('react');
 const ReactRedux = require('react-redux');
 const toastr = require('toastr');
 const BaseComponent = require('../../../../../shared/base');
-const HeaderLayout = require('../../../../../layouts/header').HeaderLayoutComponent;
+const HeaderLayout = require('../../../../../layouts/header/index').HeaderLayoutComponent;
 const FooterLayout = require('../../../../../layouts/footer').FooterLayoutComponent;
 const CommonModule = require('../../../../../../public/js/common');
 const OrderTotalComponent = require('./order-total');
@@ -11,7 +11,7 @@ const DetailsComponent = require('./details');
 const ReviewComponent = require('./review');
 const PayComponent = require('./pay');
 let EnumCoreModule = require('../../../../../../../src/public/js/enum-core.js');
-const PermissionTooltip = require('../../../../../common/permission-tooltip');
+
 
 class OnePageCheckoutMainComponent extends BaseComponent {
 
@@ -37,6 +37,11 @@ class OnePageCheckoutMainComponent extends BaseComponent {
                 });
             });
 
+            $(".openModalRemove").on("click", function () {
+                var $parent = $(this).parents(".parent-r-b");
+                $parent.addClass("modal-delete-open");
+                $("#modalRemove").modal("show");
+            });
             $("#modalRemove .btn-gray").on("click", function (e) {
                 $(".parent-r-b").removeClass("modal-delete-open");
 
@@ -239,12 +244,10 @@ class OnePageCheckoutMainComponent extends BaseComponent {
     }
 
     addAddressValidate() {
-        this.props.validatePermissionToPerformAction("add-consumer-checkout-api", () => {
-            let hasError = CommonModule.validateFields('#addDeliveryAddress .required');
-            if (!hasError) {
-                this.props.createAddress();
-            }
-        });
+        let hasError = CommonModule.validateFields('#addDeliveryAddress .required');
+        if (!hasError) {
+            this.props.createAddress();
+        }
     }
 
     render() {
@@ -279,7 +282,7 @@ class OnePageCheckoutMainComponent extends BaseComponent {
                     <div className="main">
                         <div className="error-pg-container">
                             <div className="container">
-                                <a href="/cart" className="error-back"><i className="fa fa-angle-left" /> Back</a>
+                                <a href={CommonModule.getAppPrefix()+"/cart"} className="error-back"><i className="fa fa-angle-left" /> Back</a>
                                 <div className="error-msg-txt">
                                     <div>Order is invalid</div>
                                     <div>Buyer, Merchant or item may be disabled, please check and try again.</div>
@@ -366,9 +369,7 @@ class OnePageCheckoutMainComponent extends BaseComponent {
                             </div>
                             <div className="modal-footer">
                                 <div className="btn-gray" data-dismiss="modal" onClick={(e) => self.clearAddDelivery(e)}>Cancel</div>
-                                <PermissionTooltip isAuthorized={self.props.permissions.isAuthorizedToAdd}>
-                                    <div className="btn-green" id="btnAddDelivery" onClick={(e) => self.addAddressValidate(e)}>Add</div>
-                                </PermissionTooltip>
+                                <div className="btn-green" id="btnAddDelivery" onClick={(e) => self.addAddressValidate(e)}>Add</div>
                             </div>
                         </div>
                     </div>

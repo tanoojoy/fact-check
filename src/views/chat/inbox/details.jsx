@@ -34,7 +34,6 @@ class SearchChatComponent extends BaseComponent {
         return (
             <React.Fragment>
                 <div className="col-md-3" key={message.ID} >
-                    <span className="inbox-not-read"></span>
                     <div className="user-avatar">
                         <img src={'images/user-avatar.png" alt="user-avatar"'} title="user-avatar" />
                     </div>

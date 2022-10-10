@@ -3,6 +3,7 @@ const React = require('react');
 const BaseComponent = require('../../shared/base');
 
 class Items extends BaseComponent {
+
     renderOfferDetails(offerDetails, currencyCode) {
         if (offerDetails && offerDetails.length > 1) {
             const arr = offerDetails.slice(1);
@@ -31,41 +32,20 @@ class Items extends BaseComponent {
 
     renderItem(cart, hasQuotation) {
         const { ItemDetail } = cart;
-                   //ARC10053  the discountamount should not be round off to have the correct value.
+
+        console.log(this.props)
+
         return (
             <tr className={hasQuotation ? 'brdt' : ''} key={cart.ID}>
                 <td data-th="Item Description">
-                    <div className="flex-wrap">
-                        <div className="thumb-group mr-15">
-                            <img src={ItemDetail.Media ? ItemDetail.Media[0].MediaUrl : ''} alt="Item" style={{ maxWidth: '64px' }} />
-                        </div>
-                        <div className="text-left">
-                            <span>{ItemDetail.Name}</span>
-                            <div className="item-field">
-                                {
-                                    ItemDetail.SKU ?
-                                        <span className="if-txt">
-                                            <span>SKU:</span>
-                                            <span>{ItemDetail.SKU}</span>
-                                        </span> : ""
-
-                                }
-                                {
-                                    ItemDetail.Variants && ItemDetail.Variants.length > 0 &&
-                                    ItemDetail.Variants.filter(v => v.GroupID != this.props.locationVariantGroupId).map(v =>
-                                        <span key={v.ID} className="if-txt">
-                                            <span>{v.GroupName + ":"}</span>
-                                            <span>{v.Name}</span>
-                                        </span>
-                                    )
-                                }
-                            </div>
-                        </div>
+                    <div className="thumb-group">
+                        <img src={ItemDetail.Media? ItemDetail.Media[0].MediaUrl:''} alt="Item" style={{ maxWidth: '64px' }} />
+                        <span>{ItemDetail.Name}</span>
                     </div>
                 </td>
                 <td data-th="Quantity">{cart.Quantity}</td>
                 <td data-th="Unit Price"><div className="item-price">{this.renderFormatMoney(cart.CurrencyCode, ItemDetail.Price)}</div></td>
-                <td data-th="Total Cost"><div className="item-price">{this.renderFormatMoney(cart.CurrencyCode, (cart.ItemDetail.Price * cart.Quantity) - (cart.DiscountAmountNotRoundOff || 0))}</div></td>
+                <td data-th="Total Cost"><div className="item-price">{this.renderFormatMoney(cart.CurrencyCode, (cart.ItemDetail.Price * cart.Quantity) - (cart.DiscountAmount || 0))}</div></td>
 
 
             </tr>
@@ -97,6 +77,9 @@ class Items extends BaseComponent {
         }
         return;
     }
+
+   
+
 
     render() {
         return (

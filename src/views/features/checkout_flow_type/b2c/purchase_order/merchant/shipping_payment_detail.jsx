@@ -1,17 +1,8 @@
 var React = require('react');
 var BaseComponent = require('../../../../../../views/shared/base');
 
-const PermissionTooltip = require('../../../../../common/permission-tooltip');
-
 class ShippingPaymentDetailComponent extends BaseComponent {
-    showCancelButton()
-    {
-        let cancelOrderText = ' Cancel Order';
-        if (this.props.serviceLevel) {
-            return (<button id="cancelOrder" className="btn btn-cancel-order mt-15">
-                <i className="fa fa-times" aria-hidden="true" />{cancelOrderText}</button>);
-        }
-    }
+
     render() {
         const detail = this.props.detail;
         const order = detail.Orders[0];
@@ -42,13 +33,12 @@ class ShippingPaymentDetailComponent extends BaseComponent {
 
         let orderNo = "-";
         if (order.PurchaseOrderNo) {
-            orderNo = order.CosmeticNo != null && order.CosmeticNo != "" ? order.CosmeticNo : order.PurchaseOrderNo;
+            orderNo = order.PurchaseOrderNo;
         }
 
         let paymentStatusTableBase = '';
         if (order.PaymentDetails != null && order.PaymentDetails.length > 0) {
-            //paymentStatusTableBase = order.PaymentDetails[0].Status == "Success" ? 'Paid' : order.PaymentDetails[0].Status
-            paymentStatusTableBase = order.PaymentStatus;
+            paymentStatusTableBase = order.PaymentDetails[0].Status == "Success" ? 'Paid' : order.PaymentDetails[0].Status
         }
 
         return (
@@ -60,7 +50,7 @@ class ShippingPaymentDetailComponent extends BaseComponent {
                     </tr>
                         <tr>
                             <th>Invoice No. :</th>
-                            <td data-th="Invoice No. :">{order.PaymentDetails[0].CosmeticNo != null && order.PaymentDetails[0].CosmeticNo != "" ? order.PaymentDetails[0].CosmeticNo : detail.InvoiceNo}</td>
+                            <td data-th="Invoice No. :">{detail.InvoiceNo}</td>
                         </tr>
                         <tr>
                             <th>Payment Type :</th>
@@ -83,19 +73,16 @@ class ShippingPaymentDetailComponent extends BaseComponent {
                             <td data-th="Invoice No. :">
                                 <div className="select-wrapper osg mxw">
                                     {this.props.renderStatusDropdown(order)}
-                                    {this.showCancelButton()}
                                 </div>
                             </td>
                         </tr>
                         <tr>
                             <th>Refund:</th>
                             <div className="slrordrlst-refnd-act">
-                                <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                    <div className="fancy-checkbox">
-                                        <input className="slrordrlst-refnd-chk" type="checkbox" id="refund-1" name="item-options[]" checked={isRefunded} onChange={(e) => this.props.onCheckboxChange(e, cartItem.ID)} />
-                                        <label htmlFor="refund-1" />
-                                    </div>
-                                </PermissionTooltip>
+                                <div className="fancy-checkbox">
+                                    <input className="slrordrlst-refnd-chk" type="checkbox" id="refund-1" name="item-options[]" checked={isRefunded} onChange={(e) => this.props.onCheckboxChange(e, cartItem.ID)} />
+                                    <label htmlFor="refund-1" />
+                                </div>
                             </div>
                         </tr>
                     </tbody></table>

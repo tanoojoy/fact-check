@@ -4,64 +4,15 @@ var ReactRedux = require('react-redux');
 var BaseComponent = require('../../../../../shared/base');
 var Moment = require('moment');
 const Currency = require('currency-symbol-map');
-const PurchaseTableContents = require('./' +  process.env.PRICING_TYPE + '/index');
-
-class FeaturePurchaseOrderListB2cComponent extends PurchaseTableContents {
-    
+class FeaturePurchaseOrderListB2cComponent extends BaseComponent {
     getLatestOrderStatus(cartItem) {
         let status = "";
-        let orderStatuses = cartItem.Statuses.filter(s => s.Type === 'Order');
-
-        if (process.env.CHECKOUT_FLOW_TYPE === 'b2c') {
-            orderStatuses = cartItem.Statuses.filter(s => s.Type === 'Fulfilment');
-        }
-
+        let orderStatuses = cartItem.Statuses.filter(s => s.Type === 'Fulfilment');
         if (orderStatuses.length > 0) {
-            orderStatuses.sort((a, b) => (a.CreatedDateTime > b.CreatedDateTime) ? 1 : -1)
             status = orderStatuses[orderStatuses.length - 1].Name;
-        } else if (orderStatuses.length === 0) {
-            let fulfillmentStatuses = cartItem.Statuses.filter(s => s.Type === 'Fulfilment');
-            if (fulfillmentStatuses.length > 0) {
-                status = fulfillmentStatuses[fulfillmentStatuses.length - 1].Name;
-            }
-        } 
-        switch (status) {
-            case 'Ready For Consumer Collection':
-                status = 'Ready for Pick-up';
-                break;
-            case 'Delivered':
-                if (cartItem.BookingSlot != 'undefined' && cartItem.BookingSlot != null) {
-                    status = 'Shipped';
-                }
-                break;
         }
-        return status;
+        return status === 'Ready For Consumer Collection' ? 'Ready for Pick-up' : status ;
     }
-
-    renderHeader() {
-        if (typeof this.renderCustomHeader == 'function') return this.renderCustomHeader();
-        return (
-            <thead>
-                <tr>
-                    <th>Order No.</th>
-                    <th>Timestamp</th>
-                    <th>Supplier</th>
-                    <th>Total</th>
-                    <th>Order Status</th>
-                </tr>
-            </thead>
-        );
-    }
-
-    renderCustomListItemContent(contentCode, invoice) {
-        if (contentCode == 'BOOKING_DETAILS') {
-            if (typeof this.renderBookingDetails == 'function') {
-                return this.renderBookingDetails(invoice);
-            }
-        }
-        return;
-    }
-
     render() {
         const self = this;
         if (this.props.Records) {
@@ -69,7 +20,15 @@ class FeaturePurchaseOrderListB2cComponent extends PurchaseTableContents {
                 <React.Fragment>
                     <div className="subaccount-data-table table-responsive">
                         <table className="table order-data1 sub-account tb-left clickable">
-                            {this.renderHeader()}
+                            <thead>
+                                <tr>
+                                    <th>Order No.</th>
+                                    <th>Timestamp</th>
+                                    <th>Supplier</th>
+                                    <th>Total</th>
+                                    <th>Order Status</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 {
                                     this.props.Records.map(function (obj, index) {
@@ -78,11 +37,11 @@ class FeaturePurchaseOrderListB2cComponent extends PurchaseTableContents {
                                             obj.Orders && obj.Orders[0].PaymentDetails && obj.Orders[0].PaymentDetails[0].Status === "Failed" ||
                                             obj.Orders && obj.Orders[0].PaymentDetails && obj.Orders[0].PaymentDetails[0].Status === "Created")
                                             return ""
+
                                         return <tr className="account-row " data-key="item" data-id={1}>
-                                            <td><a href={"/purchase/detail/" + obj.InvoiceNo + "/merchant/" + obj.Orders[0].MerchantDetail.ID}>{obj.Orders[0].CosmeticNo != null && obj.Orders[0].CosmeticNo != "" ? obj.Orders[0].CosmeticNo : obj.Orders[0].PurchaseOrderNo}</a></td>
+                                            <td><a href={"/purchase/detail/" + obj.InvoiceNo + "/merchant/" + obj.Orders[0].MerchantDetail.ID}>{obj.Orders[0].PurchaseOrderNo}</a></td>
                                             <td><a href={"/purchase/detail/" + obj.InvoiceNo + "/merchant/" + obj.Orders[0].MerchantDetail.ID}>{self.formatDateTime(obj.Orders[0].CreatedDateTime)}</a></td>
                                             <td><a href={"/purchase/detail/" + obj.InvoiceNo + "/merchant/" + obj.Orders[0].MerchantDetail.ID}>{obj.Orders[0].MerchantDetail.DisplayName}</a></td>
-                                            {self.renderCustomListItemContent('BOOKING_DETAILS', obj)}
                                             <td className="text-right">
                                                 <div className="item-price test">
                                                     <span className="currencyCode"></span>

@@ -626,20 +626,9 @@
 	.order-data tbody>tr>td .thumb-group {
 		text-align: left;
 	}
-	.seller-upload-page .modal.sm-big .modal-dialog {
-
-	    width: 890px;
-
-	    margin: 30px auto;
-
-	    max-width: 100%;
-
-	}
-
-	.seller-upload-page .modal.sm-mdl .modal-dialog {
-
+	.seller-upload-page .modal .modal-dialog {
 		width: 600px;
-
+		margin: 30px auto;
 	}
 	.order-data tbody>tr>td select {
 		width: 86%;

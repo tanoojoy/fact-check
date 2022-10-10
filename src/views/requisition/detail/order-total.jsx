@@ -11,9 +11,7 @@ class Total extends BaseComponent {
             Orders.map(order => {
                 if (order.CartItemDetails && order.CartItemDetails.length > 0) {
                     const { CartItemDetails } = order;
-
-            //ARC10053  the discountamount should not be round off to have the correct value.
-                    CartItemDetails.map(cart => subTotal += parseFloat(cart.ItemDetail.Price * cart.Quantity) - parseFloat(cart.DiscountAmountNotRoundOff || 0));
+                    CartItemDetails.map(cart => subTotal += parseFloat(cart.ItemDetail.Price * cart.Quantity) - parseFloat(cart.DiscountAmount || 0));
                 }
             });
             
@@ -112,12 +110,12 @@ class Total extends BaseComponent {
         let link ="#";
         let QuoteNo = '-';
         if (this.props.pendingOffer) {
-            QuoteNo = this.props.pendingOffer.CosmeticNo != null && this.props.pendingOffer.CosmeticNo != "" ? this.props.pendingOffer.CosmeticNo : this.props.pendingOffer.QuoteNo;
+            QuoteNo = this.props.pendingOffer.QuoteNo;
             link =  "/quotation/detail?id=" + this.props.pendingOffer.ID;
         } else if (this.props.requisitionDetail && this.props.requisitionDetail.Orders && this.props.requisitionDetail.Orders.length > 0) {
             if (this.props.requisitionDetail.Orders[0].CartItemDetails && this.props.requisitionDetail.Orders[0].CartItemDetails[0] && this.props.requisitionDetail.Orders[0].CartItemDetails[0].AcceptedOffer) {
                 const id = this.props.requisitionDetail.Orders[0].CartItemDetails[0].AcceptedOffer.ID;
-                QuoteNo = this.props.requisitionDetail.Orders[0].CartItemDetails[0].AcceptedOffer.CosmeticNo != null && this.props.requisitionDetail.Orders[0].CartItemDetails[0].AcceptedOffer.CosmeticNo != "" ? this.props.requisitionDetail.Orders[0].CartItemDetails[0].AcceptedOffer.CosmeticNo : this.props.requisitionDetail.Orders[0].CartItemDetails[0].AcceptedOffer.QuoteNo;
+                QuoteNo = this.props.requisitionDetail.Orders[0].CartItemDetails[0].AcceptedOffer.QuoteNo;
                 link =  "/quotation/detail?id=" + id;
             }
         }
@@ -128,7 +126,7 @@ class Total extends BaseComponent {
         let link = "#";
         let RequisitionOrderNo = '';
         if (this.props.requisitionDetail && this.props.requisitionDetail.ID) {
-            RequisitionOrderNo = this.props.requisitionDetail.CosmeticNo != null && this.props.requisitionDetail.CosmeticNo != "" ? this.props.requisitionDetail.CosmeticNo : this.props.requisitionDetail.RequisitionOrderNo;
+            RequisitionOrderNo = this.props.requisitionDetail.RequisitionOrderNo;
             //link = "/requisition/detail?requisitionId=" + this.props.requisitionDetail.ID; //ARC-8508
         }
         return (<span className="highlight-text inv">{RequisitionOrderNo}</span>)
@@ -140,7 +138,7 @@ class Total extends BaseComponent {
         if (this.props.requisitionDetail && this.props.requisitionDetail.Orders && this.props.requisitionDetail.Orders.length > 0) {
             if (this.props.requisitionDetail.Status == 'Approved' && this.props.requisitionDetail.Orders[0]) {
                 const id = this.props.requisitionDetail.Orders[0].ID;
-                PurchaseOrderNo = this.props.requisitionDetail.Orders[0].CosmeticNo != null && this.props.requisitionDetail.Orders[0].CosmeticNo != "" ? this.props.requisitionDetail.Orders[0].CosmeticNo : this.props.requisitionDetail.Orders[0].PurchaseOrderNo;
+                PurchaseOrderNo = this.props.requisitionDetail.Orders[0].PurchaseOrderNo;
                 link =  "/purchase/detail/orderid/" + id;
             }
         }
@@ -157,39 +155,8 @@ class Total extends BaseComponent {
 
                 ReceivingNotes.map((note, index) => {
                     if (!note.Void) {
-                        links.push(<span className="highlight-text"><a href={`/receiving-note/detail?id=${note.ID}`} key={index}>{note.CosmeticNo != null && note.CosmeticNo != "" ? note.CosmeticNo : note.ReceivingNoteNo}</a></span>);
+                        links.push(<span className="highlight-text"><a href={`/receiving-note/detail?id=${note.ID}`} key={index}>{note.ReceivingNoteNo}</a></span>);
                         links.push(<span key={'comma-' + index}> , </span>);
-                    }
-                });
-
-                links.pop();
-
-                return (
-                    <React.Fragment>
-                        {links}
-                    </React.Fragment>
-                )
-            }
-        }
-
-        return (<span className="highlight-text"><a href='#'>-</a></span>)
-    }
-
-    renderInvoiceNumber() {
-        const { requisitionDetail } = this.props;
-        const links = [];
-
-        if (requisitionDetail && requisitionDetail.Orders && requisitionDetail.Orders.length > 0) {
-            if (requisitionDetail.Orders[0].PaymentDetails) {
-                const { PaymentDetails } = requisitionDetail.Orders[0];
-                const uniqueInvoices = [];
-
-                PaymentDetails.forEach((payment) => {
-                    if (uniqueInvoices.indexOf(payment.InvoiceNo) < 0) {
-                        uniqueInvoices.push(payment.InvoiceNo);
-
-                        links.push(<span className="highlight-text"><a href={`/invoice/detail/${payment.InvoiceNo}`} key={payment.InvoiceNo}>{payment.CosmeticNo ? payment.CosmeticNo : payment.InvoiceNo}</a></span>);
-                        links.push(<span key={'comma-' + payment.InvoiceNo}> , </span>);
                     }
                 });
 
@@ -208,6 +175,7 @@ class Total extends BaseComponent {
 
 	render() {
         const currencyCode = this.getCurrencyCode();
+
 		return (
 			<React.Fragment>
 				<section className="sassy-box box-order-total">
@@ -234,7 +202,7 @@ class Total extends BaseComponent {
                                         </tr>
                                         <tr>
                                             <th>Invoice No. :</th>
-                                            <td data-th="Requisition Order No. :">{this.renderInvoiceNumber()}</td>
+                                            <td data-th="Requisition Order No. :"><span className="highlight-text">-</span></td>
                                         </tr>
                                     </tbody>
                                 </table>

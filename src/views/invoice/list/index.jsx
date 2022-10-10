@@ -2,7 +2,7 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 const BaseComponent = require('../../shared/base');
-const HeaderLayoutComponent = require('../../layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../layouts/header/index').HeaderLayoutComponent;
 let FooterLayoutComponent = require('../../layouts/footer').FooterLayoutComponent;
 const SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 const PaginationComponent = require('../../common/pagination');
@@ -16,8 +16,6 @@ const POModalComponent = require('./po-modal');
 const moment = require('moment');
 
 if (typeof window !== 'undefined') { var $ = window.$; }
-
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
 
 class InvoiceListComponent extends BaseComponent {
     constructor(props) {
@@ -57,12 +55,8 @@ class InvoiceListComponent extends BaseComponent {
         this.goToPage = this.goToPage.bind(this);
         this.onSearchKeywordChanged = this.onSearchKeywordChanged.bind(this);
         this.onChangePageSize = this.onChangePageSize.bind(this);
-        this.onCreateInvoiceClicked = this.onCreateInvoiceClicked.bind(this);
-        this.updateInvoiceStatus = this.updateInvoiceStatus.bind(this);
         this.startDateFilter = null;
         this.endDateFilter = null;
-
-        this.permissionPageType = props.isUserMerchant ? 'merchant' : 'consumer';
     }
 
     componentDidMount() {
@@ -376,7 +370,6 @@ class InvoiceListComponent extends BaseComponent {
                 statusesFilter += item.Name + ",";
             });
         statusesFilter = statusesFilter.slice(0, -1);
-        statusesFilter = statusesFilter.length === 0 ? 'Processing,Pending,Paid.Failed,Refunded,Created,Acknowledged,Waiting For Payment,Invoiced,Overdue' : statusesFilter;
         // .map(item => {
         //     return item.Name;
         // });
@@ -441,18 +434,7 @@ class InvoiceListComponent extends BaseComponent {
 
     onCreateInvoiceClicked(e) {
         e.preventDefault();
-
-        this.props.validatePermissionToPerformAction(`add-${this.permissionPageType}-invoices-api`, () => {
-            $("#modalHavePO").modal("show");
-        });
-    }
-
-    updateInvoiceStatus(invoiceNo, status) {
-        const self = this;
-
-        this.props.validatePermissionToPerformAction('edit-merchant-invoices-api', () => {
-            self.props.updateInvoiceStatus(invoiceNo, status);
-        });
+        $("#modalHavePO").modal("show");
     }
 
     render() {
@@ -477,7 +459,6 @@ class InvoiceListComponent extends BaseComponent {
                                     selectedPageSize={pageSize}
                                     onChangePageSize={this.onChangePageSize}
                                     isUserMerchant={this.isUserMerchant()}
-                                    pagePermissions={this.props.pagePermissions}
                                     onCreateInvoiceClicked={this.onCreateInvoiceClicked}
                                 />
                                 {/* title */}
@@ -508,8 +489,7 @@ class InvoiceListComponent extends BaseComponent {
                                     invoiceList={invoiceList.Records}
                                     isUserMerchant={this.isUserMerchant()}
                                     statuses={this.props.statuses || []}
-                                    updateInvoiceStatus={this.updateInvoiceStatus}
-                                    pagePermissions={this.props.pagePermissions}
+                                    updateInvoiceStatus={this.props.updateInvoiceStatus}
                                 />
                                 {/* table */}
                                 <PaginationComponent
@@ -529,8 +509,6 @@ class InvoiceListComponent extends BaseComponent {
                 {/* main-content */}
                 <POModalComponent
                     purchaseOrders={purchaseOrders}
-                    permissionPageType={this.permissionPageType}
-                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
                 />
 
             </React.Fragment>
@@ -541,7 +519,6 @@ class InvoiceListComponent extends BaseComponent {
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
-        pagePermissions: state.userReducer.pagePermissions,
         invoiceList: state.invoiceReducer.invoiceList,
         purchaseOrders: state.invoiceReducer.purchaseOrders,
         users: state.invoiceReducer.users,
@@ -555,7 +532,6 @@ function mapStateToProps(state, ownProps) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
         filterInvoices: (filters) => dispatch(InvoiceActions.filterInvoices(filters)),
         updateInvoiceStatus: (invoiceNo, status) => dispatch(InvoiceActions.updateInvoiceStatus(invoiceNo, status))
     }

@@ -1,6 +1,7 @@
 'use strict';
 
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -9,7 +10,7 @@ if (typeof window !== 'undefined') {
 function filterRequisitions(filters) {
     return function (dispatch) {
         $.ajax({
-            url: '/requisition/filter',
+            url: prefix+'/requisition/filter',
             type: 'GET',
             data: filters,
             //processData: false, 
@@ -49,7 +50,7 @@ function setSupplierFilter(id) {
 function addRequisitionStatus(options, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/requisition/update-requisition',
+            url: prefix+'/requisition/update-requisition',
             type: 'PUT',
             data: {
                 requisitionId: options.Id,
@@ -69,7 +70,7 @@ function addRequisitionStatus(options, callback) {
 function acceptQuotation(pendingOffer, callback) {
     if (pendingOffer) {
         $.ajax({
-            url: '/quotation/decline-accept-quotation',
+            url: prefix+'/quotation/decline-accept-quotation',
             type: 'POST',
             data: {
                 quotationId: pendingOffer.ID,
@@ -94,7 +95,7 @@ function addUserRequisitionApproval(options, callback) {
     return function (dispatch, getState) {
         const pendingOffer = getState().requisitionReducer.pendingOffer;
         $.ajax({
-            url: '/requisition/add-requisition-approval',
+            url: prefix+'/requisition/add-requisition-approval',
             type: 'PUT',
             data: {
                 requisitionId: options.Id,

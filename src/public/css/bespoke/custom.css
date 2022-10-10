@@ -1228,7 +1228,7 @@ li.h-logo a>img {
 }
 
 .footer {
-	padding: 20px 0;
+	padding: 25px 0;
 }
 
 .footer-social-navigation li a {
@@ -1420,14 +1420,6 @@ li.h-logo>img {
 	font-weight: 700;
 	float: inherit;
 	margin: auto;
-}
-
-.footer-navigation li a {
-	color: #999;
-}
-
-.copy-right {
-	color: #999;
 }
 
 .status-btn-pr>.status-btn {
@@ -4149,13 +4141,13 @@ ul.st-parent {
 	word-break: break-all;
 }
 
-.latest-item-list .col-sm-4.col-xs-6.xs-mb-15 { 
-	min-height: 225px; 
+.latest-item-list .col-sm-4.col-xs-6.xs-mb-15 {
+	min-height: 225px;
 	max-height: 195px;
 }
 
-.store-container .product-list .col-sm-4.col-xs-6.xs-mb-15 { 
-	min-height: 295px; 
+.store-container .product-list .col-sm-4.col-xs-6.xs-mb-15 {
+	min-height: 295px;
 	max-height: 295px;
 }
 
@@ -4755,9 +4747,9 @@ ul.st-parent {
 
         display: none;
 
-    }   
+    }
 
-    .mobile {display: table-row; } 
+    .mobile {display: table-row; }
 
     .mobile .cmparpg-list-td{color: transparent; border-right-color: transparent;}
 

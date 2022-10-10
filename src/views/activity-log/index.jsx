@@ -9,9 +9,9 @@ const Toastr = require('toastr');
 const moment = require('moment');
 const CommonModule = require('../../public/js/common.js');
 
-const ActivityLogAction = require('../../redux/ActivityLogAction');
+const activityLogAction = require('../../redux/activityLogAction');
 
-const HeaderLayoutComponent = require('../layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../layouts/header/index').HeaderLayoutComponent;
 const SidebarLayoutComponent = require('../layouts/sidebar').SidebarLayoutComponent;
 const FooterLayout = require('../layouts/footer').FooterLayoutComponent;
 
@@ -26,25 +26,11 @@ class ActivityLogComponent extends React.Component {
     componentDidMount() {
         $('input[name="dates"]').daterangepicker({
             opens: 'left',
-            autoUpdateInput: false,
-            locale: {
-                 format: 'DD/MM/YYYY',
-            }
+            autoUpdateInput: false
         }, function (start_date, end_date) {
             $('#date-range').val(start_date.format('DD/MM/YYYY') + ' - ' + end_date.format('DD/MM/YYYY'));
             $('#from_date').val(start_date.format('DD/MM/YYYY'));
             $('#to_date').val(end_date.format('DD/MM/YYYY'));
-        });
-
-        $('input[name="dates"]').on('apply.daterangepicker', function(ev, picker) {
-           $('#date-range').val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
-            $('#from_date').val(picker.startDate.format('DD/MM/YYYY'));
-            $('#to_date').val(picker.endDate.format('DD/MM/YYYY'));
-        });
-
-        $('input[name="dates"]').on('cancel.daterangepicker', function(ev, picker) {
-            $(this).val('');
-            $(this).removeClass('filled');
         });
     }
 
@@ -135,7 +121,7 @@ class ActivityLogComponent extends React.Component {
                                 pageNumber={!(this.props.messages && this.props.messages.PageNumber) ? '' : this.props.messages.PageNumber}
                                 pageSize={!(this.props.messages && this.props.messages.PageSize) ? '' : this.props.messages.PageSize}
                                 goToPage={this.props.goToPage}
-                                filters={filters} 
+                                filters={filters}
                             />
                         </div>
                     </div>
@@ -156,9 +142,9 @@ function mapStateToProps(state, ownProps) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        searchActivityLog: (e) => dispatch(ActivityLogAction.searchActivityLog(e.target.getAttribute('data-log-name'))),
-        goToPage: (pageNo, filters) => dispatch(ActivityLogAction.goToPage(pageNo, filters)),
-        exportToExcel: (startDate, endDate) => dispatch(ActivityLogAction.exportToExcel(startDate, endDate))
+        searchActivityLog: (e) => dispatch(activityLogAction.searchActivityLog(e.target.getAttribute('data-log-name'))),
+        goToPage: (pageNo, filters) => dispatch(activityLogAction.goToPage(pageNo, filters)),
+        exportToExcel: (startDate, endDate) => dispatch(activityLogAction.exportToExcel(startDate, endDate))
     };
 }
 

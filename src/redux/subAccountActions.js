@@ -1,13 +1,13 @@
 'use strict';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
 
-function ajaxSearch(pageSize, pageNumber, keyword, isMerchantAccess, callback) {
-    const extraPath = isMerchantAccess ? '/merchants' : '';
+function ajaxSearch(pageSize, pageNumber, keyword, callback) {
     $.ajax({
-        url: `${extraPath}/subaccount/search`,
+        url: prefix+'/subaccount/search',
         type: 'GET',
         data: {
             pageSize: pageSize,
@@ -58,17 +58,15 @@ function deleteUser() {
         const subAccounts = Object.assign({}, getState().subAccountReducer.subAccounts);
         const userToDelete = Object.assign({}, getState().subAccountReducer.userToDelete);
         const keyword = getState().subAccountReducer.keyword;
-        const { isMerchantAccess } = getState().subAccountReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
 
         $.ajax({
-            url: `${extraPath}/subaccount/delete`,
+            url: prefix+'/subaccount/delete',
             type: 'DELETE',
             data: {
                 userId: userToDelete.ID
             },
             success: function (result) {
-                ajaxSearch(subAccounts.PageSize, subAccounts.PageNumber, keyword, isMerchantAccess, (subAccounts) => {
+                ajaxSearch(subAccounts.PageSize, subAccounts.PageNumber, keyword, (subAccounts) => {
                     return dispatch({
                         type: actionTypes.DELETE_SUB_ACCOUNT,
                         subAccounts: subAccounts,
@@ -93,9 +91,6 @@ function deleteUser() {
 
 function sendInvitations(emails, registrationType, callback) {
     return function (dispatch, getState) {
-        const { isMerchantAccess } = getState().subAccountReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
-
         const invitations = emails.split(',').map((email) => {
             return {
                 name: email.split('@')[0],
@@ -104,7 +99,7 @@ function sendInvitations(emails, registrationType, callback) {
         });
 
         $.ajax({
-            url: `${extraPath}/subaccount/send-invitations`,
+            url: prefix+'/subaccount/send-invitations',
             type: 'POST',
             data: {
                 invitations: JSON.stringify(invitations),
@@ -132,12 +127,11 @@ function sendInvitations(emails, registrationType, callback) {
 function search(pageSize, pageNumber, keyword) {
     return function (dispatch, getState) {
         const subAccounts = Object.assign({}, getState().subAccountReducer.subAccounts);
-        const { isMerchantAccess } = getState().subAccountReducer;
 
         pageSize = pageSize || subAccounts.PageSize;
         pageNumber = pageNumber || 1;
 
-        ajaxSearch(pageSize, pageNumber, keyword, isMerchantAccess, (subAccounts) => {
+        ajaxSearch(pageSize, pageNumber, keyword, (subAccounts) => {
             return dispatch({
                 type: actionTypes.GET_SUB_ACCOUNTS,
                 subAccounts: subAccounts,
@@ -151,11 +145,9 @@ function addRole(userId, role) {
     return function (dispatch, getState) {
         const subAccounts = Object.assign({}, getState().subAccountReducer.subAccounts);
         const keyword = getState().subAccountReducer.keyword;
-        const { isMerchantAccess } = getState().subAccountReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
 
         $.ajax({
-            url: `${extraPath}/subaccount/add-role`,
+            url: prefix+'/subaccount/add-role',
             type: 'PUT',
             data: {
                 userId: userId,
@@ -163,7 +155,7 @@ function addRole(userId, role) {
             },
             success: function (result) {
                 if (result) {
-                    ajaxSearch(subAccounts.PageSize, subAccounts.PageNumber, keyword, isMerchantAccess, (subAccounts) => {
+                    ajaxSearch(subAccounts.PageSize, subAccounts.PageNumber, keyword, (subAccounts) => {
                         return dispatch({
                             type: actionTypes.GET_SUB_ACCOUNTS,
                             subAccounts: subAccounts,
@@ -187,11 +179,9 @@ function deleteRole(userId, role) {
     return function (dispatch, getState) {
         const subAccounts = Object.assign({}, getState().subAccountReducer.subAccounts);
         const keyword = getState().subAccountReducer.keyword;
-        const { isMerchantAccess } = getState().subAccountReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
 
         $.ajax({
-            url: `${extraPath}/subaccount/delete-role`,
+            url: prefix+'/subaccount/delete-role',
             type: 'DELETE',
             data: {
                 userId: userId,
@@ -199,7 +189,7 @@ function deleteRole(userId, role) {
             },
             success: function (result) {
                 if (result) {
-                    ajaxSearch(subAccounts.PageSize, subAccounts.PageNumber, keyword, isMerchantAccess, (subAccounts) => {
+                    ajaxSearch(subAccounts.PageSize, subAccounts.PageNumber, keyword, (subAccounts) => {
                         return dispatch({
                             type: actionTypes.GET_SUB_ACCOUNTS,
                             subAccounts: subAccounts,

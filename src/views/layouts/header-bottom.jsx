@@ -1,20 +1,32 @@
 ﻿'use strict';
-const React = require('react');
-const SearchComponent = require('../features/pricing_type/' + process.env.PRICING_TYPE + '/header/search');
+var React = require('react');
+const CommonModule = require('../../public/js/common.js');
 
 class HeaderLayoutBottomComponent extends React.Component {
-    constructor(props) {
-        super(props);
+    searchMessages(e) {
+        if (e.keyCode == 13) {
+            this.gotoSearch(e);
+        }
+    }
+    gotoSearch(event) {
+        if (event.target.tagName.toLowerCase() === 'input' && event.which !== 13) {
+            return;
+        }
 
-        this.renderCategories = this.renderCategories.bind(this);
+        const keywords = $('.h-search-bar input').val();
+        let categories = $('.h-search-bar option:selected').text();
+        if (categories === "All Catgories") {
+            categories = "";
+        }
+
+        window.location.href = CommonModule.getAppPrefix() + '/search/cgi-search?keywords=' + encodeURIComponent(keywords) + '&categories=' + encodeURIComponent(categories);
     }
 
     renderCategories() {
         if (this.props.categories != null && Array.isArray(this.props.categories)) {
             var categoryViews = this.props.categories.map(function (item, index) {
                 return (
-                    <option value={item.ID} key={item.ID}>{item.Name}</option>
-                );
+                    <option value={item.ID} key={item.ID}>{item.Name}</option>);
             });
             return categoryViews;
         } else {
@@ -36,6 +48,7 @@ class HeaderLayoutBottomComponent extends React.Component {
     }
 
     render() {
+        const self = this;
         return (
             <div className="header-bottom">
                 <div className="container">
@@ -46,10 +59,19 @@ class HeaderLayoutBottomComponent extends React.Component {
                             </a>
                         </li>
                         <li className="h-search">
-                            <SearchComponent
-                                keyword={this.props.keyword}
-                                renderCategories={this.renderCategories}
-                                searchGooglePlaces={this.props.searchGooglePlaces} />
+                            <div className="h-search-bar">
+                                <div className="h-search-input">
+                                    <input type="text" placeholder="Search..." onKeyDown={(e) => self.searchMessages(e)} defaultValue={decodeURIComponent(this.props.keyword.replace(/%(?![0-9][0-9a-fA-F]+)/g, '%25'))} />
+                                    <i className="fa fa-search" onClick={(e) => self.gotoSearch(e)}></i>
+                                </div>
+                                <div className="h-search-category">
+                                    <select>
+                                        <option value="All Catgories">All Categories</option>
+                                        {this.renderCategories()}
+                                    </select>
+                                    <i className="fa fa-angle-down"></i>
+                                </div>
+                            </div>
                         </li>
                         <li className="h-mobi-search mobi-show" onClick={(e) => this.props.searchMobile(e)}>
                             <i className="fa fa-search"></i>

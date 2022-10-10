@@ -4,22 +4,21 @@ const BaseComponent = require('../../../../../views/shared/base');
 const BreadcrumbComponent = require('../../../../../views/item/breadcrumb');
 const ItemCustomFieldsComponent = require('../../../../../views/item/item-custom-fields');
 
-const ItemInfoComponent = require('../../../../item/item-info');
-const PurchaseOrderComponent = require('../../../../item/purchase-order');
-const ReviewsComponent = require('../../../../item/reviews');
-const SellerInfoComponent = require('../../../../item/seller-info');
+const ItemInfoComponent = require('./item-info');
+const SellerInfoComponent = require('./seller-info');
+const PurchaseOrderComponent = require('./purchase-order');
+const ReviewsComponent = require('./reviews.jsx');
+var ComparisonWidgetComponent = require('../../../../comparison/comparison-widget/index');
 
-const ComparisonWidgetComponent = require('../../../../comparison/comparison-widget/index');
-
-const ComparisonActions = require('../../../../../redux/comparisonActions');
-const ItemDetailActions = require('../../../../../redux/itemDetailsActions');
+var ComparisonActions = require('../../../../../redux/comparisonActions');
+const itemDetailActions = require('../../../../../redux/itemDetailsActions');
 const ChatActions = require('../../../../../redux/chatActions');
 const CartActions = require('../../../../../redux/cartActions');
 const userActions = require('../../../../../redux/userActions');
 const actionTypes = require('../../../../../redux/actionTypes');
-import { validatePermissionToPerformAction } from '../../../../../redux/accountPermissionActions';
 
 class ItemDetailMainComponent extends BaseComponent {
+
     showHideWidget(isShow) {
         if (typeof isShow === 'undefined') {
             $('.compare-desk').toggleClass('active');
@@ -38,10 +37,6 @@ class ItemDetailMainComponent extends BaseComponent {
         }
     }
 
-    getItemInfoPrice() {
-        return this.props.itemDetails.Price;
-    }
-
     renderDefaultPaymentTerm() {
         if (this.props.paymentTerms && this.props.paymentTerms.length > 0) {
             const defaultPaymentTerm = this.props.paymentTerms.find(p => p.Default);
@@ -58,125 +53,111 @@ class ItemDetailMainComponent extends BaseComponent {
         }
         return;
     }
-
     render() {
         let percentage = 0;
         if (this.props.feedback) {
             percentage = this.props.feedback.PositiveFeedbackPercentage;
         }
-
         return (
             <React.Fragment>
                 <div className="item-detail-container">
                     <div className="container">
                         <BreadcrumbComponent itemDetails={this.props.itemDetails} />
                         <div className="idc-left">
-                            <ItemInfoComponent
-                                defaultPrice={this.getItemInfoPrice()}
+                            <ItemInfoComponent countryCode={this.props.countryCode} ReviewAndRating={this.props.ReviewAndRating} itemDetails={this.props.itemDetails} PositiveFeedbackPercentage={percentage} />
+                            <SellerInfoComponent merchantDetails={this.props.merchantDetails}
+                                countryCode={this.props.countryCode}
+                                getUserChannels={this.props.getUserChannels}
+                                createChatChannel={this.props.createChatChannel}
                                 itemDetails={this.props.itemDetails}
-                                PositiveFeedbackPercentage={percentage}
-                                ReviewAndRating={this.props.ReviewAndRating} />
-                            <SellerInfoComponent
-                                comparison={this.props.comparison}
-                                controlFlags={this.props.controlFlags}
-                                itemDetails={this.props.itemDetails}
-                                merchantDetails={this.props.merchantDetails}
                                 priceValues={this.props.priceValues}
-                                processing={this.props.processing}
                                 user={this.props.user}
                                 addOrEditCart={this.props.addOrEditCart}
-                                createChatChannel={this.props.createChatChannel}
-                                createComparisonDetail={this.props.createComparisonDetail}
                                 deleteCartItem={this.props.deleteCartItem}
-                                getChatDetails={this.props.getChatDetails}
-                                getUserChannels={this.props.getUserChannels}
-                                setProcessing={this.props.setProcessing}
-                                showHideWidget={this.showHideWidget}
+                                comparison={this.props.comparison}
+                                createComparisonDetail={this.props.createComparisonDetail}
                                 updateComparisonDetail={this.props.updateComparisonDetail}
-                                permissions={this.props.permissions}
-                                validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
+                                showHideWidget={this.showHideWidget}
+                                processing={this.props.processing}
+                                setProcessing={this.props.setProcessing}
+                                controlFlags={this.props.controlFlags}
+                                getChatDetails={this.props.getChatDetails}
                             />
-                            <ItemCustomFieldsComponent
-                                itemDetails={this.props.itemDetails}
-                                decodeHTMLEntities={this.decodeHTMLEntities} />
+                            <ItemCustomFieldsComponent itemDetails={this.props.itemDetails} decodeHTMLEntities={this.decodeHTMLEntities} />
                             <ReviewsComponent
-                                feedback={this.props.feedback}
                                 itemDetails={this.props.itemDetails}
+                                user={this.props.user}
+                                feedback={this.props.feedback}
                                 ReviewAndRating={this.props.ReviewAndRating}
-                                selectedFeedBack={this.props.selectedFeedBack}
-                                user={this.props.user} />
+                                selectedFeedBack={this.props.selectedFeedBack}/>
                         </div>
                         <div className="idc-right">
                             <PurchaseOrderComponent
-                                controlFlags={this.props.controlFlags}
                                 itemDetails={this.props.itemDetails}
+                                addOrEditCart={this.props.addOrEditCart}
+                                updateSubTotal={this.props.updateSubTotal}
                                 priceValues={this.props.priceValues}
                                 processing={this.props.processing}
-                                user={this.props.user}
-                                addOrEditCart={this.props.addOrEditCart}
-                                createChatChannel={this.props.createChatChannel}
-                                getChatDetails={this.props.getChatDetails}
-                                getUserCarts={this.props.getUserCarts}
-                                getUserChannels={this.props.getUserChannels}
                                 setProcessing={this.props.setProcessing}
-                                updateQuantity={this.props.updateQuantity}
-                                permissions={this.props.permissions}
-                                validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
+                                getUserCarts={this.props.getUserCarts}
+                                user={this.props.user}
+                                getUserChannels={this.props.getUserChannels}
+                                createChatChannel={this.props.createChatChannel}
+                                updateUserInfo={this.props.updateUserInfo}
+                                controlFlags={this.props.controlFlags}
+                                getChatDetails={this.props.getChatDetails}
                             />
                             {this.renderDefaultPaymentTerm()}
                         </div>
                     </div>
                 </div>
                 <ComparisonWidgetComponent
-                    comparison={this.props.comparison}
                     comparisonList={this.props.comparisonList}
+                    comparison={this.props.comparison}
                     comparisonToUpdate={this.props.comparisonToUpdate}
                     comparisonDetailToUpdate={this.props.comparisonDetailToUpdate}
-                    controlFlags={this.props.controlFlags}
-                    user={this.props.user}
+                    getUserComparisons={this.props.getUserComparisons}
+                    getComparison={this.props.getComparison}
                     createComparison={this.props.createComparison}
                     editComparison={this.props.editComparison}
-                    deleteComparisonDetail={this.props.deleteComparisonDetail}
-                    getComparison={this.props.getComparison}
-                    getUserComparisons={this.props.getUserComparisons}
                     setComparisonToUpdate={this.props.setComparisonToUpdate}
                     setComparisonDetailToUpdate={this.props.setComparisonDetailToUpdate}
-                    comparisonWidgetPermissions={this.props.comparisonWidgetPermissions}
-                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction} />
-            </React.Fragment>   
+                    controlFlags={this.props.controlFlags}
+                    user={this.props.user}
+                    deleteComparisonDetail={this.props.deleteComparisonDetail} />
+
+            </React.Fragment>
         );
     }
 }
 
 function mapStateToProps(state, ownProps) {
     return {
-        customFieldsDefinitions: state.itemsReducer.customFieldsDefinitions,
-        feedback: state.itemsReducer.feedback,
-        itemDetails: state.itemsReducer.items,
         merchantDetails: state.merchantReducer.user,
-        message: state.itemsReducer.message,
         paymentTerms: state.merchantReducer.paymentTerms,
-        priceValues: state.itemsReducer.priceValues,
-        processing: state.itemsReducer.processing,
-        ReviewAndRating: state.itemsReducer.ReviewAndRating,
         user: state.userReducer.user,
+        countryCode: state.itemsReducer.countryCode,
+        itemDetails: state.itemsReducer.items,
+        priceValues: state.itemsReducer.priceValues,
+        customFieldsDefinitions: state.itemsReducer.customFieldsDefinitions,
+        processing: state.itemsReducer.processing,
+        feedback: state.itemsReducer.feedback,
+        ReviewAndRating: state.itemsReducer.ReviewAndRating,
+        message: state.itemsReducer.message,
         //Comparison Widget
         comparisonList: state.comparisonReducer.comparisonList,
         comparison: state.comparisonReducer.comparison,
         comparisonToUpdate: state.comparisonReducer.comparisonToUpdate,
         comparisonDetailToUpdate: state.comparisonReducer.comparisonDetailToUpdate,
-
-        controlFlags: state.marketplaceReducer.ControlFlags,
-        comparisonWidgetPermissions: state.userReducer.comparisonWidgetPermissions,
-        permissions: state.userReducer.permissions
+        controlFlags: state.marketplaceReducer.ControlFlags
     };
 }
 
 function mapDispatchToProps(dispatch) {
     return {
         contactSeller: () => dispatch({ type: actionTypes.LATEST_ITEMS }),
-        updateQuantity: (quantity, price, bulkDiscounts) => dispatch(ItemDetailActions.updateQuantity(quantity, price, bulkDiscounts)),
-        addOrEditCart: (cartItemId, quantity, options, successCallback, failedCallback) => dispatch(ItemDetailActions.addOrEditCart(cartItemId, quantity, options, successCallback, failedCallback)),
+        updateSubTotal: (quantity, price) => dispatch(itemDetailActions.updateSubTotal(quantity, price)),
+        addOrEditCart: (cartItemId, quantity, discount, itemId, force, isComparisonOnly, successCallback, failedCallback) => dispatch(itemDetailActions.addOrEditCart(cartItemId, quantity, discount, itemId, force, isComparisonOnly, successCallback, failedCallback)),
         getUserCarts: (options, callback) => dispatch(CartActions.getUserCarts(options, callback)),
         deleteCartItem: (cartItemId, userId) => dispatch(CartActions.deleteCartItem(cartItemId, userId)),
         setProcessing: (processing) => dispatch({ type: actionTypes.PROCESSING, processing: processing }),
@@ -184,9 +165,9 @@ function mapDispatchToProps(dispatch) {
         createChatChannel: (options, callback) => dispatch(ChatActions.createChannel(options, callback)),
         getChatDetails: (channelId, callback) => dispatch(ChatActions.getChatDetails(channelId, callback)),
         updateUserInfo: (userInfo) => dispatch(userActions.updateUserInfo(userInfo)),
-        selectedFeedBack: (feedbackId) => dispatch(ItemDetailActions.selectedFeedBack(feedbackId)),
-        addReplyFeedBack: (message) => dispatch(ItemDetailActions.addReplyFeedBack(message)),
-        updateMessage: (message) => dispatch(ItemDetailActions.updateMessage(message)),
+        selectedFeedBack: (feedbackId) => dispatch(itemDetailActions.selectedFeedBack(feedbackId)),
+        addReplyFeedBack: (message) => dispatch(itemDetailActions.addReplyFeedBack(message)),
+        updateMessage: (message) => dispatch(itemDetailActions.updateMessage(message)),
         //Comparison Widget
         getUserComparisons: (createIfEmpty, namesOnly, pageSize) => dispatch(ComparisonActions.getUserComparisons(createIfEmpty, namesOnly, pageSize)),
         getComparison: (id, includes) => dispatch(ComparisonActions.getComparison(id, includes)),
@@ -197,9 +178,9 @@ function mapDispatchToProps(dispatch) {
         deleteComparisonDetail: () => dispatch(ComparisonActions.deleteComparisonDetail()),
         createComparisonDetail: (cartItemId, includes, comparisonFields) => dispatch(ComparisonActions.createComparisonDetail(cartItemId, includes, comparisonFields)),
         updateComparisonDetail: (cartItemId, quantity, subTotal, discountAmount) => dispatch(ComparisonActions.updateComparisonDetail(cartItemId, quantity, subTotal, discountAmount)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback))
     }
 }
+
 
 module.exports = {
     mapStateToProps,

@@ -127,7 +127,7 @@ class NonPrivateLoginComponent extends BaseComponent {
 
     renderCustomLogin() {
         if (typeof window !== 'undefined') {
-            let urlAction = "/accounts/non-private/sign-in";
+            let urlAction = CommonModule.getAppPrefix() + "/accounts/non-private/sign-in";
             const query = new URLSearchParams(window.location.search);
             const isSeller = query.get('isSeller');
             let isMerge = false;
@@ -135,7 +135,7 @@ class NonPrivateLoginComponent extends BaseComponent {
                 isMerge = this.props.isMerge;
             }
 
-            if (!isMerge && window.location.href.indexOf('returnUrl=cart') > 0) {
+            if (!isMerge && window.location.href.indexOf('returnUrl='+CommonModule.getAppPrefix()+'/cart') > 0) {
                 isMerge = true;
             }
 
@@ -151,13 +151,13 @@ class NonPrivateLoginComponent extends BaseComponent {
                         <input type="isSeller" className="hidden" id="isSeller" name="isSeller" value={isSeller} />
                     </div>
                     <span className="lbb-text">
-                        <a href="/accounts/non-private/forgot-password">Forgotten your password?</a>
+                        <a href={CommonModule.getAppPrefix()+"/accounts/non-private/forgot-password"}>Forgotten your password?</a>
                     </span>
                     <div className="btn-signin">
                         <a href="#" onClick={(e) => this.loginWithUsernameAndPassword()}>Sign In</a>
                     </div>
                     <div className="signup-btn">
-                        <a href={`/accounts/non-private/register?isSeller=${isSeller || false}`}>Create Account</a>
+                        <a href={`${CommonModule.getAppPrefix()}/accounts/non-private/register?isSeller=${isSeller || false}`}>Create Account</a>
                     </div>
                 </form>
             );
@@ -248,7 +248,7 @@ class NonPrivateLoginComponent extends BaseComponent {
                     <div className="login-box">
                         <div className="lb-head full-width head-buyer">
                             <a href="/">
-                                <img src="/assets/images/back.svg" />
+                                <img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"} />
                             </a>
                             <span>Register / Sign In</span>
                         </div>

@@ -14,9 +14,7 @@ class ModalComponent extends BaseComponent {
     }
 
     render() {
-        //ARC 9831
-        let btnClassName = "btn-green btn-loader-cancel";
-
+        
         return (
             <div id="modalRemove" className="modal fade in" role="dialog" data-backdrop="static" data-keyboard="false" style={{ display: 'none' }}>
                 <div className="modal-dialog compare-delete-modal-content">
@@ -27,7 +25,7 @@ class ModalComponent extends BaseComponent {
                         </div>
                         <div className="modal-footer">
                             <div className="btn-gray" data-dismiss="modal">Cancel</div>
-                            <div className={btnClassName} id="btnRemoveEvlist" onClick={(e) => this.handleOkay()}>Okay</div>
+                            <div className="btn-green" id="btnRemoveEvlist" onClick={(e) => this.handleOkay()}>Okay</div>
                         </div>
                     </div>
                 </div>

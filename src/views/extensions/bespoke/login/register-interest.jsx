@@ -1,7 +1,7 @@
 'use strict';
 var React = require('react');
 var ReactRedux = require('react-redux');
-var CommonModule = require('../../../../../src/public/js/common.js');
+var CommonModule = require('../../../../public/js/common.js');
 var EnumCoreModule = require('../../../../public/js/enum-core');
 var BaseComponent = require('../../../shared/base');
 var AccountActions = require('../../../../redux/accountAction');
@@ -18,12 +18,12 @@ class RegisterInterestComponent extends BaseComponent {
         var type = $('input[name="intrested"]:checked').val();
         var hasError = 0;
         var errPrompt = [];
-        $('.required').removeClass('error-con');        	
+        $('.required').removeClass('error-con');
         if (name == '' || email == '' || !type) {
         	if (name == '') $('.interested-name').addClass('error-con');
         	if (email == '') $('.interested-email').addClass('error-con');
         	if (typeof type == 'undefined' || type == null) $('.account-type').addClass('error-con');
-        	
+
             errPrompt.push(EnumCoreModule.GetToastStr().Error.PLEASE_FILL_OUT_THE_REQUIRED_FIELD_TO_PROCEED);
             e.preventDefault();
             hasError = 1;
@@ -63,21 +63,21 @@ class RegisterInterestComponent extends BaseComponent {
 					<div className="reset-content">
 						<div className="icon-logo"> <img src={this.props.marketplaceLogoUrl} /> </div>
 						<div className="login-box">
-							<div className="lb-head full-width head-buyer"> 
+							<div className="lb-head full-width head-buyer">
 								<a href="/">
-									<img src="/assets/images/back.svg" />
+									<img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"} />
 								</a>
-								<span>Register your interest below!</span> 
+								<span>Register your interest below!</span>
 							</div>
-							<div className="lb-body full-width"> 
+							<div className="lb-body full-width">
 								<div className="lbb-input">
 									<p align="left">Your Name</p>
 									<input type="text" className="input-text interested-name required"  name="interest_name" maxlength="150" />
-								</div> 
+								</div>
 								<div className="lbb-input">
 									<p align="left">Email</p>
 									<input type="text" className="input-text interested-email required"  name="interest_email" maxlength="150" />
-								</div> 
+								</div>
 		                        <div className="fancy-radio">
 		                            <label style={{ 'paddingLeft': 0}}>
 		                                <input type="radio" className="account-type required" name="intrested" value="buyer" checked />
@@ -91,7 +91,7 @@ class RegisterInterestComponent extends BaseComponent {
 								<div className="btn-signin"> <a href="#" onClick={(e) => this.registerInterest(e)}> Send</a></div>
 		                        <a href="/">Back</a>
 							</div>
-						</div>   
+						</div>
 					</div>
 		        </div>
 			</React.Fragment>

@@ -65,7 +65,6 @@ var optimization =
 };
 
 var bundleAllJs = [
-    './src/scripts/shared/unauthorized-access.js',
     './src/scripts/shared/header.js',
     './src/scripts/shared/sidebar.js',
     './src/scripts/shared/footer.js',
@@ -78,6 +77,7 @@ var bundleAllJs = [
     './src/scripts/delivery/settings.js',
     './src/scripts/delivery/add-edit.js',
     './src/scripts/user/settings.js',
+    './src/scripts/company/settings.js',
     './src/scripts/merchant/dashboard.js',
     './src/scripts/merchant/settings.js',
     './src/scripts/merchant/order.js',
@@ -103,10 +103,15 @@ var bundleAllJs = [
     './src/scripts/receiving-note/index.js',
     './src/scripts/invoice/index.js',
     './src/scripts/payment-gateway/index.js',
-    './src/scripts/user-group/index.jsx',
-    './src/scripts/account-permission/index.jsx'
+    './src/scripts/horizon/user.js',
+    './src/scripts/horizon/company.js',
+    './src/scripts/horizon/choice-user-role.js',
+    './src/scripts/horizon/choice-user-company.js',
+    './src/scripts/horizon/create-rfq.js',
+    './src/scripts/horizon/inbox.js',
+    './src/scripts/horizon/common-chat.js',
+    './src/scripts/horizon/update-token.js'
 ];
-
 
 module.exports = [
     {

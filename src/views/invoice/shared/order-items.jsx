@@ -52,7 +52,7 @@ class OrderItems extends BaseComponent {
 
     renderItem(cart, hasQuotation) {
         const { ItemDetail } = cart;
-         //ARC10053  the discountamount should not be round off to have the correct value.
+
         return (
             <tr className={hasQuotation ? 'brdt' : ''} key={cart.ID}>
                 <td data-th="Item Description">
@@ -63,14 +63,13 @@ class OrderItems extends BaseComponent {
                         <div className="text-left">
                             <span>{ItemDetail.Name}</span>
                             <div className="item-field">
-                                {
-                                    ItemDetail.SKU ?
-                                        <span class="if-txt">
-                                            <span>SKU: </span>
-                                            <span>{ItemDetail.SKU}</span>
-                                        </span> : ''
-                                }
-                                {this.renderVariants(ItemDetail.Variants)}
+                                <span class="if-txt">
+                                    <span class="if-txt">
+                                        <span>SKU: </span>
+                                        <span>{ItemDetail.SKU}</span>
+                                    </span>
+                                    {this.renderVariants(ItemDetail.Variants)}
+                                </span>
                             </div>
                         </div>
 
@@ -78,7 +77,7 @@ class OrderItems extends BaseComponent {
                 </td>
                 <td data-th="Quantity">{cart.Quantity}</td>
                 <td data-th="Unit Price"><div className="item-price">{this.renderFormatMoney(cart.CurrencyCode, ItemDetail.Price)}</div></td>
-                <td data-th="Total Cost"><div className="item-price">{this.renderFormatMoney(cart.CurrencyCode, (cart.ItemDetail.Price * cart.Quantity) - (cart.DiscountAmountNotRoundOff || 0))}</div></td>
+                <td data-th="Total Cost"><div className="item-price">{this.renderFormatMoney(cart.CurrencyCode, (cart.ItemDetail.Price * cart.Quantity) - (cart.DiscountAmount || 0))}</div></td>
             </tr>
         );
     }
@@ -86,7 +85,7 @@ class OrderItems extends BaseComponent {
     renderVariants(variants) {
         if (variants && variants.length > 0) {
             return (
-                variants.filter(v => v.GroupID != this.props.locationVariantGroupId).map((variant, index) => {
+                variants.map((variant, index) => {
                     return (
                         <span className="if-txt" key={index}>
                             <span>{variant.GroupName}:</span>

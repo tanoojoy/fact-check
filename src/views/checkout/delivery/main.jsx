@@ -3,7 +3,7 @@ let React = require('react');
 let ReactRedux = require('react-redux');
 let BaseClassComponent = require('../../shared/base.jsx');
 
-let HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+let HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 let FooterLayout = require('../../../views/layouts/footer').FooterLayoutComponent;
 
 let addressActions = require('../../../redux/addressActions');
@@ -11,7 +11,7 @@ let userActions = require('../../../redux/userActions');
 let orderActions = require('../../../redux/orderActions');
 let checkoutReviewActions = require('../../../redux/checkoutReviewAction');
 let EnumCoreModule = require('../../../../src/public/js/enum-core.js');
-let CommonModule = require('../../../../src/public/js/common.js');
+let CommonModule = require('../../../public/js/common.js');
 
 let HeadComponentTemplate = require('../../extensions/' + process.env.TEMPLATE + '/checkout/delivery/main');
 let AddressBoxComponent = require('../../extensions/' + process.env.TEMPLATE + '/checkout/delivery/address-box');
@@ -35,12 +35,12 @@ class CheckoutDeliveryComponent extends BaseClassComponent {
             $(".pdcb-address-box").removeClass("selected");
             $(this).addClass("selected");
         });
-        
+
         if (window.sessionStorage.getItem("browserBackNavigate")) {
             window.sessionStorage.removeItem("browserBackNavigate");
             window.location.reload(true); // force refresh page1
         }
-        
+
     }
 
     onChange(event) {
@@ -58,11 +58,11 @@ class CheckoutDeliveryComponent extends BaseClassComponent {
                 [reactStateName]: event.target.value,
                 guestUserID : guestUserID
             }
-            
-        } 
+
+        }
 
         self.props.updateUserInfo(userInfoModel);
-       
+
     }
 
     onChangeSetStateCallBack(props) {
@@ -97,7 +97,7 @@ class CheckoutDeliveryComponent extends BaseClassComponent {
                 } else {
                     //Bespoke
                     window.location = "/checkout/review?invoiceNo=" + self.props.invoiceDetails.InvoiceNo;
-                } 
+                }
             }
 
             self.setState({
@@ -144,7 +144,7 @@ class CheckoutDeliveryComponent extends BaseClassComponent {
                     self.props.updateCheckoutSelectedDeliveryAddress(order.ID, addressID);
                 });
             }
-           
+
         }
     }
 
@@ -198,18 +198,18 @@ class CheckoutDeliveryComponent extends BaseClassComponent {
                 Pickup: false
             });
 
-            
+
 
             if (self.props.user && self.props.user.Guest !== undefined) {
                 let guestUserID = CommonModule.getCookie("guestUserID");
-                newAddress.guestUserID = guestUserID                
+                newAddress.guestUserID = guestUserID
             }
 
             self.props.createAddress(newAddress, function () {
-                
+
                 self.clearAddDelivery();
             });
-            
+
         }
     }
 
@@ -228,8 +228,8 @@ class CheckoutDeliveryComponent extends BaseClassComponent {
     }
 
     GuestGoToLogin() {
-        
-        if (this.props.user && this.props.user.Guest && this.props.user.Guest === true) 
+
+        if (this.props.user && this.props.user.Guest && this.props.user.Guest === true)
         {
             return (
                 <div className="pd-container">
@@ -239,13 +239,13 @@ class CheckoutDeliveryComponent extends BaseClassComponent {
                                 <p>Already Registered with us?</p>
                             </div>
                             <div className="col-md-4 col-sm-12">
-                                <a href="/accounts/non-private/sign-in?merge=true" className="pull-right btn-dark">SIGN IN NOW</a>
+                                <a href={CommonModule.getAppPrefix()+"/accounts/non-private/sign-in?merge=true"} className="pull-right btn-dark">SIGN IN NOW</a>
                             </div>
                         </div>
                     </div>
                 </div>
             )
-        } 
+        }
     }
 
     render() {
@@ -285,7 +285,7 @@ class CheckoutDeliveryComponent extends BaseClassComponent {
                                         {self.showAddressList()}
                                         <div className="pdcb-address-box btn-add-adress" id="btnAddDeliveryAddress" onClick={(e) => self.showDeliveryModal()} style={{ height: '204px;' }}>
                                             <span className="icon-address">
-                                                <img src="/assets/images/add_address.svg" />
+                                                <img src={CommonModule.getAppPrefix() + "/assets/images/add_address.svg"} />
                                             </span>
                                             <span>Add Delivery Address</span>
                                         </div>
@@ -331,7 +331,7 @@ class CheckoutDeliveryComponent extends BaseClassComponent {
                                             <select name="country" className="get-text required" data-react-state-name="CountryCode" value={this.state.CountryCode} onChange={(e) => self.onChange(e)} >
                                                 <option value="">Select your country</option>
                                                 {
-                                                    
+
                                                     EnumCoreModule.GetCountries().map(function (country) {
                                                         return (
                                                             <option key={country.name} value={country.alpha2code}>{country.name}</option>

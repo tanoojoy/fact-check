@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../../utils';
+
 const React = require('react');
 const reactDom = require('react-dom/server');
 const express = require('express');
@@ -14,72 +16,10 @@ const Store = require('../../redux/store');
 const template = require('../../views/layouts/template');
 const InvoiceListComponent = require('../../views/invoice/list/index').InvoiceListComponent;
 const InvoiceDetailsComponent = require('../../views/invoice/detail/index').InvoiceDetailsComponent;
-const AddEditInvoiceComponent = require('../../views/invoice/add-edit/index').AddEditInvoiceComponent;
 
 const validPaymentStatuses = ['Acknowledged', 'Processing', 'Waiting for Payment', 'Pending', 'Paid'];
 
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../../scripts/shared/user-permissions');
-
-const viewInvoicesPage = {
-    code: 'view-merchant-invoices-api',
-    renderSidebar: true
-};
-
-const viewCreateInvoicePage = {
-    code: 'view-merchant-create-invoice-api',
-    renderSidebar: true
-};
-
-const viewInvoiceDetailsPage = {
-    code: 'view-merchant-invoice-details-api',
-    renderSidebar: true
-};
-
-merchantInvoiceRouter.get('/create', ...handlers, isAuthorizedToAccessViewPage(viewCreateInvoicePage), function (req, res) {
-    const user = req.user;
-    const purchaseOrderId = req.query['purchaseOrderId'];
-    const promisePurchaseOrder = new Promise((resolve, reject) => {
-        let options = {
-            userId: user.ID,
-            keyword: purchaseOrderId,
-            pageNumber: 1,
-            pageSize: 20,
-        }
-        client.Orders.getHistoryB2B(options, function (err, result) {
-            resolve(result);
-        });
-    });
-
-    Promise.all([promisePurchaseOrder]).then(responses => {
-        const appString = 'create-invoice';
-        const invoiceDetail = { Orders: responses[0].Records };
-
-        getUserPermissionsOnPage(user, 'Create Invoice', 'Merchant', (pagePermissions) => {
-            const store = Store.createInvoiceStore({
-                userReducer: {
-                    user,
-                    pagePermissions
-                },
-                invoiceReducer: { invoiceDetail },
-                marketplaceReducer: { locationVariantGroupId: req.LocationVariantGroupId }
-            });
-
-            const reduxState = store.getState();
-            const app = reactDom.renderToString(
-                <AddEditInvoiceComponent user={user} pagePermissions={pagePermissions} invoiceDetail={invoiceDetail} locationVariantGroupId={req.LocationVariantGroupId} />
-            );
-
-            let seoTitle = 'Create Invoice';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-            }
-
-            res.send(template('page-seller page-sidebar page-create-invoice', seoTitle, app, appString, reduxState));
-        })
-    });
-});
-
-merchantInvoiceRouter.post('/create', ...handlers, isAuthorizedToPerformAction('add-merchant-create-invoice-api'), function (req, res) {
+merchantInvoiceRouter.post('/create', ...handlers, function (req, res) {
     var promiseInvoice = new Promise((resolve, reject) => {
         const options = {
             userId: req.user.ID,
@@ -105,7 +45,9 @@ merchantInvoiceRouter.post('/create', ...handlers, isAuthorizedToPerformAction('
     });
 });
 
-merchantInvoiceRouter.get('/list', ...handlers, isAuthorizedToAccessViewPage(viewInvoicesPage), (req, res) => {
+merchantInvoiceRouter.get('/list', ...handlers, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
 
     const promisePurchaseOrders = new Promise((resolve, reject) => {
@@ -158,7 +100,6 @@ merchantInvoiceRouter.get('/list', ...handlers, isAuthorizedToAccessViewPage(vie
         keywords: null,
         pageNumber: 1,
         pageSize: 20,
-        status: 'Processing,Pending,Paid.Failed,Refunded,Created,Acknowledged,Waiting For Payment,Invoiced,Overdue'
     }, function (data) {
         Promise.all([promisePurchaseOrders, promiseUsers, promisePaymentGateways]).then(responses => {
             const appString = 'invoice-list';
@@ -196,53 +137,51 @@ merchantInvoiceRouter.get('/list', ...handlers, isAuthorizedToAccessViewPage(vie
                 isChecked: false
             });
 
-            getUserPermissionsOnPage(user, 'Invoices', 'Merchant', (pagePermissions) => {
-                const s = Store.createInvoiceStore({
-                    userReducer: {
-                        user: user,
-                        pagePermissions: pagePermissions
-                    },
-                    invoiceReducer: {
-                        invoiceList: invoices,
-                        purchaseOrders: purchaseOrders,
-                        users: users,
-                        paymentGateways: paymentGateways,
-                        statuses: statuses,
-                        isUserMerchant: true
-                    }
-                });
-
-                const reduxState = s.getState();
-                try {
-                    const invoiceListApp = reactDom.renderToString(
-                        <InvoiceListComponent
-                            user={user}
-                            pagePermissions={pagePermissions}
-                            invoiceList={invoices}
-                            purchaseOrders={purchaseOrders}
-                            users={users}
-                            paymentGateways={paymentGateways}
-                            statuses={statuses}
-                            isUserMerchant={true}
-                        />
-                    );
-
-                    let seoTitle = 'Invoice List';
-                    if (req.SeoTitle) {
-                        seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-                    }
-
-                    res.send(template('page-seller goods-receipt-list invoice-list page-sidebar', seoTitle, invoiceListApp, appString, reduxState));
-                }
-                catch (e) {
-                    console.log('error', e);
+            const s = Store.createInvoiceStore({
+                userReducer: {
+                    user: user
+                },
+                invoiceReducer: {
+                    invoiceList: invoices,
+                    purchaseOrders: purchaseOrders,
+                    users: users,
+                    paymentGateways: paymentGateways,
+                    statuses: statuses,
+                    isUserMerchant: true
                 }
             });
+
+            const reduxState = s.getState();
+            try {
+                const invoiceListApp = reactDom.renderToString(
+                    <InvoiceListComponent
+                        user={user}
+                        invoiceList={invoices}
+                        purchaseOrders={purchaseOrders}
+                        users={users}
+                        paymentGateways={paymentGateways}
+                        statuses={statuses}
+                        isUserMerchant={true}
+                    />
+                );
+
+                let seoTitle = 'Invoice List';
+                if (req.SeoTitle) {
+                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+                }
+
+                res.send(template('page-seller goods-receipt-list invoice-list page-sidebar', seoTitle, invoiceListApp, appString, reduxState));
+            }
+            catch (e) {
+                console.log('error', e);
+            }
         });
     });
 });
 
 merchantInvoiceRouter.get('/filter', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const filters = req.query;
     filters.userId = user.ID;
@@ -253,7 +192,9 @@ merchantInvoiceRouter.get('/filter', ...handlers, function (req, res) {
     });
 });
 
-merchantInvoiceRouter.get('/detail/:invoiceNo', ...handlers, isAuthorizedToAccessViewPage(viewInvoiceDetailsPage), (req, res) => {
+merchantInvoiceRouter.get('/detail/:invoiceNo', ...handlers, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const invoiceNo = req.params['invoiceNo'];
     if (!invoiceNo || typeof invoiceNo == 'undefined' || invoiceNo == 'undefined') return res.send('Invoice number is missing.');
@@ -293,40 +234,29 @@ merchantInvoiceRouter.get('/detail/:invoiceNo', ...handlers, isAuthorizedToAcces
                     paymentMethods.push(payMethod);
                 }
             }
-
-            getUserPermissionsOnPage(user, 'Invoice Details', 'Merchant', (pagePermissions) => {
-                const store = Store.createInvoiceStore({
-                    userReducer: {
-                        user,
-                        pagePermissions
-                    },
-                    invoiceReducer: {
-                        invoiceDetail: invoiceDetail,
-                        paymentMethods: paymentMethods,
-                        isUserMerchant: true
-                    },
-                    marketplaceReducer: {
-                        locationVariantGroupId: req.LocationVariantGroupId
-                    }
-                });
-                const reduxState = store.getState();
-                const app = reactDom.renderToString(
-                    <InvoiceDetailsComponent
-                        user={user}
-                        pagePermissions={pagePermissions}
-                        invoiceDetail={invoiceDetail}
-                        paymentMethods={paymentMethods}
-                        isUserMerchant={true}
-                        locationVariantGroupId={req.LocationVariantGroupId} />
-                );
-
-                let seoTitle = 'Invoice Details';
-                if (req.SeoTitle) {
-                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            const store = Store.createInvoiceStore({
+                userReducer: { user },
+                invoiceReducer: {
+                    invoiceDetail: invoiceDetail,
+                    paymentMethods: paymentMethods,
+                    isUserMerchant: true
                 }
-
-                res.send(template('page-seller page-invoice-view page-sidebar', seoTitle, app, appString, reduxState));
             });
+            const reduxState = store.getState();
+            const app = reactDom.renderToString(
+                <InvoiceDetailsComponent
+                    user={user}
+                    invoiceDetail={invoiceDetail}
+                    paymentMethods={paymentMethods}
+                    isUserMerchant={true} />
+            );
+
+            let seoTitle = 'Invoice Details';
+            if (req.SeoTitle) {
+                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            }
+
+            res.send(template('page-seller page-invoice-view page-sidebar', seoTitle, app, appString, reduxState));
         });
     });
 });

@@ -1,6 +1,5 @@
 'use strict';
-const React = require('React');
-const PermissionTooltip = require('../../common/permission-tooltip');
+const React = require('react');
 
 class OrderDetail extends React.Component {
     renderBillingAddress() {
@@ -54,7 +53,7 @@ class OrderDetail extends React.Component {
             let paymentGatewayCode = '';
             if (Orders && Orders.length > 0) {
                 if (Orders[0].PurchaseOrderNo) {
-                    purchaseNo = Orders[0].CosmeticNo != null && Orders[0].CosmeticNo != "" ? Orders[0].CosmeticNo : Orders[0].PurchaseOrderNo;
+                    purchaseNo = Orders[0].PurchaseOrderNo;
                 }
                 if (Orders[0].PaymentTerm) {
                     paymentTerms = Orders[0].PaymentTerm.Name;
@@ -185,19 +184,14 @@ class OrderDetail extends React.Component {
     }
 
     handleUpdateInvoicePaymentStatus(e) {
-        const self = this;
         const status = e.target.value;
-        if (!this.props.isAuthorizedToEdit) return;
-        this.props.validatePermissionToPerformAction('edit-merchant-invoice-details-api', () => {
-            if (status) {
-                if (self.props.invoiceDetail && self.props.invoiceDetail.Orders && self.props.invoiceDetail.Orders[0]) {
-                    const invoiceNo = self.props.invoiceDetail.InvoiceNo;
-                    self.props.updateInvoiceStatus(invoiceNo, status);
-                }
+        if (status) {
+            if (this.props.invoiceDetail && this.props.invoiceDetail.Orders && this.props.invoiceDetail.Orders[0]) {
+                const invoiceNo = this.props.invoiceDetail.InvoiceNo;
+                this.props.updateInvoiceStatus(invoiceNo, status);
             }
-            return;
-        });
-        
+        }
+        return;
     }
 
     renderPaymentStatus(status) {
@@ -208,12 +202,10 @@ class OrderDetail extends React.Component {
         }
 
         return (
-            <PermissionTooltip isAuthorized={this.props.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                <select disabled={!this.props.isAuthorizedToEdit} defaultValue={status} onChange={(e) => this.handleUpdateInvoicePaymentStatus(e)}>
-                    <option value="Waiting for Payment">Waiting for Payment</option>
-                    <option value="Paid">Paid</option>
-                </select>
-            </PermissionTooltip>
+            <select defaultValue={status} onChange={(e) => this.handleUpdateInvoicePaymentStatus(e)}>
+                <option value="Waiting for Payment">Waiting for Payment</option>
+                <option value="Paid">Paid</option>
+            </select>
         );
     }
 

@@ -7,7 +7,7 @@ class ExtraMenuComponent extends React.Component {
             function() {
                 $(".h-dd-menu.h-cart-menu").removeClass('hide-me');
                 $(".h-dd-menu.h-cart-menu").slideDown();
-            }, 
+            },
             function() {
                 if (!$(".h-dd-menu.h-cart-menu").is(':hover')) {
                     $(".h-dd-menu.h-cart-menu").slideUp("fast", () => $(".h-dd-menu.h-cart-menu").addClass('hide-me'));
@@ -30,20 +30,20 @@ class ExtraMenuComponent extends React.Component {
     renderCartIcon() {
         if (this.props.isDeliveryComponent == true && this.props.isMerchant == true) return null;
 
-        let cartUrl = '/cart';
-        
+        let cartUrl = CommonModule.getAppPrefix()+'/cart';
+
         return (
             <li className="h-cart">
                 <a href={cartUrl}>
                     <i className="fa fa-shopping-cart"></i>
                     (<span className="cart-count" id="latest-cart-count">0</span>)
                 </a>
-                <div className="h-dd-menu h-cart-menu hide-me" style={{ overflow: 'hidden', outline: 'none', cursor: 'grab', display: 'none' }} tabIndex="3">
-                    <div className="h-cart-mid"> 
+                <div className="h-dd-menu h-cart-menu hide-me" style={{ overflow: 'hidden', outline: 'none', display: 'none' }} tabIndex="3">
+                    <div className="h-cart-mid">
                         <ul />
                     </div>
                     <div className="h-cart-bot">
-                        <a href="/cart" className="btn-view-cart"> View Cart </a>
+                        <a href={CommonModule.getAppPrefix()+"/cart"} className="btn-view-cart"> View Cart </a>
                     </div>
                 </div>
                 <div className="h-dd-menu add-cart">
@@ -76,7 +76,7 @@ class ExtraMenuComponent extends React.Component {
     renderInboxIcon() {
         return this.props.user && this.props.user.ID ?
             <li className="h-mail">
-                <a href="/chat/inbox">
+                <a href={CommonModule.getAppPrefix()+"/chat/inbox"}>
                     <i className="fa fa-envelope"></i>
                     <span> (<span className="cart-count" id="unreadMessagesCount">{this.props.unreadCount || 0}</span>)</span>
                 </a>

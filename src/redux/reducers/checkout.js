@@ -10,8 +10,7 @@ const initialState = {
     workflows: null,
     showCreateRequisition: false,
     isSameBillingAndDelivery: false,
-    pendingOffer: null,
-    processing: false,
+    pendingOffer: null
 };
 
 function checkoutReducer(state = initialState, action) {
@@ -56,12 +55,6 @@ function checkoutReducer(state = initialState, action) {
         case actionTypes.UPDATE_IS_SAME_BILLING_AND_DELIVERY_ADDRESS: {
             return Object.assign({}, state, {
                 isSameBillingAndDelivery: action.isSameBillingAndDelivery
-            })
-        }
-        
-        case actionTypes.PROCESSING: {
-            return Object.assign({}, state, {
-                processing: action.processing
             })
         }
 

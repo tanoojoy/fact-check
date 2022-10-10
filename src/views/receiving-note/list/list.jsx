@@ -2,6 +2,7 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 const BaseComponent = require('../../shared/base');
+const CommonModule = require('../../../public/js/common');
 
 class ListComponent extends BaseComponent {
     redirectToDetail(id) {
@@ -11,7 +12,7 @@ class ListComponent extends BaseComponent {
     renderPurchaseOrder(order) {
         if (order) {
             return (
-                <a href={`/purchase/detail/orderid/${order.ID}`}>{order.CosmeticNo != null && order.CosmeticNo != "" ? order.CosmeticNo : order.PurchaseOrderNo}</a>
+                <a href={`/purchase/detail/orderid/${order.ID}`}>{order.PurchaseOrderNo}</a>
             );
         }
 
@@ -47,7 +48,7 @@ class ListComponent extends BaseComponent {
             return (
                 <div className="item-actions action-inline">
                     <ul>
-                        <li><span><img src="/assets/images/void_black.svg" /></span> </li>
+                        <li><span><img src={CommonModule.getAppPrefix() + "/assets/images/void_black.svg"} /></span> </li>
                     </ul>
                 </div>
             );
@@ -77,7 +78,7 @@ class ListComponent extends BaseComponent {
                             const rowClass = note.Void ? 'account-row void-grey' : 'account-row';
                             return (
                                 <tr className={rowClass} data-key="item" data-id={index} key={index} onClick={(e) => self.redirectToDetail(note.ID)}>
-                                    <td data-th="Receiving Notes">{note.CosmeticNo != null && note.CosmeticNo != "" ? note.CosmeticNo : note.ReceivingNoteNo}</td>
+                                    <td data-th="Receiving Notes">{note.ReceivingNoteNo}</td>
                                     <td data-th="Timestamp">{self.formatDateTime(note.CreatedDateTime)}</td>
                                     <td data-th="PO No.">{self.renderPurchaseOrder(note.Order)}</td>
                                     <td data-th="Supplier">{self.renderSupplier(note.Order)}</td>

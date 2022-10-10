@@ -34,7 +34,7 @@ class CheckoutReview extends BaseComponent {
 		const { pickupOptions, shippingOptions } = this.props;
 		const orderSelect = $(`.sel_del_method[order-id=${order.ID}]`);
 		const selectedDelID = $(orderSelect).find('option:selected').val();
-        
+
         const surcharge = $(orderSelect).find('option:selected').attr('data-surcharge');
         const time = $(orderSelect).find('option:selected').attr('data-time');
 		let selectedDelOption = null;
@@ -51,7 +51,7 @@ class CheckoutReview extends BaseComponent {
 	        	}
 	        }
 	    }
-	        
+
         $(`.deliver-method[order-id=${order.ID}]`).find('.surcharge').html(surcharge);
         $(`.deliver-method[order-id=${order.ID}]`).find('.lead-time').html(time);
 
@@ -89,14 +89,14 @@ class CheckoutReview extends BaseComponent {
         if (orderCount == orderCountSelectedDelivery) {
         	$('.full-btn-procced').removeClass('disable');
         } else {
-        	$('.full-btn-procced').addClass('disable');   
+        	$('.full-btn-procced').addClass('disable');
         }
     }
 
 	renderAdditionalAttr(variants) {
 		return (
 			<div className="item-attrs">
-				{variants.map(v => 
+				{variants.map(v =>
 					<div key={v.ID} className="attr-size">
 						<span>{`${v.GroupName}: `}</span>
 						<span>{v.Name}</span>
@@ -129,14 +129,14 @@ class CheckoutReview extends BaseComponent {
 			      		</span>
 			    	</div>
 			    	{
-			    		ItemDetail && ItemDetail.Variants && ItemDetail.Variants.length > 0 ? 
+			    		ItemDetail && ItemDetail.Variants && ItemDetail.Variants.length > 0 ?
 			    		this.renderAdditionalAttr(ItemDetail.Variants): null
 			    	}
 			    </div>
 			</div>
 		)
 	}
-	
+
 	renderCartContents(order) {
 		const { CartItemDetails } = order;
 		return (
@@ -145,7 +145,7 @@ class CheckoutReview extends BaseComponent {
 					{CartItemDetails.map(cartItem => this.renderCartItem(cartItem))}
 				</div>
 			</div>
-		);	
+		);
 	}
 
 	getMinimumLeadTime(del) {
@@ -166,7 +166,7 @@ class CheckoutReview extends BaseComponent {
 				<option data-surcharge="-" data-time="-" data-cost="0.00" value="">Select Delivery Method</option>
 				{
 					merchantShippingOptions && merchantShippingOptions.shippingOptions.map(del =>
-						<option 
+						<option
 							key={`${order.ID}|||${del.ShippingData.ID}`}
 							data-surcharge={`${del.CurrencyCode} ${Currency(del.CurrencyCode)}${parseFloat(del.ShippingCost || 0).toFixed(2)}`}
 							data-time={this.getMinimumLeadTime(del)}
@@ -179,7 +179,7 @@ class CheckoutReview extends BaseComponent {
 					)
 				}
 				{
-					merchantPickupOptions && merchantPickupOptions.pickupOptions.map(del => 
+					merchantPickupOptions && merchantPickupOptions.pickupOptions.map(del =>
 						<option key={del.ID} data-surcharge="Pick-up" data-time="-" data-cost="0.00" value={del.ID}>
 							{`${del.Name} (Pick-up)`}
 						</option>
@@ -203,7 +203,7 @@ class CheckoutReview extends BaseComponent {
 		    		<h4 className="text-center">Delivery/Pick-up</h4>
 				    <form>
 				      <div className="form-element">
-				        <select 
+				        <select
 				        	className="txt sel_del_method"
 				        	name="delivery_method[]"
 				        	key={order.ID}
@@ -269,7 +269,7 @@ class CheckoutReview extends BaseComponent {
         const { Orders } = invoiceDetails;
 		return Orders.map(order =>
         	<div key={order.ID} className="cart-box-item mearchant_box">
-	  			<div className="cb-header"> 
+	  			<div className="cb-header">
 	  				<span className="cb-seller">
 	  					{this.renderSellerDisplayName(order.MerchantDetail)}
 	  				</span>
@@ -285,9 +285,10 @@ class CheckoutReview extends BaseComponent {
           		{this.renderNoAvailableDelivery(order)}
        		</div>
        	)
-        
+
 	}
 	render() {
+		console.log('bespoke')
         return (
             <div className="pcc-left pull-left">
                 <div className="cart-box full-width">

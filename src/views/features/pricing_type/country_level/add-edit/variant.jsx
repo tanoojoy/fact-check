@@ -2,8 +2,6 @@
 const React = require('react');
 const BaseComponent = require('../../../../shared/base');
 
-const PermissionTooltip = require('../../../../common/permission-tooltip');
-
 class VariantComponent extends BaseComponent {
     constructor(props) {
         super(props);
@@ -175,11 +173,7 @@ class VariantComponent extends BaseComponent {
 
     deleteVariantGroup(event, id) {
         event.preventDefault();
-        const self = this;
-
-        this.props.validatePermissionToPerformAction("delete-merchant-create-item-api", () => {
-            self.props.deleteVariantGroup(id);
-        });
+        this.props.deleteVariantGroup(id);
     }
 
     renameVariant(event) {
@@ -257,9 +251,7 @@ class VariantComponent extends BaseComponent {
                                         className="option_choices" />
                                 </div>
                                 <div className="options-cell option-actions">
-                                    <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToDelete} extraClassOnUnauthorized={'icon-grey'}>
-                                        <a href="#" onClick={(e) => this.deleteVariantGroup(e, variantGroup.id)}><i className="icon icon-dustbin" /></a>
-                                    </PermissionTooltip>
+                                    <a href="#" onClick={(e) => this.deleteVariantGroup(e, variantGroup.id)}><i className="icon icon-dustbin" /></a>
                                 </div>
                             </div>
                         )

@@ -1,6 +1,7 @@
 ﻿'use strict';
 var React = require('react');
 var UserExtraMenuComponent = require('./extra-menu');
+const CommonModule = require('../../../../public/js/common.js');
 
 class HeaderLayoutBottomComponent extends React.Component {
     searchMessages(e) {
@@ -18,7 +19,7 @@ class HeaderLayoutBottomComponent extends React.Component {
         if (categories === "All Catgories") {
             categories = "";
         }
-        window.location.href = '/search?keywords=' + keywords + "&categories=" + categories;
+        window.location.href = CommonModule.getAppPrefix() + '/search?keywords=' + keywords + "&categories=" + categories;
     }
 
     renderHeaderPanel() {
@@ -30,7 +31,7 @@ class HeaderLayoutBottomComponent extends React.Component {
                         <li className="h-more" key={index1} onClick={(e) => self.props.showBannerMenu(e)} >
                             <span>More</span>
                             <i className="fa fa-angle-down"></i>
-                            <ul className="h-dd-menu hide-me" style={{ overflow: 'hidden', outline: 'currentcolor none medium', cursor: 'grab', display: 'none' }} tabIndex="1">
+                            <ul className="h-dd-menu hide-me" style={{ overflow: 'hidden', outline: 'currentcolor none medium', display: 'none' }} tabIndex="1">
                                 {panel.Details.map(function (detail, index2) {
                                     return (<li key={index2}><a href={detail.Url}>{detail.Title}</a></li>)
                                 })}

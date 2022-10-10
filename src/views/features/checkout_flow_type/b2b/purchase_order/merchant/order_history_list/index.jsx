@@ -3,11 +3,6 @@ var React = require('react');
 var ReactRedux = require('react-redux');
 var BaseComponent = require('../../../../../../shared/base');
 var Moment = require('moment');
-
-if (typeof window !== 'undefined') { var $ = window.$; }
-
-const PermissionTooltip = require('../../../../../../common/permission-tooltip');
-
 class MerchantFeaturePurchaseOrderListB2cComponent extends BaseComponent {
     constructor(props) {
         super(props);
@@ -19,21 +14,13 @@ class MerchantFeaturePurchaseOrderListB2cComponent extends BaseComponent {
 
     onDropdownChange(e) {
         var self = this;
-        var target = e.target;
-
-        this.props.validatePermissionToPerformAction("edit-merchant-purchase-orders-api", () => {
-            self.setState({ status: target.value, invoiceNo: target.id });
-            self.renderModalPopup();
-            self.props.updateHistoryOrdersB2B(target.id, target.value);
-        });
+        self.setState({ status: e.target.value, invoiceNo: e.target.id });
+        self.renderModalPopup();
+        self.props.updateHistoryOrdersB2B(e.target.id, e.target.value);
     }
     onCheckboxChange(e,cartitemId) {
         const self = this;
-        const checked = e.target.checked;
-
-        this.props.validatePermissionToPerformAction("edit-merchant-purchase-orders-api", () => {
-            self.props.revertPaymentOrderList(checked, cartitemId);
-        });
+        self.props.revertPaymentOrderList(e.target.checked, cartitemId);
     }
     renderModalPopup() {
         var target = jQuery(".popup-area.order-itemstatus-popup");
@@ -204,19 +191,17 @@ class MerchantFeaturePurchaseOrderListB2cComponent extends BaseComponent {
          //   }
 
             return (
-                <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                    <div className="select-wrapper mxwr">
-                        <select className="order-item-status-popup" id={order.ID} defaultValue={fulfillmentStatus} onChange={(e) => this.onDropdownChange(e)}>
-                            {
-                                statuses.map(function (status, index) {
-                                    return (
-                                        <option key={index} value={status}>{status === 'Ready For Consumer Collection' ? 'Ready for Pick-up' : status}</option>
-                                    )
-                                })
-                            }
-                        </select>
-                    </div>
-                </PermissionTooltip>
+               <div className="select-wrapper mxwr">
+                <select className="order-item-status-popup" id={order.ID} value={fulfillmentStatus} onChange={(e) => this.onDropdownChange(e)}>
+                    {
+                        statuses.map(function (status, index) {
+                            return (
+                                <option key={index} value={status}>{status === 'Ready For Consumer Collection' ? 'Ready for Pick-up' : status}</option>
+                            )
+                        })
+                    }
+                </select>
+              </div>
             )
 
         } else {
@@ -228,15 +213,14 @@ class MerchantFeaturePurchaseOrderListB2cComponent extends BaseComponent {
     renderInvoiceList(order) {
         let links = [];
         if (order && order.PaymentDetails && order.PaymentDetails.length > 0) {
-            let uniquePayments = this.getUnique(order.PaymentDetails, 'InvoiceNo');
+            let invoiceNos = order.PaymentDetails.map((payment) => payment.InvoiceNo);
+            invoiceNos = [...new Set(invoiceNos)];
 
-            if (uniquePayments) {
-                //ARC10131
-                uniquePayments.forEach(function (payment, index) {
-                    links.push(<a href={`/invoice/detail/${payment.InvoiceNo}`} key={index}>{payment.CosmeticNo != null && payment.CosmeticNo != "" ? payment.CosmeticNo : payment.InvoiceNo}</a>);
-                    links.push(<span key={'comma-' + index}> , </span>);
-                });
-            }
+            invoiceNos.map((invoiceNo, index) => {
+                links.push(<a href={`/invoice/detail/${invoiceNo}`} key={index}>{invoiceNo}</a>);
+                links.push(<span key={'comma-' + index}> , </span>);
+            });
+
             links.pop();
 
             return (
@@ -254,7 +238,7 @@ class MerchantFeaturePurchaseOrderListB2cComponent extends BaseComponent {
            
             var html = this.props.Records.map(function (obj, index) {
                 return <tr className="account-row " data-key="item" data-id={1}>
-                    <td><a href={"/merchants/order/detail/orderid/" + obj.ID}>{obj.CosmeticNo != null && obj.CosmeticNo != "" ? obj.CosmeticNo : obj.PurchaseOrderNo}</a></td>
+                    <td><a href={"/merchants/order/detail/orderid/" + obj.ID}>{obj.PurchaseOrderNo}</a></td>
                     <td><a href={"/merchants/order/detail/orderid/" + obj.ID}>{self.formatDateTime(obj.CreatedDateTime)}</a></td>
                     <td><a href={"/merchants/order/detail/orderid/" + obj.ID}>{obj.ConsumerDetail.DisplayName}</a></td>
                     <td className="wrap-col" data-th="Invoice No">

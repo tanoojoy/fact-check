@@ -1,0 +1,11 @@
+Host us_west_bastion
+  LocalForward 8081 10.152.93.12:7001
+  LocalForward 8082 10.103.160.119:7001
+  LocalForward 8083 10.152.92.108:7001
+  LocalForward 8084 10.152.93.58:7001
+  LocalForward 8085 10.152.93.58:7001
+  LocalForward 8086 10.152.93.29:7001
+  User justice.ruby@clarivate.com
+  HostName bastion-ad.us-west-2.dev-cortellis.com
+  ServerAliveInterval 60
+  IdentityFile ~/.ssh/clarivate.pub

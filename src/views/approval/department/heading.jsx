@@ -1,7 +1,7 @@
 'use strict';
 
 const React = require('react');
-const PermissionTooltip = require('../../common/permission-tooltip');
+const CommonModule = require('../../../public/js/common.js');
 
 class DepartmentHeading extends React.Component {
 
@@ -11,13 +11,6 @@ class DepartmentHeading extends React.Component {
         }
         return 0;
     }
-
-    handleCreateDepartmentBtnClick() {
-        if (!this.props.isAuthorizedToAdd) return;
-        const code = 'add-consumer-approval-departments-api';
-        this.props.validatePermissionToPerformAction(code, () => window.location.href = '/approval/create-department');
-    }
-
 	render() {
 		return (
 			<div className="sc-upper">
@@ -25,18 +18,16 @@ class DepartmentHeading extends React.Component {
                     <span className="sc-text-big">
                     	Department &nbsp;
                     	<a href="https://support.arcadier.com/hc/en-us">
-                    		<img src="/assets/images/Info.svg" />
+                    		<img src={CommonModule.getAppPrefix() + "/assets/images/Info.svg"} />
                     	</a>
                     </span>
                     <small>{`${this.getNumOfEntries()} entries`}</small>
                 </div>
                 <div className="sc-tops">
-                    <PermissionTooltip isAuthorized={this.props.isAuthorizedToAdd} extraClassOnUnauthorized="icon-grey">
-                        <a className="top-title" onClick={() => this.handleCreateDepartmentBtnClick()} href="#">
-                        	<i className="fas fa-plus fa-fw" />
-                        	Create new Department
-                        </a>
-                    </PermissionTooltip>
+                    <a className="top-title" href="/approval/create-department">
+                    	<i className="fas fa-plus fa-fw" />
+                    	Create new Department
+                    </a>
                 </div>
 			</div>
 		);

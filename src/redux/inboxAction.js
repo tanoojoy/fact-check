@@ -1,5 +1,6 @@
 ﻿'use strict';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -34,7 +35,7 @@ function getDetails(messages, keyword) {
 function searchInbox(keyword) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/chat/inbox/search',
+            url: prefix+'/chat/inbox/search',
             type: "get",
             data: {
                 "keyword": keyword
@@ -59,7 +60,7 @@ function goToPage(pageNo, filters) {
     return function (dispatch, getState) {
         const keyword = getState().inboxReducer.keyword;
         $.ajax({
-            url: '/chat/inbox/paging',
+            url: prefix+'/chat/inbox/paging',
             type: "get",
             data: {
                 "pageNumber": pageNo,
@@ -82,7 +83,7 @@ function goToPage(pageNo, filters) {
 function getUnreadCount() {
     return function (dispatch) {
         $.ajax({
-            url: '/chat/inbox/getUnreadCount',
+            url: prefix+'/chat/inbox/getUnreadCount',
             type: "GET",
             success: function (result) {
                 return dispatch({
@@ -97,9 +98,96 @@ function getUnreadCount() {
     };
 }
 
+const updateUnreadIndicator = () => dispatch => {
+    const { UPDATE_UNREAD_INDICATOR } = actionTypes;
+    const dispatchUpdateUnreadIndicator = (hasUnreadMessages = false) => dispatch({ type: UPDATE_UNREAD_INDICATOR, hasUnreadMessages });
+    $.ajax({
+        url: `${prefix}/inbox/getchats`,
+        type: "GET",
+        success: (chats) => {
+            if (chats && chats.username) {
+                $.ajax({
+                    url: `${prefix}/product-profile/token/${chats.username}`,
+                    type: "GET",
+                    success: (data) => {
+                        if (data && data.token) {
+                            Twilio.Chat.Client.create(data.token).then(client => {
+                                const chatClient = client;
+                                chats.chatIds.forEach(channelName => {
+                                    chatClient.getChannelByUniqueName(channelName)
+                                    .then(function(channel) {
+                                        channel.join().finally(() => {
+                                            channel.getUnconsumedMessagesCount().then(res => {
+                                                channel.getMessagesCount().then(msgCount => {
+                                                    if (res !== 0 && msgCount !== 0 ) {
+                                                        return dispatchUpdateUnreadIndicator(true);
+                                                    }
+                                                })
+                                            });
+                                        }).catch(() => {});
+                                    }).catch(() => dispatchUpdateUnreadIndicator());
+                                });
+                            }).catch(() => dispatchUpdateUnreadIndicator());
+                        } else {
+                            return dispatchUpdateUnreadIndicator();
+                        }
+                    },
+                    error: () => dispatchUpdateUnreadIndicator()
+                });
+            } else {
+                return dispatchUpdateUnreadIndicator();
+            }
+        },
+        error: () => dispatchUpdateUnreadIndicator()
+    });
+}
+
+function getEnquiry(page, size) {
+    return function (dispatch, getState) {        
+        $.ajax({
+            url: prefix+'/chat/inbox/get-enquiries',
+            type: "get",
+            data: {
+                "page": page,
+                "size": size
+            },
+            success: function (result) {
+                return dispatch({
+                    type: actionTypes.FETCH_ENQUIRIES,
+                    payload: result.inboxes
+                });
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+            }
+        });
+    };
+}
+
+function getRequestsQuotes(page, size) {
+    return function (dispatch, getState) {
+        $.ajax({
+            url: prefix+`/chat/inbox/get-requests-quotes?page=${page}&size=${size}`,
+            type: "get",
+            success: function (result) {
+                dispatch({
+                    type: actionTypes.FETCH_MESSAGES,
+                    getUserMessages: result.inboxes
+                });                
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+            }
+        });
+    };
+}
+
 module.exports = {
     updateKeyWord,
     searchInbox: searchInbox,
     goToPage: goToPage,
-    getUnreadCount: getUnreadCount
+    getUnreadCount: getUnreadCount,
+    updateUnreadIndicator, 
+    getEnquiry, 
+    getRequestsQuotes
 }

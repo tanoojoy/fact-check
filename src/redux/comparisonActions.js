@@ -2,7 +2,7 @@
 var actionTypes = require('./actionTypes');
 var toastr = require('toastr');
 var EnumCoreModule = require('../public/js/enum-core');
-var CommonModule = require('../public/js/common.js');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -17,7 +17,7 @@ function getUserComparisons(createIfEmpty = false, namesOnly = false, pageSize =
         }
 
         $.ajax({
-            url: '/comparison/getUserComparisons',
+            url: prefix+'/comparison/getUserComparisons',
             type: 'GET',
             data: {
                 namesOnly: namesOnly,
@@ -65,7 +65,7 @@ function getComparison(id, includes = null) {
     }
     return function (dispatch, getState) {
         $.ajax({
-            url: '/comparison/getComparison',
+            url: prefix+'/comparison/getComparison',
             type: 'GET',
             data: {
                 comparisonId: id,
@@ -110,7 +110,7 @@ function ajaxCreateComparison(name, includes, callback) {
     }
 
     $.ajax({
-        url: '/comparison/createComparison',
+        url: prefix+'/comparison/createComparison',
         type: 'POST',
         data: {
             name: name,
@@ -139,7 +139,7 @@ function editComparison(name, includes = null){
         let comparisonToUpdate = getState().comparisonReducer.comparisonToUpdate;
 
         $.ajax({
-            url: '/comparison/editComparison',
+            url: prefix+'/comparison/editComparison',
             type: 'PUT',
             data: {
                 comparisonId: comparisonToUpdate.ID,
@@ -228,7 +228,7 @@ function deleteComparisonDetail() {
             : getState().comparisonDetailToUpdate;
 
         $.ajax({
-            url: '/comparison/deleteComparisonDetail',
+            url: prefix+'/comparison/deleteComparisonDetail',
             type: 'DELETE',
             data: {
                 comparisonId: comparison.ID,
@@ -266,7 +266,7 @@ function createComparisonDetail(cartItemId, includes = null, comparisonFields) {
             guestUserID = CommonModule.getCookie("guestUserID");
         }
         $.ajax({
-            url: '/comparison/createComparisonDetail',
+            url: prefix+'/comparison/createComparisonDetail',
             type: 'POST',
             data: {
                 comparisonId: comparison.ID,
@@ -294,7 +294,7 @@ function createComparisonDetail(cartItemId, includes = null, comparisonFields) {
     };
 }
 
-function updateComparisonDetail(cartItemId, quantity, subTotal, discountAmount, addOns) {
+function updateComparisonDetail(cartItemId, quantity, subTotal, discountAmount) {
     return function (dispatch, getState) {
         let comparison = getState().comparisonReducer.comparison;
 
@@ -303,7 +303,6 @@ function updateComparisonDetail(cartItemId, quantity, subTotal, discountAmount, 
                 detail.CartItem.Quantity = quantity;
                 detail.CartItem.SubTotal = subTotal;
                 detail.CartItem.DiscountAmount = discountAmount;
-                detail.CartItem.AddOns = addOns;
             }
         });
 
@@ -328,7 +327,7 @@ function clearAllComparisonDetails() {
         });
 
         $.ajax({
-            url: '/comparison/clearAllComparisonDetails',
+            url: prefix+'/comparison/clearAllComparisonDetails',
             type: 'PUT',
             data: {
                 comparisonId: comparisonToUpdate.ID,
@@ -364,7 +363,7 @@ function createPurchaseDetail(cartItemIds, comparisonDetailId) {
         let comparisonId = getState().comparisonReducer.comparison.ID;
 
         $.ajax({
-            url: '/comparison/validateComparisonDetails',
+            url: prefix+'/comparison/validateComparisonDetails',
             type: 'POST',
             data: {
                 comparisonId: comparisonId
@@ -387,7 +386,7 @@ function createPurchaseDetail(cartItemIds, comparisonDetailId) {
 
                 if (proceed === true && getState().comparisonReducer.processing === false) {
                     $.ajax({
-                        url: '/checkout/generate-invoice-number-by-cartitems',
+                        url: prefix+'/checkout/generate-invoice-number-by-cartitems',
                         type: 'POST',
                         data: { cartItemIds: cartItemIds, comparisonId: comparisonId, comparisonDetailId: comparisonDetailId },
                         success: function (result) {
@@ -415,7 +414,7 @@ function createPurchaseDetail(cartItemIds, comparisonDetailId) {
 function getComparisonByOrderId(id, includeInactive = null, includes = null) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/comparison/getComparisonByOrderId',
+            url: prefix+'/comparison/getComparisonByOrderId',
             type: 'GET',
             data: {
                 orderId: id,
@@ -439,7 +438,7 @@ function getComparisonByOrderId(id, includeInactive = null, includes = null) {
 function generateComparisonFile(orderId) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/comparison/getComparisonSnapshot',
+            url: prefix+'/comparison/getComparisonSnapshot',
             type: 'POST',
             data: {
                 orderId: orderId,
@@ -466,7 +465,7 @@ function editEvaluation(id, name, includes = null) {
 
         //   let comparisonToUpdate = getState().comparisonReducer.comparisonToUpdate;
         $.ajax({
-            url: '/comparison/editComparison',
+            url: prefix+'/comparison/editComparison',
             type: "PUT",
             data: {
                 comparisonId: id,
@@ -502,15 +501,15 @@ function setEvaluationToUpdate(id, name) {
         if (typeof id !== 'undefined') {
             comparisonList.Records.map(function (comparison) {
                 if (comparison.ID === id) {
-                    selectedComparison = Object.assign({}, comparison);
-                    selectedComparison.Name = name;
+                    comparison.Name = name;
+                    selectedComparison = comparison;
                 }
             });
         }
 
         return dispatch({
             type: actionTypes.SET_COMPARISON_TO_UPDATE,
-            comparisonToUpdate: selectedComparison
+            comparisonToUpdate: Object.assign({}, selectedComparison)
         });
     };
 }
@@ -520,7 +519,7 @@ function deleteEvaluation(Id, callback) {
         let comparison = getState().comparisonReducer.comparisonList;
         let updatedComparison = [];
         $.ajax({
-            url: '/comparison/deleteComparison',
+            url: prefix+'/comparison/deleteComparison',
             type: 'DELETE',
             data: {
                 comparisonId: Id,
@@ -548,7 +547,7 @@ function createEvaluation(name, includes = null) {
         comparison = getState().comparisonReducer.comparisonList;
 
         $.ajax({
-            url: '/comparison/createComparison',
+            url: prefix+'/comparison/createComparison',
             type: 'POST',
             data: {
                 name: name,
@@ -580,7 +579,7 @@ function createEvaluation(name, includes = null) {
 function reloadEvaluationListPage() {
     return function (dispatch) {
         $.ajax({
-            url: '/comparison/load',
+            url: prefix+'/comparison/load',
             type: "get",
             success: function (comparisons) {
                 return dispatch({
@@ -599,7 +598,7 @@ function reloadEvaluationListPage() {
 function goToPage(pageNo) {
     return function (dispatch) {
         $.ajax({
-            url: '/comparison/paging',
+            url: prefix+'/comparison/paging',
             type: "get",
             data: {
                 "pageNumber": pageNo
@@ -620,7 +619,7 @@ function goToPage(pageNo) {
 function exportToPDF(comparisonId, emailAddress) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/comparison/exportToPDF',
+            url: prefix+'/comparison/exportToPDF',
             type: 'POST',
             data: {
                 comparisonId: comparisonId,

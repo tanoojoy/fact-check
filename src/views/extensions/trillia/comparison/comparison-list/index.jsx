@@ -3,7 +3,7 @@
 let React = require('react');
 let ReactRedux = require('react-redux');
 
-let HeaderLayoutComponent = require('../../../../layouts/header').HeaderLayoutComponent;
+let HeaderLayoutComponent = require('../../../../layouts/header/index').HeaderLayoutComponent;
 let FooterLayoutComponent = require('../../../../layouts/footer').FooterLayoutComponent;
 
 let ListComponent = require('../comparison-list/list');
@@ -12,6 +12,7 @@ let ModalDeleteComponent = require('../comparison-list/modal-delete');
 let PaginationComponent = require('../../../../common/pagination');
 
 let ComparisonActions = require('../../../../../redux/comparisonActions');
+const CommonModule = require('../../../../../public/js/common');
 
 let Moment = require('moment');
 
@@ -39,7 +40,7 @@ class ComparisonListComponent extends React.Component {
         $('#modalRemove').modal('show');
 
     }
-   
+
     render() {
 
         // const  comparisonToUpdate = this.props.comparisonToUpdate;
@@ -61,7 +62,7 @@ class ComparisonListComponent extends React.Component {
                     <div className="orderlist-container">
                         <div className="container">
                             <div className="h-parent-child-txt full-width">
-                                <p><a href="/">Home</a></p>
+                                <p><a href={CommonModule.getAppPrefix()+"/"}>Home</a></p>
                                 <i className="fa fa-angle-right"></i>
                                 <p className="active">My Comparison Table</p>
                             </div>
@@ -78,7 +79,7 @@ class ComparisonListComponent extends React.Component {
                                 </div>
                             </div>
                             <div className="oreder-data-table">
-                                        
+
                                 <ListComponent
                                     comparisons={self.props.comparisons.Records}
                                     showComparisonAddEdit={this.showComparisonAddEdit}
@@ -101,7 +102,7 @@ class ComparisonListComponent extends React.Component {
                 <ModalAddEditComponent addEvaluationList={this.props.addEvaluationList}
                     editEvaluationList={this.props.editEvaluationList}
                     comparisonList={this.props.comparisonToUpdate}
-                   
+
                     setEvaluationToUpdate={this.props.setEvaluationToUpdate} />
                 <ModalDeleteComponent
                     reloadEvaluationListPage={this.props.reloadEvaluationListPage}

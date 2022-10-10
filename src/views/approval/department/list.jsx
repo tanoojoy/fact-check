@@ -1,7 +1,5 @@
 'use strict';
 const React = require('react');
-const PermissionTooltip = require('../../common/permission-tooltip');
-
 if (typeof window !== 'undefined') { var $ = window.$; }
 
 class DepartmentList extends React.Component {
@@ -10,23 +8,13 @@ class DepartmentList extends React.Component {
     }
     
     onDeleteClick(id) {
-        if (!this.props.isAuthorizedToDelete) return;
-        const code = 'delete-consumer-approval-departments-api';
-        this.props.validatePermissionToPerformAction(code, () => {        
-            const target = $(".popup-area.item-remove-popup");
-            const cover = $("#cover");
+        const target = $(".popup-area.item-remove-popup");
+        const cover = $("#cover");
 
-            target.fadeIn();
-            cover.fadeIn();
-            $(".my-btn.btn-saffron").attr('data-key', "item");
-            $(".my-btn.btn-saffron").attr('data-id', id);
-        });
-    }
-
-    handleUpdateBtnClick(id) {
-        if (!this.props.isAuthorizedToEdit) return;
-        const code = 'edit-consumer-approval-departments-api';
-        this.props.validatePermissionToPerformAction(code, () => window.location.href = `/approval/departments/${id}`);   
+        target.fadeIn();
+        cover.fadeIn();
+        $(".my-btn.btn-saffron").attr('data-key', "item");
+        $(".my-btn.btn-saffron").attr('data-id', id);
     }
 
     renderDepartments() {
@@ -40,17 +28,11 @@ class DepartmentList extends React.Component {
                         <td className="action-cell" data-th="Action">
                             <div className="item-actions action-inline">
                                 <ul>
+                                    <li><a href={`/approval/departments/${dept.Id}`}><i className="icon icon-edit"></i></a></li>
                                     <li>
-                                        <PermissionTooltip isAuthorized={this.props.isAuthorizedToEdit} extraClassOnUnauthorized="icon-grey">
-                                            <a onClick={() => this.handleUpdateBtnClick(dept.Id)} href="#"><i className="icon icon-edit"></i></a>
-                                        </PermissionTooltip>
-                                    </li>
-                                    <li>
-                                        <PermissionTooltip isAuthorized={this.props.isAuthorizedToDelete} extraClassOnUnauthorized="icon-grey">
-                                            <a href="#" className="delete_item" data-id={dept.Id} onClick={() => this.onDeleteClick(dept.Id)}>
-                                                <i className="fas fa-trash-alt" style={{ fontSize: '26px', color: '#999', textAlign: 'center' }}></i>
-                                            </a>
-                                        </PermissionTooltip>
+                                        <a href="#" className="delete_item" data-id={dept.Id} onClick={() => this.onDeleteClick(dept.Id)}>
+                                            <i className="fas fa-trash-alt" style={{ fontSize: '26px', color: '#999', textAlign: 'center' }}></i>
+                                        </a>
                                     </li>
                                 </ul>
                             </div>

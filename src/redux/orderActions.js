@@ -1,10 +1,10 @@
 'use strict';
 var actionTypes = require('./actionTypes');
 var EnumCoreModule = require('../public/js/enum-core');
-const Moment = require('moment');
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
+const prefix  = require('../public/js/common.js').getAppPrefix();
 
 function searchOrder(filters) {
     return function (dispatch, getState) {
@@ -18,10 +18,6 @@ function searchOrder(filters) {
         if (!filters.status) {
             filters.status = status;
         }
-        if (filters.status.includes('Shipped')){
-            filters.status = filters.status.replace('Shipped','Delivered')
-        }
-       
         if (!filters.keyword) {
             filters.keyword = keyword;
             if (!filters.keyword) {
@@ -38,7 +34,7 @@ function searchOrder(filters) {
         }
 
         $.ajax({
-            url: '/merchants/order/history/search',
+            url: prefix+'/merchants/order/history/search',
             type: 'GET',
             data: {
                 keyword: filters.keyword,
@@ -85,7 +81,7 @@ function goToPage(pageNo) {
         }
 
         $.ajax({
-            url: '/merchants/order/history/search',
+            url: prefix+'/merchants/order/history/search',
             type: 'GET',
             data: {
                 keyword: keyword,
@@ -201,12 +197,71 @@ function updateHistoryOrdersB2B(id, status) {
         });
 
         $.ajax({
-            url: '/merchants/order/detail/updateStatusb2b',
+            url: prefix+'/merchants/order/detail/updateStatusb2b',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(request),
             success: function (result) {
                 if (result) {
+                    //$.ajax({
+                    //    url: '/merchants/order/edm/sendStatusEdm',
+                    //    type: 'POST',
+                    //    contentType: 'application/json',
+                    //    data: JSON.stringify(request),
+                    //    success: function (result) {
+                    //        if (result) {
+                    //            //b2b
+                    //            if (process.env.CHECKOUT_FLOW_TYPE === 'b2b') {
+                    //                history.Records.map(function (order) {
+                    //                    if (order.ID === id) {
+                    //                        order.CartItemDetails.map(function (cartItem) {
+                    //                            let tempStatus = {
+                    //                                Name: request.status,
+                    //                                Type: 'Order'
+                    //                            };
+                    //                            cartItem.Statuses.push(tempStatus);
+                    //                        });
+                    //                    }
+                    //                });
+                    //            } else {
+                    //                history.Records.map(function (invoice) {
+                    //                    if (invoice.Orders) {
+                    //                        invoice.Orders.map(function (order) {
+                    //                            if (order.ID === id) {
+                    //                                order.CartItemDetails.map(function (cartItem) {
+                    //                                    let tempStatus = {
+                    //                                        Name: request.status,
+                    //                                        Type: 'Order'
+                    //                                    };
+                    //                                    cartItem.Statuses.push(tempStatus);
+                    //                                });
+                    //                            }
+                    //                        });
+                    //                    }
+                    //                });
+                    //            }
+                    //        }
+
+                    //        //update payment status
+
+                    //        var theDispatch = dispatch({
+                    //            type: actionTypes.UPDATE_HISTORY_ORDERS,
+                    //            history: history,
+                    //            selectedFulfillmentStatuses: [],
+                    //            selectedOrderStatus: '',
+                    //            selectedDeliveryTypeName: '',
+                    //            isShowChangeStatus: false,
+                    //            isShowSuccessMessage: true,
+                    //            theInvoices: request.invoices,
+                    //            theStatus: request.status
+                    //        });
+
+                    //        return theDispatch;
+                    //    },
+                    //    error: function (jqXHR, textStatus, errorThrown) {
+                    //        console.log(textStatus, errorThrown);
+                    //    }
+                    //});
                     if (process.env.CHECKOUT_FLOW_TYPE === 'b2b') {
                         history.Records.map(function (order) {
                             if (order.ID === id) {
@@ -259,77 +314,6 @@ function updateHistoryOrdersB2B(id, status) {
 
     }
 }
-function setToDatetime(toDate, duration, durationUnit) {
-    var array = durationUnit.trim().split(' ');
-    if (array.length > 1) {
-        duration = duration * array[0];
-    }
-
-    if (durationUnit.toLowerCase().includes("minute")) {
-        toDate.add(duration, 'minutes');
-    } else if (durationUnit.toLowerCase().includes("hour")) {
-        toDate.add(duration, 'hours');
-    } else if (durationUnit.toLowerCase().includes("day")) {
-        toDate.add(duration, 'days');
-    } else if (durationUnit.toLowerCase().includes("week")) {
-        toDate.add(duration, 'weeks');
-    } else if (durationUnit.toLowerCase().includes("month")) {
-        toDate.add(duration, 'months');
-    } else if (durationUnit.toLowerCase().includes("night")) {
-        toDate.add(duration, 'days');
-    }
-    return toDate;
-}
-function onUpdateBookingSlot(bookDate,bookTime) {
-
-    return function (dispatch, getState) {
-
-        let detail = getState().orderReducer.detail;
-        let cartItemDetails = getState().orderReducer.detail.Orders[0].CartItemDetails;
-       
-        let duration = cartItemDetails[0].BookingSlot.Duration;
-        let durationUnit = cartItemDetails[0].BookingSlot.DurationUnit;
-        let timeZoneID = cartItemDetails[0].BookingSlot.TimeZoneID;
-        let timeZoneOffset = cartItemDetails[0].BookingSlot.TimeZoneOffset;
-        var fromDate = Moment(bookDate + ' ' +bookTime, 'MM/DD/YYYY hh:mm A');
-        var toDate = Moment(bookDate + ' ' + bookTime, 'MM/DD/YYYY hh:mm A');
-        toDate = setToDatetime(toDate, duration, durationUnit);
-
-        let request = {
-            ID: cartItemDetails[0].ID,
-            ItemDetailID: cartItemDetails[0].ItemDetail.ID,
-            Quantity: cartItemDetails[0].Quantity,
-            Notes: cartItemDetails[0].Notes,
-            BookingSlot: {
-                Duration : duration,
-                DurationUnit : durationUnit,
-                FromDateTime: fromDate.toDate().getTime() / 1000,
-                ToDateTime: toDate.toDate().getTime() / 1000,
-                TimeZoneID : timeZoneID,
-                TimeZoneOffset : timeZoneOffset
-            }
-        };
-
-        $.ajax({
-            url: '/merchants/order/detail/updateBooking',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(request),
-            success: function (result) {
-                detail.Orders[0].CartItemDetails[0].BookingSlot.FromDateTime = fromDate.toDate().getTime() / 1000;
-                detail.Orders[0].CartItemDetails[0].BookingSlot.ToDateTime = toDate.toDate().getTime() / 1000;
-                return dispatch({
-                    type: actionTypes.UPDATE_BOOKING_SLOT,
-                    detail: detail,
-                    isShowSuccessMessage:true
-                });
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log(textStatus, errorThrown);
-            }
-        });
-    };
-}
 
 function updateHistoryOrders(id, status) {
     return function (dispatch, getState) {
@@ -372,12 +356,66 @@ function updateHistoryOrders(id, status) {
         });
 
         $.ajax({
-            url: '/merchants/order/history/updateStatus',
+            url: prefix+'/merchants/order/history/updateStatus',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(request),
             success: function (message) {
                 if (typeof message !== 'undefined' && message.Result === true) {
+                    //$.ajax({
+                    //    url: '/merchants/order/edm/sendStatusEdm',
+                    //    type: 'POST',
+                    //    contentType: 'application/json',
+                    //    data: JSON.stringify(request),
+                    //    success: function (result) {
+                    //        history.Records.map(function (invoice) {
+                    //            invoice.Orders.map(function (order) {
+                    //                if (order && order.CartItemDetails) {
+                    //                    if (process.env.TEMPLATE == 'variants_level') {
+                    //                        if (idsToUpdate.includes(order.ID)) {
+                    //                            order.CartItemDetails.map(function (cartItem) {
+                    //                                let tempStatus = {
+                    //                                    Name: request.status,
+                    //                                    Type: 'Fulfilment'
+                    //                                }
+                    //                                cartItem.Statuses.push(tempStatus);
+                    //                            });
+                    //                        }
+                    //                    } else {
+                    //                        order.CartItemDetails.map(function (cartItem) {
+                    //                            if (idsToUpdate.includes(cartItem.ID)) {
+                    //                                let tempStatus = {
+                    //                                    Name: request.status,
+                    //                                    Type: 'Fulfilment'
+                    //                                }
+                    //                                cartItem.Statuses.push(tempStatus);
+                    //                            }
+                    //                        });
+                    //                    }
+                    //                }
+                    //            })
+                    //        });
+
+                    //        //update payment status
+
+                    //        var theDispatch = dispatch({
+                    //            type: actionTypes.UPDATE_HISTORY_ORDERS,
+                    //            history: history,
+                    //            selectedFulfillmentStatuses: [],
+                    //            selectedOrderStatus: '',
+                    //            selectedDeliveryTypeName: '',
+                    //            isShowChangeStatus: false,
+                    //            isShowSuccessMessage: true,
+                    //            theInvoices: request.invoices,
+                    //            theStatus: request.status
+                    //        });
+
+                    //        return theDispatch;
+                    //    },
+                    //    error: function (jqXHR, textStatus, errorThrown) {
+                    //        console.log(textStatus, errorThrown);
+                    //    }
+                    //});
 
                     history.Records.map(function (invoice) {
                         invoice.Orders.map(function (order) {
@@ -489,6 +527,7 @@ function showHideChangeStatus(isShow) {
                     }
                 });
             });
+
             if (withDelivery && withPickup) {
                 statuses = process.env.COMMON_FULFILLMENT_STATUSES.split(',');
                 deliveryTypeName = 'Delivery and Pick-Up';
@@ -538,7 +577,7 @@ function updateCheckoutSelectedDeliveryAddress(orderID, addressID) {
         };
 
         $.ajax({
-            url: '/checkout/updateCheckoutSelectedDeliveryAddress',
+            url: prefix+'/checkout/updateCheckoutSelectedDeliveryAddress',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(request),
@@ -564,7 +603,7 @@ function updateInvoicePaymentStatus(options, callback) {
         };
 
         $.ajax({
-            url: '/merchants/order/detail/updateStatus',
+            url: prefix+'/merchants/order/detail/updateStatus',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(request),
@@ -572,7 +611,7 @@ function updateInvoicePaymentStatus(options, callback) {
                 if (typeof message !== 'undefined' && message.Result === true) {
 
                     $.ajax({
-                        url: '/merchants/order/detail/updateTransactionInvoiceStatus',
+                        url: prefix+'/merchants/order/detail/updateTransactionInvoiceStatus',
                         type: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify({
@@ -618,7 +657,7 @@ function updateOrderStatusb2binDetails(status) {
         };
 
         $.ajax({
-            url: '/merchants/order/detail/updateStatusb2b',
+            url: prefix+'/merchants/order/detail/updateStatusb2b',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(request),
@@ -627,7 +666,7 @@ function updateOrderStatusb2binDetails(status) {
 
                     if (process.env.CHECKOUT_FLOW_TYPE === 'b2c') {
                         $.ajax({
-                            url: '/merchants/order/detail/updateTransactionInvoiceStatus',
+                            url: prefix+'/merchants/order/detail/updateTransactionInvoiceStatus',
                             type: 'POST',
                             contentType: 'application/json',
                             data: JSON.stringify({
@@ -643,6 +682,48 @@ function updateOrderStatusb2binDetails(status) {
                             }
                         });
                     }
+
+                    //$.ajax({
+                    //    url: '/merchants/order/edm/sendStatusEdm',
+                    //    type: 'POST',
+                    //    contentType: 'application/json',
+                    //    data: JSON.stringify({
+                    //        invoices: [request.invoiceNo],
+                    //        status: request.status
+                    //    }),
+                    //    success: function (result) {
+                    //        if (detail.Orders) {
+                    //            detail.Orders.map(function (order) {
+                    //                order.CartItemDetails.map(function (cartItem) {
+                    //                    let tempStatus = {
+                    //                        Name: request.status,
+                    //                        Type: 'Order'
+                    //                    };
+                    //                    cartItem.Statuses.push(tempStatus);
+                    //                });
+                    //            });
+                    //        } else {
+                    //            //b2b
+                    //            detail.CartItemDetails.map(function (cartItem) {
+                    //                let tempStatus = {
+                    //                    Name: request.status,
+                    //                    Type: 'Order'
+                    //                };
+                    //                cartItem.Statuses.push(tempStatus);
+                    //            });
+                    //        }
+
+
+                    //        return dispatch({
+                    //            type: actionTypes.UPDATE_DETAIL_ORDER,
+                    //            detail: detail,
+                    //            isShowSuccessMessage: true
+                    //        });
+                    //    },
+                    //    error: function (jqXHR, textStatus, errorThrown) {
+                    //        console.log(textStatus, errorThrown);
+                    //    }
+                    //});
 
                     if (detail.Orders) {
                         detail.Orders.map(function (order) {
@@ -684,15 +765,13 @@ function updateOrderStatusb2binDetails(status) {
 function updateDetailOrder(status) {
     return function (dispatch, getState) {
         let detail = getState().orderReducer.detail;
-
         let request = {
             invoiceNo: detail.InvoiceNo,
-            status: status,
-            orderId: detail.Orders[0].ID
+            status: status
         };
 
         $.ajax({
-            url: '/merchants/order/detail/updateStatus',
+            url: prefix+'/merchants/order/detail/updateStatus',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(request),
@@ -700,12 +779,12 @@ function updateDetailOrder(status) {
                 if (typeof message !== 'undefined' && message.Result === true) {
 
                     $.ajax({
-                        url: '/merchants/order/detail/updateTransactionInvoiceStatus',
+                        url: prefix+'/merchants/order/detail/updateTransactionInvoiceStatus',
                         type: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify({
                             fulfilmentStatus: '',
-                            paymentStatus: status === 'Cancelled' ? 'Cancelled': 'Paid',
+                            paymentStatus: 'Paid',
                             invoiceNo: request.invoiceNo
                         }),
                         success: function (message) {
@@ -721,14 +800,54 @@ function updateDetailOrder(status) {
                         }
                     });
 
+                    //$.ajax({
+                    //    url: '/merchants/order/edm/sendStatusEdm',
+                    //    type: 'POST',
+                    //    contentType: 'application/json',
+                    //    data: JSON.stringify({
+                    //        invoices: [request.invoiceNo],
+                    //        status: request.status
+                    //    }),
+                    //    success: function (result) {
+                    //        if (detail.Orders) {
+                    //            detail.Orders.map(function (order) {
+                    //                order.CartItemDetails.map(function (cartItem) {
+                    //                    let tempStatus = {
+                    //                        Name: request.status,
+                    //                        Type: 'Fulfilment'
+                    //                    };
+                    //                    cartItem.Statuses.push(tempStatus);
+                    //                });
+                    //            });
+                    //        } else {
+                    //            //b2b
+                    //            detail.CartItemDetails.map(function (cartItem) {
+                    //                let tempStatus = {
+                    //                    Name: request.status,
+                    //                    Type: 'Fulfilment'
+                    //                };
+                    //                cartItem.Statuses.push(tempStatus);
+                    //            });
+                    //        }
+
+
+                    //        return dispatch({
+                    //            type: actionTypes.UPDATE_DETAIL_ORDER,
+                    //            detail: detail,
+                    //            isShowSuccessMessage: true
+                    //        });
+                    //    },
+                    //    error: function (jqXHR, textStatus, errorThrown) {
+                    //        console.log(textStatus, errorThrown);
+                    //    }
+                    //});
+
                     if (detail.Orders) {
                         detail.Orders.map(function (order) {
                             order.CartItemDetails.map(function (cartItem) {
-                                var d = new Date();
                                 let tempStatus = {
                                     Name: request.status,
-                                    Type: 'Fulfilment',
-                                    CreatedDateTime: d.toISOString()
+                                    Type: 'Fulfilment'
                                 };
                                 cartItem.Statuses.push(tempStatus);
                             });
@@ -808,7 +927,7 @@ function revertPayment(isRefund, cartItemID) {
         };
 
         $.ajax({
-            url: '/merchants/order/detail/revertPayment',
+            url: prefix+'/merchants/order/detail/revertPayment',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(request),
@@ -888,7 +1007,7 @@ function revertPaymentOrderList(isRefund, cartItemID) {
         };
 
         $.ajax({
-            url: '/merchants/order/detail/revertPayment',
+            url: prefix+'/merchants/order/detail/revertPayment',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(request),
@@ -934,7 +1053,6 @@ module.exports = {
     showHideSuccessMessage: showHideSuccessMessage,
     updateDetailOrder: updateDetailOrder,
     revertPayment: revertPayment,
-    onUpdateBookingSlot: onUpdateBookingSlot,
     revertPaymentOrderList: revertPaymentOrderList,
     updateCheckoutSelectedDeliveryAddress: updateCheckoutSelectedDeliveryAddress,
     updateInvoicePaymentStatus: updateInvoicePaymentStatus,

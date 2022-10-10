@@ -1,6 +1,7 @@
 'use strict';
-const React = require('react');
-const BaseComponent = require('../../../../shared/base');
+var React = require('react');
+var BaseComponent = require('../../../../shared/base');
+const CommonModule = require('../../../../../public/js/common.js');
 
 class SearchItemViewComponent extends BaseComponent {
     renderRating(stars) {
@@ -10,10 +11,9 @@ class SearchItemViewComponent extends BaseComponent {
             </div>
         );
     }
-
     render() {
-        var self = this;
 
+        var self = this;
         return (
             <div className="items-content behavior2" id="items-list">
                 {Array.from(self.props.items).map(function (item, index) {
@@ -21,7 +21,7 @@ class SearchItemViewComponent extends BaseComponent {
                 	const stars = AverageRating ? AverageRating * 20 : 0;
                     return (
                         <div className="item-box" key={item.ID}>
-                            <a href={"/items/" + self.generateSlug(item.Name) + "/" + item.ID + "?name="+ item.Name}>
+                            <a href={CommonModule.getAppPrefix()+"/items/" + self.generateSlug(item.Name) + "/" + item.ID + "?name="+ item.Name}>
                                 <div className="item-image">
                                     <img src={item.Media && item.Media.length > 0 ? item.Media[0].MediaUrl : ''} />
                                 </div>
@@ -31,7 +31,7 @@ class SearchItemViewComponent extends BaseComponent {
                                     </div>
                                     <div className="item-desc">
                                         <p className="item-name">{item.Name}</p>
-                                        {self.props.reviewAndRating === true ? self.renderRating(stars):''}
+                                        {self.props.ReviewAndRating === true ? self.renderRating(stars):''}
                                         <p className="item-seller">{item.MerchantDetail.DisplayName} </p>
                                     </div>
                                 </div>

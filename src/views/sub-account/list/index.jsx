@@ -2,7 +2,7 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 const BaseComponent = require('../../shared/base');
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 const TitleComponent = require('./title');
 const FilterComponent = require('./filter');
@@ -13,8 +13,6 @@ const PaginationComponent = require('../../common/pagination');
 const FooterComponent = require('./footer');
 const SubAccountActions = require('../../../redux/subAccountActions');
 const EnumCoreModule = require('../../../public/js/enum-core');
-const PermissionTooltip = require('../../common/permission-tooltip');
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
 
 if (typeof window !== 'undefined') { var $ = window.$; }
 
@@ -29,9 +27,6 @@ class SubAccountListComponent extends BaseComponent {
         this.sendInvitations = this.sendInvitations.bind(this);
         this.showDelete = this.showDelete.bind(this);
         this.handlePageSizeChange = this.handlePageSizeChange.bind(this);
-        this.showInviteModal = this.showInviteModal.bind(this);
-
-        this.permissionPageType = props.isMerchantAccess ? 'merchant' : 'consumer';
     }
 
     handlePageSizeChange(value) {
@@ -112,27 +107,17 @@ class SubAccountListComponent extends BaseComponent {
     }
 
     showDelete(userId) {
-        if (!this.props.isAuthorizedToDelete) return;
-        const self = this;
-        this.props.validatePermissionToPerformAction(`delete-${this.permissionPageType}-sub-accounts-api`, () => {
-            self.props.setUserToDelete(userId);
-        });
-    }
-
-    showInviteModal(e) {
-        const btn = $(`#${e.target.id}`);
-        if (!this.props.isAuthorizedToAdd) return;
-        this.props.validatePermissionToPerformAction(`add-${this.permissionPageType}-sub-accounts-api`, () => {
-            $('#modal-create-account').modal('show');
-            $('#cover').fadeIn();
-            $('#modal-create-account').find('.modal-title').html(btn.data('modal-title'));
-            $('#modal-create-account').find('button[type="button"]').data('registration-type', btn.data('registration-type'));
-            $('#modal-create-account').find('button[type="button"]').attr('disabled', false);
-            $('#modal-create-account').find('input[name="invite_mail"]').val('');
-        });
+        this.props.setUserToDelete(userId);
     }
 
     componentDidMount() {
+        $('#modal-create-account').on('show.bs.modal', function (e) {
+            $(e.currentTarget).find('.modal-title').html($(e.relatedTarget).data('modal-title'));
+            $(e.currentTarget).find('button[type="button"]').data('registration-type', $(e.relatedTarget).data('registration-type'));
+            $(e.currentTarget).find('button[type="button"]').attr('disabled', false);
+            $(e.currentTarget).find('input[name="invite_mail"]').val('');
+        });
+
         $('#filter-form').on('submit', () => {
             return false;
         });
@@ -159,20 +144,14 @@ class SubAccountListComponent extends BaseComponent {
         }
 
         return (
-            <td className="action-cell mobi-text-right" data-th="">
-                <PermissionTooltip isAuthorized={this.props.isAuthorizedToDelete} extraClassOnUnauthorized={'icon-grey'}>
-                    <a data-id="" className="delete_project"><i className="icon icon-delete" onClick={(e) => this.showDelete(account.ID)} /></a>
-                </PermissionTooltip>
-            </td>
+            <td className="action-cell mobi-text-right" data-th=""><a data-id="" className="delete_project"><i className="icon icon-delete" onClick={(e) => this.showDelete(account.ID)} /></a></td>
         );
     }
 
     renderInviteMerchantLink() {
         if (this.isLoggedUserMerchant()) {
             return (
-                <PermissionTooltip isAuthorized={this.props.isAuthorizedToAdd} extraClassOnUnauthorized={"icon-grey"}>
-                    <a className="top-title" href="#" onClick={this.showInviteModal} id="inviteMerchantSubAccounts" data-registration-type="MerchantSubAccount" data-modal-title="Invite Merchant Sub-Account"><i className="fas fa-plus fa-fw" /> Invite Merchant Sub-Account</a>
-                </PermissionTooltip>
+                <a className="top-title" href="#" data-toggle="modal" data-target="#modal-create-account" data-registration-type="MerchantSubAccount" data-modal-title="Invite Merchant Sub-Account"><i className="fas fa-plus fa-fw" /> Invite Merchant Sub-Account</a>
             );
         }
 
@@ -254,15 +233,12 @@ class SubAccountListComponent extends BaseComponent {
                                 <div className="sc-upper">
                                     <TitleComponent title={"Account List"} entries={TotalRecords} />
                                     <div className="sc-tops">
-                                        <PermissionTooltip isAuthorized={this.props.isAuthorizedToAdd} extraClassOnUnauthorized={"icon-grey"}>
-                                            <a className="top-title" href="#" id="inviteBuyerSubAccounts" onClick={this.showInviteModal} data-registration-type="BuyerSubAccount" data-modal-title="Invite Buyer Sub-Account"><i className="fas fa-plus fa-fw" /> Invite Buyer Sub-Account</a>
-                                        </PermissionTooltip>
+                                        <a className="top-title" href="#" data-toggle="modal" data-target="#modal-create-account" data-registration-type="BuyerSubAccount" data-modal-title="Invite Buyer Sub-Account"><i className="fas fa-plus fa-fw" /> Invite Buyer Sub-Account</a> {'\u00A0\u00A0'}
                                         {
-                                            this.isLoggedUserMerchant() ? this.renderInviteMerchantLink() : ''
+                                            this.props.user.isBuyerSideBar === false ? this.renderInviteMerchantLink() :''
                                         }
                                     </div>
                                 </div>
-
                                 <div className="sassy-filter sm-filter">
                                     <form id="filter-form">
                                         <div className="sassy-flex">
@@ -297,12 +273,9 @@ class SubAccountListComponent extends BaseComponent {
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
-        isMerchantAccess: state.subAccountReducer.isMerchantAccess,
         subAccounts: state.subAccountReducer.subAccounts,
         userToDelete: state.subAccountReducer.userToDelete,
-        keyword: state.subAccountReducer.keyword,
-        isAuthorizedToAdd: state.userReducer.pagePermissions.isAuthorizedToAdd,
-        isAuthorizedToDelete: state.userReducer.pagePermissions.isAuthorizedToDelete
+        keyword: state.subAccountReducer.keyword
     };
 }
 
@@ -313,8 +286,7 @@ function mapDispatchToProps(dispatch) {
         deleteUser: () => dispatch(SubAccountActions.deleteUser()),
         search: (pageSize, pageNumber, keyword) => dispatch(SubAccountActions.search(pageSize, pageNumber, keyword)),
         sendInvitations: (emails, registrationType, callback) => dispatch(SubAccountActions.sendInvitations(emails, registrationType, callback)),
-        setUserToDelete: (userId) => dispatch(SubAccountActions.setUserToDelete(userId)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
+        setUserToDelete: (userId) => dispatch(SubAccountActions.setUserToDelete(userId))
     };
 }
 

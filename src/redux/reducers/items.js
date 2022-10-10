@@ -14,7 +14,8 @@ const initialState = {
     feedback: {},
     processing: false,
     itemDetail: {},
-    bookings: []
+    predefinedValues: {},
+    itemViewType: null,
 };
 
 function itemReducer(state = initialState, action) {

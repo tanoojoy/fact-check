@@ -3,19 +3,14 @@ const React = require('react');
 const ReactRedux = require('react-redux');
 const Moment = require('moment');
 const BaseComponent = require('../../shared/base');
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 const OrderItemsComponent = require('../shared/order-items');
 const OrderTotalComponent = require('../shared/order-total');
 const OrderDiaryComponent = require('../../order-diary/index-with-border');
-const PermissionTooltip = require('../../common/permission-tooltip');
 const ReceivingNoteActions = require('../../../redux/recevingNoteActions');
 const OrderDiaryActions = require('../../../redux/orderDiaryActions');
 const CommonModule = require('../../../public/js/common');
-
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
-
-const addReceivingNotePermissionCode = 'add-consumer-create-receiving-note-api';
 
 const sections = [
     { key: 'Comment', value: 'Comment' }
@@ -48,12 +43,16 @@ class CreateReceivingNoteComponent extends BaseComponent {
     }
 
     createReceipt(e) {
+
         e.preventDefault();
         let self = this;
         if (!self.state.isSaving) {
+
             self.setState({
                 isSaving: true
             }, () => {
+
+
                 if (CommonModule.validateFields('.required-input')) {
 
                     self.setState({
@@ -95,19 +94,18 @@ class CreateReceivingNoteComponent extends BaseComponent {
                     return;
                 }
 
-                if (!this.props.isAuthorizedToAdd) return;
-                self.props.validatePermissionToPerformAction(addReceivingNotePermissionCode, () => {
-                    self.props.createReceivingNote(options, (result) => {
-                        window.location = '/receiving-note/list';
-                    });
-                })
-            });
+                this.props.createReceivingNote(options, (result) => {
+                    window.location = '/receiving-note/list';
+                });
+            })
+
         }
+
     }
 
     render() {
-        const { locationVariantGroupId, orderDetail, isAuthorizedToAdd } = this.props;
-        const extraBtnClass = isAuthorizedToAdd ? '' : 'disabled';
+        const { orderDetail } = this.props;
+
         return (
             <React.Fragment>
                 <div className="header mod" id="header-section">
@@ -134,7 +132,7 @@ class CreateReceivingNoteComponent extends BaseComponent {
                                                     <div className="details-row">
                                                         <div>
                                                             <label>PO No.</label>
-                                                            <div>{orderDetail.CosmeticNo != null && orderDetail.CosmeticNo != "" ? orderDetail.CosmeticNo : orderDetail.PurchaseOrderNo}</div>
+                                                            <div>{orderDetail.PurchaseOrderNo}</div>
                                                         </div>
                                                         <div>
                                                             <label>Supplier</label>
@@ -150,15 +148,13 @@ class CreateReceivingNoteComponent extends BaseComponent {
                                                     <input className="sassy-control required-input ui-timepicker-input" type="text" name="startTime" id="time-received" placeholder="HH:MM" autoComplete="off" />
                                                 </div>
                                                 <div className="save-actions pull-right">
-                                                    <PermissionTooltip isAuthorized={isAuthorizedToAdd}>
-                                                        <a href="#" className={`sassy-btn sassy-btn-bg submit-receipt ${extraBtnClass}`} onClick={(e) => this.createReceipt(e)}>Create Receipt</a>
-                                                    </PermissionTooltip>
+                                                    <a href="#" className="sassy-btn sassy-btn-bg submit-receipt" onClick={(e) => this.createReceipt(e)}>Create Receipt</a>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="col-md-4" />
-                                    <OrderItemsComponent orderDetail={orderDetail} isCreateReceivingNote={true} locationVariantGroupId={locationVariantGroupId} />
+                                    <OrderItemsComponent orderDetail={orderDetail} isCreateReceivingNote={true} />
                                 </div>
                                 <OrderTotalComponent orderDetail={orderDetail} />
                                 <OrderDiaryComponent
@@ -177,9 +173,6 @@ class CreateReceivingNoteComponent extends BaseComponent {
                                     setUploadFile={this.props.setUploadFile}
                                     createEvent={this.props.createEvent}
                                     showDropdownPlaceholder={false}
-                                    isAuthorizedToAdd={isAuthorizedToAdd}
-                                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                    permissionCode={addReceivingNotePermissionCode}
                                 />
                             </div>
                         </div>
@@ -194,8 +187,6 @@ function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
         orderDetail: state.receivingNoteReducer.orderDetail,
-        locationVariantGroupId: state.marketplaceReducer.locationVariantGroupId,
-        isAuthorizedToAdd: state.userReducer.pagePermissions.isAuthorizedToAdd,
         //Order Diary
         eventCustomField: state.orderDiaryReducer.eventCustomField,
         events: state.orderDiaryReducer.events,
@@ -218,7 +209,6 @@ function mapDispatchToProps(dispatch) {
         updateSelectedTabSection: (section) => dispatch(OrderDiaryActions.updateSelectedTabSection(section)),
         setUploadFile: (file, isValid) => dispatch(OrderDiaryActions.setUploadFile(file, isValid)),
         createEvent: (event, formData, page) => dispatch(OrderDiaryActions.createEvent(event, formData, page)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
     };
 }
 

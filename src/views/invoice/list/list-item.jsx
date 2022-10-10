@@ -2,8 +2,6 @@ const React = require('react');
 var BaseComponent = require('../../shared/base');
 const Currency = require('currency-symbol-map');
 
-const PermissionTooltip = require('../../common/permission-tooltip');
-
 if (typeof window !== 'undefined') { var $ = window.$; }
 
 class ListItemComponent extends BaseComponent {
@@ -32,18 +30,18 @@ class ListItemComponent extends BaseComponent {
         return (
             <React.Fragment>
                 <tr className="account-row " data-key={invoice.InvoiceNo} data-id="1" key={invoice.InvoiceNo}>                    
-                    <td><a href={invoice.InvoiceNo ? `${isUserMerchant ? '/merchants' : ''}/invoice/detail/${invoice.InvoiceNo}` : '#'}>{paymentDetail.CosmeticNo != null && paymentDetail.CosmeticNo != "" ? paymentDetail.CosmeticNo : invoice.InvoiceNo || '-'}</a></td>
+                    <td><a href={invoice.InvoiceNo ? `${isUserMerchant ? '/merchants' : ''}/invoice/detail/${invoice.InvoiceNo}` : '#'}>{invoice.InvoiceNo || '-'}</a></td>
                     <td><a href={invoice.InvoiceNo ? `${isUserMerchant ? '/merchants' : ''}/invoice/detail/${invoice.InvoiceNo}` : '#'}>{paymentDetail.GatewayTransactionID || '-'}</a></td>
                     <td><a href={invoice.InvoiceNo ? `${isUserMerchant ? '/merchants' : ''}/invoice/detail/${invoice.InvoiceNo}` : '#'}>{paymentDetail.DateTimeCreated ? this.formatDateTime(paymentDetail.DateTimeCreated) : '-'}</a></td>
                     <td><a href={invoice.InvoiceNo ? `${isUserMerchant ? '/merchants' : ''}/invoice/detail/${invoice.InvoiceNo}` : '#'}>{paymentDetail.PaymentDueDateTime ? this.formatDateTime(paymentDetail.PaymentDueDateTime) : '-'}</a></td>
-                    <td><a href={order.ID ? `${isUserMerchant ? '/merchants/order' : '/purchase'}/detail/orderid/${order.ID}` : '#'}>{order.CosmeticNo != null && order.CosmeticNo != "" ? order.CosmeticNo :order.PurchaseOrderNo}</a></td>
+                    <td><a href={order.ID ? `${isUserMerchant ? '/merchants/order' : '/purchase'}/detail/orderid/${order.ID}` : '#'}>{order.PurchaseOrderNo}</a></td>
                     {isUserMerchant ? 
                         (<td><a href={invoice.InvoiceNo ? `${isUserMerchant ? '/merchants' : ''}/invoice/detail/${invoice.InvoiceNo}` : '#'}>{ConsumerDetail.DisplayName}</a></td>) : 
                         (<td><a href={invoice.InvoiceNo ? `${isUserMerchant ? '/merchants' : ''}/invoice/detail/${invoice.InvoiceNo}` : '#'}>{MerchantDetail.DisplayName}</a></td>)
                     }
                     <td>                        
                         <a href={invoice.InvoiceNo ? `${isUserMerchant ? '/merchants' : ''}/invoice/detail/${invoice.InvoiceNo}` : '#'}>
-                            {this.renderFormatMoney(order.CurrencyCode, invoice.Total + invoice.Fee)}
+                            <span className="currencyCode">{order.CurrencyCode}</span> <span className="currencySymbol">{Currency(order.CurrencyCode)}</span> <span className="priceAmount">{invoice.Total + invoice.Fee}</span>
                         </a>
                     </td>
                     <td><a href={invoice.InvoiceNo ? `${isUserMerchant ? '/merchants' : ''}/invoice/detail/${invoice.InvoiceNo}` : '#'}>{gateway.Gateway || '-'}</a></td>
@@ -57,12 +55,10 @@ class ListItemComponent extends BaseComponent {
                             ) : 
                             (
                                 <td>
-                                    <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                        <select defaultValue={paymentDetail.Status == 'Success' ? 'Paid' : paymentDetail.Status || '0'} onChange={(e) => this.props.updateInvoiceStatus(invoice.InvoiceNo, e.target.value)}>
+                                        <select defaultValue={paymentDetail.Status == 'Success' ? 'Paid' : paymentDetail.Status || '0'} onChange={(e) =>this.props.updateInvoiceStatus(invoice.InvoiceNo, e.target.value)}>
                                             <option value="Waiting for Payment">Waiting for Payment</option>
-                                            <option value="Paid">Paid</option>
-                                        </select>
-                                    </PermissionTooltip>
+                                            <option value="Paid">Paid</option>             
+                                    </select>
                                 </td>
                             )
                         ) : 

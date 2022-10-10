@@ -3,6 +3,8 @@ var React = require('react');
 var Moment = require('moment');
 
 var BaseComponent = require('../../../../../../views/shared/base');
+const CommonModule = require('../../../../../public/js/common.js');
+
 class OrderListComponent extends BaseComponent {
     isSelectedCartItem(cartItemID) {
         if (typeof this.props.selectedOrders !== "undefined") {
@@ -32,10 +34,11 @@ class OrderListComponent extends BaseComponent {
     }
 
     shortenOrderNo() {
+
         $(".long-details a").shorten({
             "showChars": 6,
-            "moreText": "<img class=" + "more-icon" + " src=" + "/assets/images/back-arrow.svg" + " />",
-            "lessText": "<img src=" + "/assets/images/back-arrow.svg" + " />"
+            "moreText": "<img class=" + "more-icon" + " src=" + CommonModule.getAppPrefix() + "/assets/images/back-arrow.svg" + " />",
+            "lessText": "<img src=" + CommonModule.getAppPrefix() + "/assets/images/back-arrow.svg" + " />"
         });
     }
 

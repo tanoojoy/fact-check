@@ -1,6 +1,5 @@
 'use strict';
 var React = require('react');
-const PermissionTooltip = require('../../common/permission-tooltip');
 
 class ComparisonDetailListComponent extends React.Component {
     setSelectedComparison() {
@@ -18,42 +17,15 @@ class ComparisonDetailListComponent extends React.Component {
         $('body').on('click', '#btnSend', function () {
             var $form = $('#modalPDF');
             var $name = $form.find('#emailPDF');
-            var names = $.trim($name.val()).split(',');
-            var i;
-            //validate all email
-            if (names) {
-                let hasError = false;
-                for (i = 0; i < names.length; i++) {
-                    if (names[i]) {
-                        if (!self.validateEmail(names[i])) {
-                            $name.addClass('error-con');
-                            hasError = true;
-                            break;
-                        }
-                    }
-                }
-                if (hasError) {
-                    return false;
-                }
-            }
-            else {
+            var name = $.trim($name.val());
+            if (!self.validateEmail(name)) {
                 $name.addClass('error-con');
-            }            
-            for (i = 0; i < names.length; i++) {
-                if (names[i]) {
-                    self.props.exportToPDF(self.props.selectedComparisonId, name);
-                }
+            } else {
+                self.props.exportToPDF(self.props.selectedComparisonId, name);
+                $name.removeClass('error-con');
+                $form.modal('hide');
+                $name.val('');
             }
-            $form.modal('hide');
-            $name.val('');
-            //if (!self.validateEmail(name)) {
-            //    $name.addClass('error-con');
-            //} else {
-            //    self.props.exportToPDF(self.props.selectedComparisonId, name);
-            //    $name.removeClass('error-con');
-            //    $form.modal('hide');
-            //    $name.val('');
-            //}
         });
     }
 
@@ -99,11 +71,7 @@ class ComparisonDetailListComponent extends React.Component {
                     <div className="col-md-6 col-sm-6">
                         <ul className="compare-tab">
                             <li><span>{this.props.comparisonDetailCount}</span> products added</li>
-                            <li>
-                                <PermissionTooltip isAuthorized={this.props.permissions.isAuthorizedToDelete}>
-                                    <span id="clearAll" onClick={() => this.showDeleteAllModal()}>Clear all</span>
-                                </PermissionTooltip>
-                            </li>
+                            <li><span id="clearAll" onClick={() => this.showDeleteAllModal()}>Clear all</span></li>
                             <li><a id="exportPDF" className="pdf-button" href="javascript:void(0);">Export to PDF</a></li>
                         </ul>
                     </div>

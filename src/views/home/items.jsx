@@ -1,15 +1,33 @@
 ﻿'use strict';
-const React = require('react');
-const BaseComponent = require('../shared/base');
-const ItemPriceComponent = require('../features/pricing_type/' + process.env.PRICING_TYPE + '/home/item-price');
+var React = require('react');
 
-class ItemsComponent extends BaseComponent {
+var BaseComponent = require('../shared/base');
+const CommonModule = require('../../public/js/common.js');
+
+class ItemsHomeComponent extends BaseComponent {
+
+    constructor(props) {
+        super(props);
+    }
+
     itemUrl(itemName, itemId) {
-        return "/items/" + this.generateSlug(itemName) + "/" + itemId;
+        return CommonModule.getAppPrefix()+"/items/" + this.generateSlug(itemName) + "/" + itemId;
+    }
+
+    getPrice(item) {
+        const { PRICING_TYPE } = process.env;
+        const { user, userPreferredLocationId } = this.props;
+
+        //Guest Logic
+        if (PRICING_TYPE == 'country_level' && (typeof user === 'undefined' || !userPreferredLocationId)) {
+            return 0;
+        }
+
+        return item.Price == null && (item.HasChildItems && item.ChildItems != null && item.ChildItems.length > 0) ? item.ChildItems[0].Price : item.Price;
     }
 
     render() {
-        var self = this;    
+        var self = this;
         return (
             <div className="latest-item-list">
                 <div className="container">
@@ -20,7 +38,7 @@ class ItemsComponent extends BaseComponent {
                     <div className="row">
                         {Array.from(this.props.items.slice(0, (self.props.layoutItemCount))).map(function (item, index) {
                             let imgSrc = "";
-                            if (item.Media) {                                
+                            if (item.Media) {
                                 imgSrc = item.Media[0].MediaUrl
                             }
                             return (<div className="col-md-2 col-sm-4 col-xs-6 xs-mb-15" key={item.ID}>
@@ -31,10 +49,7 @@ class ItemsComponent extends BaseComponent {
                                     <div className="item-detail">
                                         <h4 className="item-name">{item.Name}</h4>
                                         <div className="item-price">
-                                            <ItemPriceComponent
-                                                item={item}
-                                                user={self.props.user}
-                                                userPreferredLocationId={self.props.userPreferredLocationId} />
+                                            {self.renderFormatMoney(item.CurrencyCode, self.getPrice(item))}
                                         </div>
                                     </div>
                                 </a>
@@ -42,7 +57,7 @@ class ItemsComponent extends BaseComponent {
                         })}
 
                         <div className="vew-more-btn text-center">
-                            <a href="/search" className="more-btn">View More <i className="fa fa-angle-right"></i></a>
+                            <a href={CommonModule.getAppPrefix()+"/search"} className="more-btn">View More <i className="fa fa-angle-right"></i></a>
                         </div>
                     </div>
                 </div>
@@ -51,4 +66,6 @@ class ItemsComponent extends BaseComponent {
     }
 }
 
-module.exports = ItemsComponent;
+module.exports = {
+    ItemsHomeComponent
+}

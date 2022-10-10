@@ -5,7 +5,6 @@ if (typeof window !== 'undefined') {
 }
 
 var EnumCoreModule = require('../../public/js/enum-core');
-const PermissionTooltip =  require('../common/permission-tooltip');
 
 class EventFormComponent extends React.Component {
     componentDidUpdate() {
@@ -123,34 +122,31 @@ class EventFormComponent extends React.Component {
     }
 
     addNewEvent(e) {
-        if (!this.props.isAuthorizedToAdd) return;
-        const self = this;
-        this.props.validatePermissionToPerformAction(this.props.permissionCode, () => {
-            if (self.validInput()) {
-                const btn = $("#addNewEntry").prop('disabled', true);
+        if (this.validInput()) {
+            const btn = $("#addNewEntry").prop('disabled', true);
 
-                const event = $('input[name="entry_event"]').val();
-                let formData;
+            const event = $('input[name="entry_event"]').val();
+            let formData;
 
-                if (self.props.uploadFile !== '') {
-                    formData = new FormData();
-                    $.each($('#order-diary-file[type="file"]')[0].files, function (i, file) {
-                        formData.append('file-' + i, file);
-                    });
-                }
-
-                self.props.createEvent(event, formData, self.props.page || null);
-                $(".uploaded-contracts").html("");
-                $('#order-diary-file[type="file"]')[0].value = '';
-                $('input[name="entry_event"]').val('');
-                setTimeout(function(){ btn.prop('disabled', false); }, 3000);
+            if (this.props.uploadFile !== '') {
+                formData = new FormData();
+                $.each($('#order-diary-file[type="file"]')[0].files, function (i, file) {
+                    formData.append('file-' + i, file);
+                });
             }
-        });
+
+            this.props.createEvent(event, formData, this.props.page || null);
+            $(".uploaded-contracts").html("");
+            $('#order-diary-file[type="file"]')[0].value = '';
+            $('input[name="entry_event"]').val('');
+            setTimeout(function(){ btn.prop('disabled', false); }, 3000);
+        }
+
     }
 
     validInput() {
         $('.required').each(function () {
-            if ($(this).val() === '' && $(this).attr('id') !== 'booking_date' && $(this).attr('id') !=='booking_time') {
+            if ($(this).val() === '') {
                 $(this).addClass('error-con');
             }
             else {
@@ -183,7 +179,6 @@ class EventFormComponent extends React.Component {
 
     render() {
         const border = this.props.showBorder == true ? 'border' : '';
-        const extraBtnClass = this.props.isAuthorizedToAdd ? '' : 'disabled';
         return (
             <div className={"sassy-box-content " + border}>
                 <div className="order-grey-box">
@@ -215,9 +210,7 @@ class EventFormComponent extends React.Component {
                         </div>
                         <div className="added-entry"></div>
                         <div className="entry-btns">
-                            <PermissionTooltip isAuthorized={this.props.isAuthorizedToAdd}>
-                                <button className={`sassy-black-btn ${extraBtnClass}`} id="addNewEntry" onClick={(e) => this.addNewEvent()}>Add new entry</button>
-                            </PermissionTooltip>
+                            <button className="sassy-black-btn" id="addNewEntry" onClick={(e) => this.addNewEvent()}>Add new entry</button>
                         </div>
                     </div>
                 </div>

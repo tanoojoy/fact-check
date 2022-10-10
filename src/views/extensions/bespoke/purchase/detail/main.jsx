@@ -4,6 +4,7 @@ import ReactRedux from 'react-redux';
 import TransactionDetailComponent from './transaction-detail';
 import OrderListComponent from './order-list';
 import { submitFeedbackForCartItem } from '../../../../../redux/purchaseActions';
+const CommonModule = require('../../../../../public/js/common');
 
 class PurchaseDetailMain extends React.Component {
     onButtonClick() {
@@ -15,9 +16,9 @@ class PurchaseDetailMain extends React.Component {
 			<div className="purchase-history-container">
                 <div className="container">
                 	<div className="h-parent-child-txt full-width">
-                        <p><a href="/">Home</a></p>
+                        <p><a href={CommonModule.getAppPrefix()+"/"}>Home</a></p>
                         <i className="fa fa-angle-right"></i>
-                        <p><a href="/purchase/history">Purchase History</a></p>
+                        <p><a href={CommonModule.getAppPrefix()+"/purchase/history"}>Purchase History</a></p>
                         <i className="fa fa-angle-right"></i>
                         <p className="active">Order Summary</p>
                     </div>
@@ -64,4 +65,3 @@ module.exports = {
 	mapStateToProps,
 	mapDispatchToProps
 };
-

@@ -3,6 +3,7 @@ var React = require('react');
 var EnumCoreModule = require('../../../../../../src/public/js/enum-core.js');
 var BootBox = require('bootbox')
 var BaseClassComponent = require('../../../../shared/base.jsx');
+var CommonModule = require('../../../../../public/js/common.js');
 var toastr = require('toastr');
 
 class PaymentComponent extends BaseClassComponent {
@@ -43,7 +44,6 @@ class PaymentComponent extends BaseClassComponent {
     showAccountLinkAndCompulsory(payment) {
         var self = this;
         let linkName = '';
-
         //if (self.props.paymentAcceptanceMethod.length < 1)
         //    return ''
 
@@ -58,14 +58,14 @@ class PaymentComponent extends BaseClassComponent {
                     if (theConnection.PaymentGateway.Gateway == EnumCoreModule.GetGateways().Omise) {
                         return (
                             <div className="payment-text">
-                                <div className="verified"><div className="check-icon"><img src="/assets/images/done.svg" /></div> <span>Verified</span></div>
+                                <div className="verified"><div className="check-icon"><img src={CommonModule.getAppPrefix() + "/assets/images/done.svg"} /></div> <span>Verified</span></div>
                             </div>
                         )
                     }
                     else {
                         return (
                             <div className="payment-text"> {theConnection.Account}
-                                <div className="verified"><div className="check-icon"><img src="/assets/images/done.svg" /></div> <span>Verified</span></div>
+                                <div className="verified"><div className="check-icon"><img src={CommonModule.getAppPrefix() + "/assets/images/done.svg"} /></div> <span>Verified</span></div>
                             </div>
                         )
                     }
@@ -107,7 +107,7 @@ class PaymentComponent extends BaseClassComponent {
                     if (payment.Gateway == EnumCoreModule.GetGateways().Stripe) {
                         return (
                             <li className="Stripe" key={payment.Code}>
-                                <div className="payment-logo"> <img src="/assets/images/gateways/stripe_logo.svg" /> </div>
+                                <div className="payment-logo"> <img src={CommonModule.getAppPrefix() + "/assets/images/gateways/stripe_logo.svg"} /> </div>
                                 {self.showAccountLinkAndCompulsory(payment)}
                                 <div className="payment-note pull-right">
                                     <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
@@ -118,7 +118,7 @@ class PaymentComponent extends BaseClassComponent {
                     else if (payment.Gateway == EnumCoreModule.GetGateways().PayPal) {
                         return (
                             <li className="PayPal" key={payment.Code}>
-                                <div className="payment-logo"> <img src="/assets/images/gateways/paypal_icon.svg" /> </div>
+                                <div className="payment-logo"> <img src={CommonModule.getAppPrefix() + "/assets/images/gateways/paypal_icon.svg"} /> </div>
                                 {self.showAccountLinkAndCompulsory(payment)}
                                 <div className="payment-note pull-right">
                                     <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
@@ -129,7 +129,7 @@ class PaymentComponent extends BaseClassComponent {
                     else if (payment.Gateway == EnumCoreModule.GetGateways().Omise) {
                         return (
                             <li className="Omise" key={payment.Code}>
-                                <div className="payment-logo"> <img src="/assets/images/gateways/omise_logo.svg" /> </div>
+                                <div className="payment-logo"> <img src={CommonModule.getAppPrefix() + "/assets/images/gateways/omise_logo.svg"} /> </div>
                                 {self.showAccountLinkAndCompulsory(payment)}
                                 <div className="payment-note pull-right">
                                     <div className="btn-blue" onClick={(e) => self.doLinkAccount(payment)}>Link Account</div>
@@ -347,7 +347,7 @@ class PaymentComponent extends BaseClassComponent {
                 <div className="seller-common-box pull-left" id="omiseConfirmSec" style={{ display: self.state.showOmise ? 'block' : 'none' }}>
                     <div className="pay-tab-container">
                         <div className="nav-breadcrumb"><i className="fa fa-angle-left" /><a href="javascript:void(0);" onClick={(e) => { self.setState({ showOmise: false }) }} className="omise-back">Back</a></div>
-                        <p><img src="/assets/images/gateways/omise_logo.svg" alt="omise" width={150} /></p>
+                        <p><img src={CommonModule.getAppPrefix() + "/assets/images/gateways/omise_logo.svg"} alt="omise" width={150} /></p>
                         <h4 className="title">ACCOUNT CONFIGURATION</h4>
                         <p className="description">Your details entered here will be saved and verified by Omise. Money you earn from your sales will be accredited to your bank account directly</p>
                     </div>

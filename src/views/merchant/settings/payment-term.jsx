@@ -1,8 +1,7 @@
 'use strict';
-const React = require('React');
+const React = require('react');
 const BaseComponent = require('../../shared/base');
-
-const PermissionTooltip = require('../../common/permission-tooltip');
+const CommonModule = require('../../../public/js/common');
 
 class PaymentTermComponent extends BaseComponent {
     constructor(props) {
@@ -13,16 +12,11 @@ class PaymentTermComponent extends BaseComponent {
         $('#modalRemovePaymentTerm').on('hide.bs.modal', function (e) {
             $('#btnRemovePaymentTerm').attr('data-payment-term-id', '');
         });
-        $('[data-toggle="tooltip"]').tooltip()
     }
 
     deletePaymentTerm(e) {
-        const self = this;
-
-        this.props.validatePermissionToPerformAction("delete-merchant-payment-terms-api", () => {
-            self.props.deletePaymentTerm($(e.target).attr('data-payment-term-id'));
-            $('#modalRemovePaymentTerm').modal('hide');
-        });
+        this.props.deletePaymentTerm($(e.target).attr('data-payment-term-id'));
+        $('#modalRemovePaymentTerm').modal('hide');
     }
 
     handlePrevious() {
@@ -31,42 +25,30 @@ class PaymentTermComponent extends BaseComponent {
 
     handleSave() {
         const self = this;
-        if (!this.props.pagePermissions.isAuthorizedToAdd) return;
-        this.props.validatePermissionToPerformAction("add-merchant-payment-terms-api", () => {
-            let hasEmpty = false;
+        let hasEmpty = false;
 
-            $('#tbl-terms tbody input[type="text"]').each((index, element) => {
-                $(element).removeClass('error-con');
+        $('#tbl-terms tbody input[type="text"]').each((index, element) => {
+            $(element).removeClass('error-con');
 
-                if ($(element).val().trim() == '') {
-                    $(element).addClass('error-con');
-                    hasEmpty = true;
-                }
-            });
-
-
-            if (!hasEmpty) {
-                {
-                    self.props.savePaymentTerms(() => {
-                        self.props.updateUserToOnboard(self.props.user.Onboarded, true);
-                    });
-                }
+            if ($(element).val().trim() == '') {
+                $(element).addClass('error-con');
+                hasEmpty = true;
             }
         });
+
+
+        if (!hasEmpty) {
+            {
+                this.props.savePaymentTerms(() => {
+                    self.props.updateUserToOnboard(self.props.user.Onboarded, true);
+                });
+            }
+        }
     }
 
     showConfirmDelete(id) {
-        this.props.validatePermissionToPerformAction("delete-merchant-payment-terms-api", () => {
-            $('#modalRemovePaymentTerm').modal('show');
-            $('#btnRemovePaymentTerm').attr('data-payment-term-id', id);
-        });
-    }
-
-    addPaymentTerm() {
-        const self = this;
-        this.props.validatePermissionToPerformAction("add-merchant-payment-terms-api", () => {
-            self.props.addPaymentTerm();
-        });
+        $('#modalRemovePaymentTerm').modal('show');
+        $('#btnRemovePaymentTerm').attr('data-payment-term-id', id);
     }
 
     renderPaymentTerms(paymentTerms) {
@@ -91,11 +73,9 @@ class PaymentTermComponent extends BaseComponent {
                                 </label>
                             </td>
                             <td>
-                                <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToDelete} extraClassOnUnauthorized={''}>
-                                    <a href="#" className="delete-item" data-id={""} onClick={(e) => self.showConfirmDelete(id)}>
-                                        <img src="/assets/images/delete_btn.svg" alt="" />
-                                    </a>
-                                </PermissionTooltip>
+                                <a href="#" className="delete-item" data-id={""} onClick={(e) => self.showConfirmDelete(id)}>
+                                    <img src={CommonModule.getAppPrefix() + "/assets/images/delete_btn.svg"} alt="" />
+                                </a>
                             </td>
                         </tr>
                     )
@@ -110,7 +90,7 @@ class PaymentTermComponent extends BaseComponent {
         return (
             <React.Fragment>
                 <div id="Paymentterms" className="tab-pane fade">
-                    <h6 className="tiny-title">Payment Terms <a href="#" onClick={(e) => e.preventDefault()}><img src="/assets/images/Info.svg" width={15} /></a></h6>
+                    <h6 className="tiny-title">Payment Terms <a href="#" onClick={(e) => e.preventDefault()}><img src={CommonModule.getAppPrefix() + "/assets/images/Info.svg"} width={15} /></a></h6>
                     <div className="terms-box">
                         <div className="wrap">
                             <div className="table-responsive">
@@ -128,23 +108,12 @@ class PaymentTermComponent extends BaseComponent {
                                     </tbody>
                                 </table>
                             </div>
-
-                            <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                                <a className="add-link" href="#" onClick={(e) => this.addPaymentTerm()}><i className="fa fa-plus fa-fw" /> Add Payment Term</a>
-                            </PermissionTooltip>
+                            <a className="add-link" href="#" onClick={(e) => this.props.addPaymentTerm()}><i className="fa fa-plus fa-fw" /> Add Payment Term</a>
                         </div>
                     </div>
                     <div className="settings-button">
                         <div className="btn-previous pull-left" onClick={() => this.handlePrevious()}>Previous</div>
-                        <div
-                            className={`btn-add pull-right save-payment-terms ${this.props.pagePermissions.isAuthorizedToAdd ? '' : 'icon-grey'}`}
-                            data-toggle={this.props.pagePermissions.isAuthorizedToAdd ? '' : 'tooltip'}
-                            data-placment="top"
-                            data-original-title="You need permission to perform this action"
-                            onClick={(e) => this.handleSave()}
-                        >
-                            Save
-                        </div>
+                        <div className="btn-add pull-right save-payment-terms" onClick={(e) => this.handleSave()}>Save</div>
                     </div>
                 </div>
                 <div id="modalRemovePaymentTerm" className="modal fade" role="dialog" data-backdrop="static" data-keyboard="false" style={{ display: 'none' }}>

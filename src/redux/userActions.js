@@ -1,5 +1,11 @@
 'use strict';
+import axios from 'axios';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
+import { toExternalUserCompanyInfo } from '../utils';
+
+import { generateTempId } from '../scripts/shared/common';
+
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -28,158 +34,58 @@ function b64toBlob(b64Data, contentType, sliceSize) {
     return blob;
 }
 
-function uploadCustomFieldFile(formData) {
-    return $.ajax({
-        url: '/users/profile/pdf',
-        data: formData,
-        cache: false,
-        contentType: false,
-        processData: false,
-        method: 'POST',
-        type: 'POST'
-    });
-}
-
-function uploadCustomFieldImage(formData) {
-    return $.ajax({
-        url: '/users/profile/multiple-custom-field-media',
-        data: formData,
-        cache: false,
-        contentType: false,
-        processData: false,
-        method: 'POST',
-        type: 'POST'
-    });
-}
-
-function proceedUpdateUserInfo(userInfo, dispatch) {
-    if (userInfo.MediaOriginalFileName != null && userInfo.MediaOriginalFileName.length > 0) {
-        const formData = new FormData();
-        var block = userInfo.MediaUrl.split(';');
-        var contentType = block[0].split(':')[1];
-        var realData = block[1].split(',')[1];
-        const convertedBuffer = b64toBlob(realData, contentType);
-        formData.append('userMedia', convertedBuffer, userInfo.MediaOriginalFileName);
-        $.ajax({
-            url: '/users/profile/media',
-            data: formData,
-            cache: false,
-            contentType: false,
-            processData: false,
-            method: 'POST',
-            type: 'POST'
-        }).then(function (data, textStatus, jqXHR) {
-            userInfo.MediaOriginalFileName = null;
-            userInfo.MediaUrl = null;
-            userInfo.Media = [];
-            userInfo.Media.push({ ID: data[0].ID });
-            delete userInfo.MediaUrl;
-            delete userInfo.MediaOriginalFileName;
-
-            return userInfo;
-        }).then(function (userInfo) {
-            ajaxUpdateUserInfo(dispatch, userInfo);
+const getUserInfo = (id, token) => dispatch => {
+    axios({
+        url: `/api/user?clarivateUserId=${id}`,
+        headers: {
+            'content-type': 'application/json',
+            Authorization: `Bearer ${token}`
+        },
+        method: 'get'
+    })
+        .then(response => {
+            dispatch({
+                type: actionTypes.GET_USER_INFO,
+                userInfo: response.data
+            });
+        })
+        .catch(err => {
+            console.log(err);
         });
-    } else {
-        delete userInfo.MediaUrl;
-        delete userInfo.MediaOriginalFileName;
-        ajaxUpdateUserInfo(dispatch, userInfo);
-    }
-}
+};
 
-function proceedUpdateImageCustomField(userInfo, dispatch, callback) {
-    //Process image files from custom fields
-    var imageCustomFields = userInfo.CustomFields.filter(r => r.DataInputType === "image");
-    if (imageCustomFields && imageCustomFields.length > 0) {
-        const formData = new FormData();
-
-        imageCustomFields.forEach(image => {
-            const block = image.File.split(';');
-            const contentType = block[0].split(':')[1];
-            const realData = block[1].split(',')[1];
-            const convertedBuffer = b64toBlob(realData, contentType);
-            formData.append(image.Code, convertedBuffer, image.Filename);
-        });
-
-        Promise.all([uploadCustomFieldImage(formData)]).then((responses) => {
-            const response = responses[0];
-
-            response.forEach((media, index) => {
-                const customFieldCode = imageCustomFields[index].Code;
-                const mediaUrl = media.MediaUrl;
-                if (customFieldCode && mediaUrl) {
-                    const customField = userInfo.CustomFields.find(r => r.Code === customFieldCode);
-                    if (customField) {
-                        customField.Values = [];
-                        customField.Values.push(mediaUrl);
-                        delete customField.File;
-                        delete customField.Filename;
-                    }
-                }
-            });            
-            proceedUpdateUserInfo(userInfo, dispatch);
-        }).catch(err => {
-            if (callback) {
-                callback('Failed to upload image');
-                return false;
-            }
-        });
-    }
-    else {
-        proceedUpdateUserInfo(userInfo, dispatch);
-    }
-}
-
-function updateUserInfo(userInfo, callback) {
+function updateUserInfo(userInfo) {
     return function (dispatch) {
-        if (userInfo.CustomFields) {
-            var userCustomFilePromises = [];
-            //Process pdf files from custom fields
-            var pdfCustomFields = userInfo.CustomFields.filter(r => r.DataInputType === "upload");
-            if (pdfCustomFields && pdfCustomFields.length > 0) {
-                pdfCustomFields.forEach(pdf => {
-                    const formData = new FormData();
-                    var block = pdf.File.split(';');
-                    var contentType = block[0].split(':')[1];
-                    var realData = block[1].split(',')[1];
-                    const convertedBuffer = b64toBlob(realData, contentType);
-                    formData.append('userPdf', convertedBuffer);
-                    formData.append('customFieldCode', pdf.Code);
-                    formData.append('filename', pdf.Filename);
-                    userCustomFilePromises.push(uploadCustomFieldFile(formData));
-                });
-                Promise.all(userCustomFilePromises).then((responses) => {
-                    responses.forEach(resp => {
-                        if (resp) {
-                            var customFieldCode = resp.customFieldCode;
-                            var uploadResult = '';
-                            if (resp.result && resp.result.length > 0) {
-                                uploadResult = resp.result[0].SourceUrl;
-                            }
-                            if (customFieldCode) {
-                                var customField = userInfo.CustomFields.find(r => r.Code === customFieldCode);
-                                if (customField) {
-                                    customField.Values = [];
-                                    customField.Values.push(uploadResult);
-                                    delete customField.File;
-                                }
-                            }
-                        }
-                    });
-                    proceedUpdateImageCustomField(userInfo, dispatch, callback);
-                }).catch(err => {
-                    if (callback) {
-                        callback('Failed to upload pdf.');
-                        return false;
-                    }
-                });;                
-            }
-            else {
-                proceedUpdateImageCustomField(userInfo, dispatch, callback);
-            }
-        }
-        else {     
-            proceedUpdateUserInfo(userInfo, dispatch);
+        const externalUserInfo = toExternalUserCompanyInfo(userInfo, true);
+        if (externalUserInfo.MediaOriginalFileName != null && externalUserInfo.MediaOriginalFileName.length > 0) {
+            const formData = new FormData();
+            var block = externalUserInfo.MediaUrl.split(';');
+            var contentType = block[0].split(':')[1];
+            var realData = block[1].split(',')[1];
+            const convertedBuffer = b64toBlob(realData, contentType);
+            formData.append('userMedia', convertedBuffer, externalUserInfo.MediaOriginalFileName);
+            $.ajax({
+                url: prefix+'/users/profile/media',
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                method: 'POST',
+                type: 'POST'
+            }).then(function(data, textStatus, jqXHR) {
+                externalUserInfo.MediaOriginalFileName = null;
+                externalUserInfo.MediaUrl = null;
+                externalUserInfo.Media = [];
+                externalUserInfo.Media.push({ ID: data[0].ID });
+                delete externalUserInfo.MediaUrl;
+                delete externalUserInfo.MediaOriginalFileName;
+
+                return externalUserInfo;
+            }).then(function(externalUserInfo) {
+                ajaxUpdateInfo(dispatch, externalUserInfo);
+            });
+        } else {
+            ajaxUpdateUserInfo(dispatch, externalUserInfo);
         }
     };
 }
@@ -187,7 +93,7 @@ function updateUserInfo(userInfo, callback) {
 function getLocations(callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/user/locations',
+            url: prefix+'/user/locations',
             type: 'GET',
             success: function (result) {
                 if (typeof callback == 'function') {
@@ -209,7 +115,7 @@ function getLocations(callback) {
 function createCustomFieldDefinition(customFieldDefinition) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/user/customFieldDefinition',
+            url: prefix+'/user/customFieldDefinition',
             type: 'POST',
             data: customFieldDefinition,
             success: function (result) {
@@ -227,13 +133,17 @@ function createCustomFieldDefinition(customFieldDefinition) {
 
 function ajaxUpdateUserInfo(dispatch, userInfo) {
     const userAjaxOptions = {
-        url: '/users/update',
+        url: prefix+'/users/update',
         type: 'PUT',
         data: JSON.stringify(userInfo),
         contentType: 'application/json'
     };
     $.ajax(userAjaxOptions)
-        .done(function (user) {
+        .done(function(user) {
+            dispatch({
+                type: actionTypes.UPDATE_USER_INFO_FORM_UNIQUE_GUID,
+                payload: generateTempId()
+            })
             return dispatch({
                 type: actionTypes.UPDATE_USER_INFO,
                 user: user
@@ -244,8 +154,173 @@ function ajaxUpdateUserInfo(dispatch, userInfo) {
         });
 }
 
+const getUpgradeToPremiumPaymentLink = (callback) => dispatch => {
+    const requestOptions = {
+        url: prefix + '/users/payment-link',
+        type: 'GET',
+    };
+    $.ajax(requestOptions)
+        .done((result) => {
+            callback(result?.paymentLink);
+        })
+        .fail((jqXHR, textStatus, errorThrown) => {
+            console.log(textStatus, errorThrown);
+            callback(null);
+        })
+        .complete(() => dispatch({ type: ''}));
+};
+
+const requestLinkToCompany = (data, callback) => dispatch => {
+    axios.post(`${prefix}/choice-user-company/update`, data)
+        .then(response => {
+            if (response.data.error) {
+                callback({ success: false });
+            } else {
+                callback({ success: true });
+            }
+            return dispatch({
+                type: '',
+            });
+        })
+        .catch(err => {
+            callback({ success: false });
+            return dispatch({
+                type: '',
+            });
+        });
+}
+
+const updateUserRole = (role, callback) => dispatch => {
+    axios.post(`${prefix}/choice-user-role/update-user-role`, { role })
+        .then((response) => {
+            callback(response?.data?.redirectUrl);
+            return dispatch({
+                type: '',
+            });
+        })
+        .catch((err) => {
+            callback(null);
+            return dispatch({
+                type: '',
+            });
+        });
+}
+
+const getFollowedCompanies = (page, size) => dispatch => {
+    $.ajax({
+        url: `${prefix}/users/follower-list?page=${page}&size${size}`,
+        type: 'GET',
+        success: function (result) {
+            console.log('result', result);
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            console.log(textStatus, errorThrown);
+        }
+    });
+}
+
+const sendInviteColleaguesEmail = (data, callback) => dispatch => {
+    axios.post(`${prefix}/users/invite-colleagues`, data)
+        .then(({ data }) => {
+            callback(data?.success);
+            return dispatch({
+                type: '',
+            });
+        })
+        .catch((err) => {
+            callback(false);
+            return dispatch({
+                type: '',
+            });
+        });
+}
+
+const shareProductProfile = (data, callback) => dispatch => {
+    axios.post(`${prefix}/users/share-product`, data)
+        .then(({ data }) => {
+            callback(data?.success);
+            return dispatch({
+                type: '',
+            });
+        })
+        .catch((err) => {
+            callback(false);
+            return dispatch({
+                type: '',
+            });
+        });
+}
+
+const shareCompanySendEmail = (data, callback) => dispatch => {
+    $.ajax({
+        url: `${prefix}/users/share-company`,
+        type: 'POST',
+        data: data,        
+        success: function (result) {
+            if (callback) {
+                callback();
+            }
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            console.log(textStatus, errorThrown);
+        }
+    });
+}
+
+const followCompany = (data, callback) => dispatch => {
+    const { followCompanyId, isFollow } = data;
+    let type = '';
+    if (isFollow) {
+        type = 'POST';
+    }
+    else {
+        type = 'DELETE';
+    }
+    $.ajax({
+        url: `${prefix}/users/follower`,
+        type: type,
+        data: {
+            followCompanyId
+        },
+        success: function (result) {
+            if (callback) {
+                callback();
+            }
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            console.log(textStatus, errorThrown);
+        }
+    });
+}
+
+const getFollowerProductsByPageAndSize = (page, size, callback) => dispatch => {
+    axios.get(`${prefix}/users/product-follower-list?page=${page}&size=${size}`)
+        .then(({ data }) => {
+            callback(data?.followerProducts.followers || []);
+            return dispatch({
+                type: '',
+            });
+        })
+        .catch((err) => {
+            callback([]);
+            return dispatch({
+                type: '',
+            });
+        });
+}
+
 module.exports = {
     updateUserInfo: updateUserInfo,
     getLocations: getLocations,
-    createCustomFieldDefinition: createCustomFieldDefinition
+    createCustomFieldDefinition: createCustomFieldDefinition,
+    getUserInfo,
+    getUpgradeToPremiumPaymentLink,
+    requestLinkToCompany,
+    updateUserRole,
+    getFollowedCompanies,
+    sendInviteColleaguesEmail,
+    shareProductProfile,
+    shareCompanySendEmail,
+    followCompany,
+    getFollowerProductsByPageAndSize
 };

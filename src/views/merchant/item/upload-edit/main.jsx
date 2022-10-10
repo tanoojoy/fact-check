@@ -2,7 +2,7 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 const BaseComponent = require('../../../shared/base');
-const HeaderLayout = require('../../../layouts/header').HeaderLayoutComponent;
+const HeaderLayout = require('../../../layouts/header/index').HeaderLayoutComponent;
 const SidebarLayout = require('../../../layouts/sidebar').SidebarLayoutComponent;
 const FooterLayout = require('../../../layouts/footer').FooterLayoutComponent;
 
@@ -14,16 +14,13 @@ const CommonModule = require('../../../../public/js/common');
 
 const { PricingFeatureComponent, mapStateToProps, mapDispatchToProps } = require('../../../features/pricing_type/' + process.env.PRICING_TYPE + '/add-edit/index');
 const TabLinksComponent = require('../../../features/pricing_type/' + process.env.PRICING_TYPE + '/add-edit/tab-links');
-const AddButtonComponent = require('../../../features/pricing_type/' + process.env.PRICING_TYPE + '/add-edit/add-button');
-
-const PermissionTooltip = require('../../../common/permission-tooltip');
 
 class UploadEditComponent extends BaseComponent {
     constructor(props) {
         super(props);
         this.browseFile = this.browseFile.bind(this);
         this.showTab = this.showTab.bind(this);
-        this.uploadOrEditItem = this.uploadOrEditItem.bind(this);
+
         this.isCountryLevel = false;
     }
 
@@ -170,15 +167,13 @@ class UploadEditComponent extends BaseComponent {
     }
 
     browseFile() {
-        this.props.validatePermissionToPerformAction("add-merchant-create-item-api", () => {
-            $(".tools").addClass("hide");
-            var canvas = document.getElementById("visbleCanvas");
+        $(".tools").addClass("hide");
+        var canvas = document.getElementById("visbleCanvas");
 
-            if ($(".imageBox").find(canvas).length !== 0) {
-                canvas.remove();
-            }
-            $(".upload-wapper > .upload-wrapper-container > input").val("");
-        });
+        if ($(".imageBox").find(canvas).length !== 0) {
+            canvas.remove();
+        }
+        $(".upload-wapper > .upload-wrapper-container > input").val("");
     }
 
     showTab(tabName) {
@@ -230,22 +225,6 @@ class UploadEditComponent extends BaseComponent {
         }
     }
 
-    uploadOrEditItem() {
-        const self = this;
-
-        this.props.validatePermissionToPerformAction("add-merchant-create-item-api", () => {
-            self.props.uploadOrEditData();
-        });
-    }
-
-    removeImage(i) {
-        const self = this;
-
-        this.props.validatePermissionToPerformAction("delete-merchant-create-item-api", () => {
-            self.props.removeImage(i);
-        });
-    }
-
     renderImages() {
         let self = this;
         let images = this.props.itemModel.images;
@@ -256,11 +235,9 @@ class UploadEditComponent extends BaseComponent {
                     <div key={i} data-id={item.ID} className="uploded-box">
                         <img src={item.MediaUrl} />
                         <div className="action-area">
-                            <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToDelete} extraClassOnUnauthorized={'icon-grey'}>
-                                <a onClick={() => self.removeImage(i)}>
-                                    <i className="icon icon-close" />
-                                </a>
-                            </PermissionTooltip>
+                            <a onClick={() => { self.props.removeImage(i) }}>
+                                <i className="icon icon-close" />
+                            </a>
                         </div>
                     </div>
                 );
@@ -286,10 +263,9 @@ class UploadEditComponent extends BaseComponent {
                                 <ul id="seller-upload-tab" className="pull-left un-item-uplod-tab">
                                     <TabLinksComponent showTab={this.showTab} />
                                 </ul>
-                                <AddButtonComponent
-                                    pagePermissions={this.props.pagePermissions}
-                                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                    uploadOrEditItem={this.uploadOrEditItem} />
+                                <div className="pull-right">
+                                    <div className="un-btn-upload" id="itemUpload" onClick={() => this.props.uploadOrEditData()}><a>Add Item</a></div>
+                                </div>
                             </div>
                         </div>
                         <div className="sticky-support"></div>
@@ -326,12 +302,10 @@ class UploadEditComponent extends BaseComponent {
                                                 <div className="row">
                                                     <label>Item Cover Image* ( Maximum 5 images ) </label>
                                                     <p>Images must be in a ratio of 1:1 and no larger than 2MB (recommended 600px x 600px)</p>
-                                                    <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                                                        <div className="browse-image required">
-                                                            <a data-toggle="modal" data-target="#myModal" href="#" id="btn-browse" onClick={() => this.browseFile()} />
-                                                            <span className="icon-browse" />
-                                                        </div>
-                                                    </PermissionTooltip>
+                                                    <div className="browse-image required">
+                                                        <a data-toggle="modal" data-target="#myModal" href="#" id="btn-browse" onClick={() => this.browseFile()} />
+                                                        <span className="icon-browse" />
+                                                    </div>
                                                     <div className="uploded-items">
                                                         {this.renderImages()}
                                                     </div>
@@ -362,8 +336,6 @@ class UploadEditComponent extends BaseComponent {
                                         <div className="item-form-line" />
                                         <div className="item-custom-fields full-width">
                                             <CustomFieldComponent
-                                                pagePermissions={this.props.pagePermissions}
-                                                validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
                                                 itemModel={this.props.itemModel}
                                                 checkboxClickedCustomField={this.props.checkboxClickedCustomField}
                                                 dropDownChange={this.props.dropDownChange}
@@ -375,7 +347,6 @@ class UploadEditComponent extends BaseComponent {
                                 <div className="clearfix" />
                                 <PricingFeatureComponent
                                     {...this.props}
-                                    uploadOrEditItem={this.uploadOrEditItem}
                                     showTab={this.showTab} />
                             </div>
                         </div>

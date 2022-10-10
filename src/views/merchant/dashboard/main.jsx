@@ -2,16 +2,16 @@
 var React = require('react');
 var ReactRedux = require('react-redux');
 let FooterLayout = require('../../../views/layouts/footer').FooterLayoutComponent;
-var HeaderLayout = require('../../../views/layouts/header').HeaderLayoutComponent;
+var HeaderLayout = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 var SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 var Graph = require('./graph');
 var TopSold = require('./topsold');
 var TopViewed = require('./topviewed');
 var BaseComponent = require('../../../views/shared/base');
 var transactionActions = require('../../../redux/transactionActions');
-var activityLogActions = require('../../../redux/ActivityLogAction');
+var activityLogActions = require('../../../redux/activityLogAction');
 var moment = require('moment');
-var commonModule = require('../../../public/js/common');
+var CommonModule = require('../../../public/js/common');
 var GoogleAnalyticsLogic = require('./google-analytics-logic');
 
 class DashboardPageComponent extends BaseComponent {
@@ -25,24 +25,24 @@ class DashboardPageComponent extends BaseComponent {
 
     doMenuTopReport(type, e) {
         var self = this;
-        let pageSize = 100
+
         $('[headerfilter]').removeClass('active')
         $(e.target).addClass('active')
 
         if (type == 'Day') {
-            self.props.getMenuTopReports(this.props.user.ID, 'transactions', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', pageSize, 1)
-            self.props.getMenuTopReportsTransactionGrowth(this.props.user.ID, 'transactions', moment(new Date()).add(-2, 'days').unix(), moment(new Date()).add(-1, 'days').unix(), 'day', pageSize, 1)
-            self.props.getHeaderTotalVisits(this.props.user.ID, 'headerTotalVisits', moment(new Date()).add(-2, 'days').unix(), moment(new Date()).add(-1, 'days').unix(), 'day', pageSize, 1)
+            self.props.getMenuTopReports(this.props.user.ID, 'transactions', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', 10000000, 1)
+            self.props.getMenuTopReportsTransactionGrowth(this.props.user.ID, 'transactions', moment(new Date()).add(-2, 'days').unix(), moment(new Date()).add(-1, 'days').unix(), 'day', 10000000, 1)
+            self.props.getHeaderTotalVisits(this.props.user.ID, 'headerTotalVisits', moment(new Date()).add(-2, 'days').unix(), moment(new Date()).add(-1, 'days').unix(), 'day', 10000000, 1)
         }
         else if (type == 'Week') {
-            self.props.getMenuTopReports(this.props.user.ID, 'transactions', moment(new Date()).add(-7, 'week').unix(), moment(new Date()).unix(), 'week', pageSize, 1)
-            self.props.getMenuTopReportsTransactionGrowth(this.props.user.ID, 'transactions', moment(new Date()).add(-14, 'week').unix(), moment(new Date()).add(-7, 'week').unix(), 'week', pageSize, 1)
-            self.props.getHeaderTotalVisits(this.props.user.ID, 'headerTotalVisits', moment(new Date()).add(-14, 'week').unix(), moment(new Date()).add(-7, 'week').unix(), 'week', pageSize, 1)
+            self.props.getMenuTopReports(this.props.user.ID, 'transactions', moment(new Date()).add(-7, 'week').unix(), moment(new Date()).unix(), 'week', 10000000, 1)
+            self.props.getMenuTopReportsTransactionGrowth(this.props.user.ID, 'transactions', moment(new Date()).add(-14, 'week').unix(), moment(new Date()).add(-7, 'week').unix(), 'week', 10000000, 1)
+            self.props.getHeaderTotalVisits(this.props.user.ID, 'headerTotalVisits', moment(new Date()).add(-14, 'week').unix(), moment(new Date()).add(-7, 'week').unix(), 'week', 10000000, 1)
         }
         else if (type == 'Month') {
-            self.props.getMenuTopReports(this.props.user.ID, 'transactions', moment(new Date()).add(-30, 'month').unix(), moment(new Date()).unix(), 'month', pageSize, 1)
-            self.props.getMenuTopReportsTransactionGrowth(this.props.user.ID, 'transactions', moment(new Date()).add(-60, 'month').unix(), moment(new Date()).add(-30, 'month').unix(), 'month', pageSize, 1)
-            self.props.getHeaderTotalVisits(this.props.user.ID, 'headerTotalVisits', moment(new Date()).add(-60, 'month').unix(), moment(new Date()).add(-30, 'month').unix(), 'month', pageSize, 1)
+            self.props.getMenuTopReports(this.props.user.ID, 'transactions', moment(new Date()).add(-30, 'month').unix(), moment(new Date()).unix(), 'month', 10000000, 1)
+            self.props.getMenuTopReportsTransactionGrowth(this.props.user.ID, 'transactions', moment(new Date()).add(-60, 'month').unix(), moment(new Date()).add(-30, 'month').unix(), 'month', 10000000, 1)
+            self.props.getHeaderTotalVisits(this.props.user.ID, 'headerTotalVisits', moment(new Date()).add(-60, 'month').unix(), moment(new Date()).add(-30, 'month').unix(), 'month', 10000000, 1)
         }
 
     }
@@ -50,21 +50,21 @@ class DashboardPageComponent extends BaseComponent {
     doBottomFooter(type, e) {
 
         var self = this;
-        let pageSize = 100
+
         $('[bottomfooter]').removeClass('active')
         $(e.target).addClass('active')
 
         if (type == 'Day') {
-            self.props.getBottomFooters(this.props.user.ID, 'items', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', pageSize, 1)
-            self.props.getTopViewedTranasctions(this.props.user.ID, 'topViewed', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', pageSize, 1)
+            self.props.getBottomFooters(this.props.user.ID, 'items', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', 10000000, 1)
+            self.props.getTopViewedTranasctions(this.props.user.ID, 'topViewed', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', 10000000, 1)
         }
         else if (type == 'Week') {
-            self.props.getBottomFooters(this.props.user.ID, 'items', moment(new Date()).add(-7, 'week').unix(), moment(new Date()).unix(), 'week', pageSize, 1)
-            self.props.getTopViewedTranasctions(this.props.user.ID, 'topViewed', moment(new Date()).add(-7, 'week').unix(), moment(new Date()).unix(), 'week', pageSize, 1)
+            self.props.getBottomFooters(this.props.user.ID, 'items', moment(new Date()).add(-7, 'week').unix(), moment(new Date()).unix(), 'week', 10000000, 1)
+            self.props.getTopViewedTranasctions(this.props.user.ID, 'topViewed', moment(new Date()).add(-7, 'week').unix(), moment(new Date()).unix(), 'week', 10000000, 1)
         }
         else if (type == 'Month') {
-            self.props.getBottomFooters(this.props.user.ID, 'items', moment(new Date()).add(-30, 'month').unix(), moment(new Date()).unix(), 'month', pageSize, 1)
-            self.props.getTopViewedTranasctions(this.props.user.ID, 'topViewed', moment(new Date()).add(-30, 'month').unix(), moment(new Date()).unix(), 'month', pageSize, 1)
+            self.props.getBottomFooters(this.props.user.ID, 'items', moment(new Date()).add(-30, 'month').unix(), moment(new Date()).unix(), 'month', 10000000, 1)
+            self.props.getTopViewedTranasctions(this.props.user.ID, 'topViewed', moment(new Date()).add(-30, 'month').unix(), moment(new Date()).unix(), 'month', 10000000, 1)
         }
 
     }
@@ -221,7 +221,7 @@ class DashboardPageComponent extends BaseComponent {
         return (
             <React.Fragment >
                 <div className="graph-empty">
-                    <img src="/assets/images/cannot-found.png" />
+                    <img src={CommonModule.getAppPrefix() + "/assets/images/cannot-found.png"} />
                 </div>
             </React.Fragment>);
     }
@@ -269,7 +269,7 @@ class DashboardPageComponent extends BaseComponent {
                                                 <p>Total Sales</p>
                                                 <div className="total-value">
                                                     {self.renderFormatMoney(self.props.currencyCode, self.getTotalSales())}
-                                                   
+
                                                 </div>
                                                 <div className="high-low green">
                                                     <div className={self.totalSalesPercentage().getTotalSalesPercentage() > 0 ? 'arrow-up' : 'arrow-up hide'}></div>

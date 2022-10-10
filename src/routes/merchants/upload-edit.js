@@ -1,4 +1,6 @@
 ﻿'use strict';
+import { redirectUnauthorizedUser } from '../../utils';
+
 let express = require('express');
 let merchantUploadEditRouter = express.Router();
 let React = require('react');
@@ -19,15 +21,6 @@ let FormData = require('form-data');
 const EnumCoreModule = require('../../public/js/enum-core.js');
 
 var handlers = [authenticated, authorizedMerchant, onboardedMerchant];
-
-const { Client } = require("@googlemaps/google-maps-services-js");
-
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../../scripts/shared/user-permissions');
-
-const viewCreateItemPage = {
-    code: 'view-merchant-create-item-api',
-    renderSidebar: true
-};
 
 function generateUUID() {
     // temporary id only for variants in bespoke item upload
@@ -68,53 +61,9 @@ function createDefaultVariantGroups(currentVariantGroups) {
     return Object.assign([], currentVariantGroups);
 }
 
-function geocode(address, callback) {
-    const client = new Client({});
-    let addresses = [];
+merchantUploadEditRouter.get('/upload', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
-    if (address.Line1) {
-        addresses.push(address.Line1);
-    }
-
-    if (address.City) {
-        addresses.push(address.City);
-    }
-
-    if (address.Country) {
-        addresses.push(address.Country);
-    }
-
-    if (address.PostCode) {
-        addresses.push(address.PostCode);
-    }
-
-    addresses.join(', ')
-
-    client.geocode({
-        params: {
-            address: addresses,
-            key: process.env.GOOGLE_MAP_API_KEY
-        },
-        timeout: 1000
-    }).then((response) => {
-        const { status } = response.data;
-        if (status == 'OK') {
-            const result = response.data.results[0];
-            callback(null, result.geometry.location);
-        } else if (status == 'ZERO_RESULTS') {
-            callback(null, {
-                lat: 0,
-                lng: 0
-            });
-        } else {
-            callback('geocode api error');
-        }
-    }).catch((e) => {
-        callback('exception error');
-    });
-}
-
-merchantUploadEditRouter.get('/upload', ...handlers, isAuthorizedToAccessViewPage(viewCreateItemPage), function (req, res) {
     let currentUser = req.user;
     const appString = 'merchant-item-edit';
 
@@ -125,11 +74,7 @@ merchantUploadEditRouter.get('/upload', ...handlers, isAuthorizedToAccessViewPag
     });
 
     const promiseMarketplace = new Promise((resolve, reject) => {
-        const options = {
-            includes: 'ControlFlags'
-        };
-
-        client.Marketplaces.getMarketplaceInfo(options, function (err, result) {
+        client.Marketplaces.getMarketplaceInfo(null, function (err, result) {
             resolve(result);
         });
     });
@@ -259,21 +204,21 @@ merchantUploadEditRouter.get('/upload', ...handlers, isAuthorizedToAccessViewPag
             });
         }
         if (shippings && currentUser.CustomFields) {
-            currentUser.CustomFields.forEach(function (cf) {
-                if (cf.Name === 'DeliveryMethodAvailability') {
-                    let cfValues = JSON.parse(cf.Values[0]);
-                    if (cfValues.UnavailableDeliveryMethods) {
-                        cfValues.UnavailableDeliveryMethods.forEach(function (dmeth) {
-                            shippings.map(function (ship) {
-                                if (dmeth.ShippingMethodGuid === ship.GUID) {
-                                    ship.Show = false;
-                                }
+                currentUser.CustomFields.forEach(function (cf) {
+                    if (cf.Name === 'DeliveryMethodAvailability') {
+                        let cfValues = JSON.parse(cf.Values[0]);
+                        if (cfValues.UnavailableDeliveryMethods) {
+                            cfValues.UnavailableDeliveryMethods.forEach(function (dmeth) {
+                                shippings.map(function (ship) {
+                                    if (dmeth.ShippingMethodGuid === ship.GUID) {
+                                        ship.Show = false;
+                                    }
+                                });
+
                             });
-                               
-                        });
-                    }                       
-                }
-            });
+                        }
+                    }
+                });
         }
 
         let shippingModel = {
@@ -342,46 +287,8 @@ merchantUploadEditRouter.get('/upload', ...handlers, isAuthorizedToAccessViewPag
             }
         });
 
-        //get Implementation Bookings
-        const promiseImplementationBookings = new Promise((resolve, reject) => {
-            client.Items.getImplementationsBookings(null, function (err, result) {
-                resolve(result);
-            });
-        });
-
-        Promise.all([promiseLocationVariants, promiseImplementationBookings]).then((responses) => {
+        Promise.all([promiseLocationVariants]).then((responses) => {
             const locations = responses[0];
-            const implementationBookings = responses[1];
-
-            let defaultData = {
-                name: '-select-',
-                location: "",
-                state: "",
-                city: "",
-                postal: "",
-                long: 0,
-                lat: 0
-            };
-
-            let bookingUnit = "";
-            let durationUnit = "";
-            let priceUnit = "";
-            let isOverNight = false;
-            if (implementationBookings) {
-                //DEfault
-                bookingUnit = implementationBookings.BookingUnits[0].Name;
-                durationUnit = implementationBookings.BookingUnits[0].Durations.split("|")[0];
-                isOverNight = implementationBookings.BookingUnits[0].IsOvernight;
-                if (implementationBookings.MarketplaceBookingType === "book by duration and unit") {
-                    priceUnit = bookingUnit + " per " + durationUnit;
-                   // priceUnit = durationUnit + " per " + bookingUnit;
-
-                } else if (implementationBookings.MarketplaceBookingType === "book by duration") {
-                    priceUnit = durationUnit;
-                } else {
-                    priceUnit = bookingUnit;
-                }
-            }
 
             let itemModel = {
                 categories: categories,
@@ -393,7 +300,6 @@ merchantUploadEditRouter.get('/upload', ...handlers, isAuthorizedToAccessViewPag
                 customFields: [],
                 shippingModel: shippingModel,
                 currencyCode: marketplaceInfo.CurrencyCode,
-                controlFlags: marketplaceInfo.ControlFlags,
                 isUpload: "uploadItem",
                 moqCode: moqCode,
                 bulkPricingCode: bulkPricingCode,
@@ -414,20 +320,7 @@ merchantUploadEditRouter.get('/upload', ...handlers, isAuthorizedToAccessViewPag
                 locationItems: [],
                 locations: locations,
                 selectedLocationIds: [],
-                savedChildItemIds: [],
-                geoLocation: defaultData,
-                isAllDay: true,
-                isOverNight: isOverNight,
-                scheduler: {},
-                bookingUnit: bookingUnit,
-                durationUnit: durationUnit,
-                priceUnit: priceUnit,
-                addOn: {
-                    name: "",
-                    priceChange: ""
-                },
-                addOns: [],
-                implementationBookings: implementationBookings
+                savedChildItemIds: []
             };
 
             itemModel.negotiation = false;
@@ -437,37 +330,32 @@ merchantUploadEditRouter.get('/upload', ...handlers, isAuthorizedToAccessViewPag
                 openDeleteBulkPopUp: false
             };
 
-            getUserPermissionsOnPage(currentUser, 'Create Item', 'Merchant', (pagePermissions) => {
-                const store = Store.createItemUploadEditStore({
-                    userReducer: {
-                        user: currentUser,
-                        pagePermissions
-                    },
-                    uploadEditItemReducer: {
-                        itemModel: itemModel,
-                        modalStatus: modalStatus
-                    }
-                });
-
-                let seoTitle = 'Add Item';
-                if (req.SeoTitle) {
-                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            const store = Store.createItemUploadEditStore({
+                userReducer: { user: currentUser },
+                uploadEditItemReducer: {
+                    itemModel: itemModel,
+                    modalStatus: modalStatus
                 }
-
-                const reduxState = store.getState();
-                const upload = reactDom.renderToString(<UploadEditComponent pagePermissions={pagePermissions} modalStatus={modalStatus} itemModel={itemModel} user={currentUser} />);
-
-                const pricingTypeBodyClass = process.env.PRICING_TYPE == 'country_level' ? 'new-country' : '';
-
-                res.send(template(`page-seller seller-upload-page page-sidebar ${pricingTypeBodyClass}`, seoTitle, upload, appString, reduxState));
             });
+
+            let seoTitle = 'Add Item';
+            if (req.SeoTitle) {
+                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            }
+
+            const reduxState = store.getState();
+            const upload = reactDom.renderToString(<UploadEditComponent modalStatus={modalStatus} itemModel={itemModel} user={currentUser} />);
+
+            const pricingTypeBodyClass = process.env.PRICING_TYPE == 'country_level' ? 'new-country' : '';
+
+            res.send(template(`page-seller seller-upload-page page-sidebar ${pricingTypeBodyClass}`, seoTitle, upload, appString, reduxState));
         });
     });
 });
 
-merchantUploadEditRouter.post('/customfields', ...handlers, isAuthorizedToPerformAction('view-merchant-create-item-api'), function (req, res) {
+merchantUploadEditRouter.post('/customfields', ...handlers, function (req, res) {
     let categoryIds = req.body['categoryids[]'];
-    let itemId = req.body['itemId'];   
+    let itemId = req.body['itemId'];
     let cleanedCategoryIds = req.body['cleanedCategoryIds[]']
 
     let promiseCustomFieldDefinitions = new Promise((resolve, reject) => {
@@ -549,7 +437,6 @@ merchantUploadEditRouter.post('/customfields', ...handlers, isAuthorizedToPerfor
                                 customfield.IsMandatory = customfieldWithDefinition.IsMandatory;
                                 customfield.IsSensitive = customfieldWithDefinition.IsSensitive;
                                 customfield.IsComparable = customfieldWithDefinition.IsComparable;
-                                customfield.IsSearchable = customfieldWithDefinition.IsSearchable;
                                 customfield.MaxValue = customfieldWithDefinition.MaxValue;
                                 customfield.MinValue = customfieldWithDefinition.MinValue;
                                 customfield.Options = customfieldWithDefinition.Options;
@@ -575,7 +462,7 @@ merchantUploadEditRouter.post('/customfields', ...handlers, isAuthorizedToPerfor
                             }
                         });
                     });
-                }                
+                }
             });
         }
         //For Non Category Selected
@@ -615,7 +502,7 @@ merchantUploadEditRouter.post('/uploadMedia', ...handlers, uploadMulter.any(), f
     });
 });
 
-merchantUploadEditRouter.post('/uploadItem', ...handlers, isAuthorizedToPerformAction('add-merchant-create-item-api'), function (req, res) {
+merchantUploadEditRouter.post('/uploadItem', ...handlers, function (req, res) {
     let currentUser = req.user;
 
     const options = {
@@ -623,13 +510,8 @@ merchantUploadEditRouter.post('/uploadItem', ...handlers, isAuthorizedToPerformA
         data: req.body
     };
 
-    const webApiToken = req.cookies['webapitoken'];
-
-    if (!webApiToken)
-        return res.send(null);
-
     let promiseCreateItem = new Promise((resolve, reject) => {
-        client.Items.createItem(webApiToken, options, function (err, result) {
+        client.Items.createItem(options, function (err, result) {
             resolve(result);
         });
     });
@@ -640,7 +522,7 @@ merchantUploadEditRouter.post('/uploadItem', ...handlers, isAuthorizedToPerformA
     });
 });
 
-merchantUploadEditRouter.put('/editItem/:itemId', ...handlers, isAuthorizedToPerformAction('add-merchant-create-item-api'), function (req, res) {
+merchantUploadEditRouter.put('/editItem/:itemId', ...handlers, function (req, res) {
     let currentUser = req.user;
 
     const options = {
@@ -649,13 +531,8 @@ merchantUploadEditRouter.put('/editItem/:itemId', ...handlers, isAuthorizedToPer
         itemId: req.params.itemId
     };
 
-    const webApiToken = req.cookies['webapitoken'];
-
-    if (!webApiToken)
-        return res.send(null);
-
     let promiseEditNewItem = new Promise((resolve, reject) => {
-        client.Items.editItem(webApiToken, options, function (err, result) {
+        client.Items.EditNewItem(options, function (err, result) {
             resolve(result);
         });
     });
@@ -666,7 +543,9 @@ merchantUploadEditRouter.put('/editItem/:itemId', ...handlers, isAuthorizedToPer
     });
 });
 
-merchantUploadEditRouter.get('/edit/:itemid', ...handlers, isAuthorizedToAccessViewPage(viewCreateItemPage), function(req, res) {
+merchantUploadEditRouter.get('/edit/:itemid', ...handlers, function(req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const currentUser = req.user;
     const appString = 'merchant-item-edit';
 
@@ -871,6 +750,7 @@ merchantUploadEditRouter.get('/edit/:itemid', ...handlers, isAuthorizedToAccessV
                     })
                 }
             });
+
             shippings.forEach(function (sp) {
                 if (sp.Method == "delivery") {
                     if (sp.Selected == "") {
@@ -905,8 +785,8 @@ merchantUploadEditRouter.get('/edit/:itemid', ...handlers, isAuthorizedToAccessV
 
         let shippingModel = {
             shippings: shippings,
-            checkDeliveryAll: shippings && shippings.length === 0 ? "" : isAllDeliveryChecked,
-            checkPickUpAll: shippings && shippings.length === 0 ? "" : isAllPickupChecked,
+            checkDeliveryAll: isAllDeliveryChecked,
+            checkPickUpAll: isAllPickupChecked,
             shippingWord: ""
         };
 
@@ -945,31 +825,10 @@ merchantUploadEditRouter.get('/edit/:itemid', ...handlers, isAuthorizedToAccessV
             });
         });
 
-        //get Implementation Bookings
-        const promiseImplementationBookings = new Promise((resolve, reject) => {
-            client.Items.getImplementationsBookings(null, function (err, result) {
-                resolve(result);
-            });
-        });
-
-        const promiseItemBookings = new Promise((resolve, reject) => {
-            if (process.env.PRICING_TYPE == 'service_level') {
-                client.Items.getItemBookings({ itemId: req.params.itemid }, function (err, bookings) {
-                    resolve(bookings);
-                });
-            } else {
-                resolve([]);
-            }
-        });
-
-        Promise.all([promiseLocationVariants, promiseCategoriesWithCustomFields, promiseImplementationBookings, promiseItemBookings]).then((responses) => {
+        Promise.all([promiseLocationVariants, promiseCategoriesWithCustomFields]).then((responses) => {
             const locations = responses[0];
             const selectedCategoriesWithCustomFields = responses[1];
             let customFieldWithDefinitions = [];
-
-            const implementationBookings = responses[2];
-
-            let bookings = responses[3];
 
             if (selectedCategoriesWithCustomFields) {
                 selectedCategoriesWithCustomFields.forEach(function (category) {
@@ -1021,7 +880,6 @@ merchantUploadEditRouter.get('/edit/:itemid', ...handlers, isAuthorizedToAccessV
                                 customfield.DataInputType = customfieldWithDefinition.DataInputType;
                                 customfield.IsMandatory = customfieldWithDefinition.IsMandatory;
                                 customfield.IsSensitive = customfieldWithDefinition.IsSensitive;
-                                customfield.IsSearchable = customfieldWithDefinition.IsSearchable;
                                 customfield.IsComparable = customfieldWithDefinition.IsComparable;
                                 customfield.MaxValue = customfieldWithDefinition.MaxValue;
                                 customfield.MinValue = customfieldWithDefinition.MinValue;
@@ -1148,7 +1006,7 @@ merchantUploadEditRouter.get('/edit/:itemid', ...handlers, isAuthorizedToAccessV
                         id: child.ID,
                         sku: child.SKU || "",
                         surcharge: parseFloat(parseFloat((child.Price * 1000 - itemDetail.Price * 1000) / 1000).toFixed(4)), // did this to fix issue in floating numbers
-                        stock: child.StockQuantity == '0' && !child.StockLimited ? "" : child.StockQuantity,
+                        stock: child.StockQuantity == 0 ? "" : child.StockQuantity,
                         isUnlimited: !child.StockLimited,
                         variantGroups: nonLocationItemVariantGroups,
                         media: child.Media ? child.Media[0] : null,
@@ -1245,47 +1103,6 @@ merchantUploadEditRouter.get('/edit/:itemid', ...handlers, isAuthorizedToAccessV
                 });
             }
 
-            let defaultData = {
-                name: '-select-',
-                location: "",
-                state: "",
-                city: "",
-                postal: "",
-                long: 0,
-                lat: 0
-            };
-
-            if (itemDetail && itemDetail.Location) {
-                defaultData.name = itemDetail.Location.Country;
-                defaultData.location = itemDetail.Location.Line1;
-                defaultData.city = itemDetail.Location.City;
-                defaultData.state = itemDetail.Location.State;
-                defaultData.postal = itemDetail.Location.PostCode;
-                defaultData.long = itemDetail.Location.Longitude;
-                defaultData.lat = itemDetail.Location.Latitude;
-            }
-
-            let scheduler = {};
-            let allDay = "";
-            let isOverNight = false;
-            if (itemDetail && itemDetail.Scheduler) {
-                scheduler = itemDetail.Scheduler
-                allDay = itemDetail.Scheduler.AllDay;
-                isOverNight = itemDetail.Scheduler.Overnight;
-            }
-            let priceUnit = "";
-            if (implementationBookings.MarketplaceBookingType === "book by duration and unit") {
-                priceUnit = itemDetail.BookingUnit + " per " + itemDetail.DurationUnit;
-            } else if (implementationBookings.MarketplaceBookingType === "book by duration") {
-                priceUnit = itemDetail.DurationUnit;
-            } else {
-                priceUnit = itemDetail.BookingUnit;
-            }
-
-            if (itemDetail.AddOns) {
-                itemDetail.AddOns = itemDetail.AddOns.sort((a, b) => (a.SortOrder > b.SortOrder) ? 1 : -1);
-            }
-
             let itemModel = {
                 categories: categories,
                 categoriesSelected: [],
@@ -1307,7 +1124,7 @@ merchantUploadEditRouter.get('/edit/:itemid', ...handlers, isAuthorizedToAccessV
                 pricingItem: {},
                 isSaving: false,
                 price: itemDetail.Price,
-                quantity: itemDetail.StockQuantity == '0' && !itemDetail.StockLimited ? "" : itemDetail.StockQuantity,
+                quantity: itemDetail.StockQuantity == 0 ? "" : itemDetail.StockQuantity,
                 sku: itemDetail.SKU || "",
                 isUnlimitedStock: !itemDetail.StockLimited,
                 hasVariants: hasSavedVariants,
@@ -1318,20 +1135,7 @@ merchantUploadEditRouter.get('/edit/:itemid', ...handlers, isAuthorizedToAccessV
                 locationItems: locationItems,
                 locations: locations,
                 selectedLocationIds: locationItems.map((item) => item.locationId),
-                savedChildItemIds: savedChildItemIds,
-                geoLocation: defaultData,
-                isAllDay: allDay,
-                isOverNight: isOverNight,
-                scheduler: scheduler,
-                bookingUnit: itemDetail.BookingUnit,
-                durationUnit: itemDetail.DurationUnit,
-                priceUnit: priceUnit,
-                addOn: {
-                    name: "",
-                    priceChange: ""
-                },
-                addOns: itemDetail.AddOns,
-                implementationBookings: implementationBookings
+                savedChildItemIds: savedChildItemIds
             };
 
             itemModel.negotiation = itemDetail.Negotiation;
@@ -1341,33 +1145,27 @@ merchantUploadEditRouter.get('/edit/:itemid', ...handlers, isAuthorizedToAccessV
                 openDeleteBulkPopUp: false
             };
 
-            getUserPermissionsOnPage(currentUser, 'Create Item', 'Merchant', (pagePermissions) => {
-                const store = Store.createItemUploadEditStore({
-                    userReducer: {
-                        user: currentUser,
-                        pagePermissions
-                    },
-                    uploadEditItemReducer: {
-                        itemModel: itemModel,
-                        modalStatus: modalStatus,
-                        bookings: bookings
-                    }
-                });
-
-                const reduxState = store.getState();
-
-                const edit = reactDom.renderToString(<UploadEditComponent pagePermissions={pagePermissions} modalStatus={modalStatus} itemModel={itemModel} user={currentUser} bookings={bookings} />);
-
-                let seoTitle = 'Edit';
-                if (req.SeoTitle) {
-                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            const store = Store.createItemUploadEditStore({
+                userReducer: { user: currentUser },
+                uploadEditItemReducer: {
+                    itemModel: itemModel,
+                    modalStatus: modalStatus
                 }
-
-                const pricingTypeBodyClass = process.env.PRICING_TYPE == 'country_level' ? 'new-country' : '';
-
-                res.send(template(`page-seller seller-upload-page page-sidebar ${pricingTypeBodyClass}`, seoTitle, edit, appString, reduxState));
             });
-        });   
+
+            const reduxState = store.getState();
+
+            const edit = reactDom.renderToString(<UploadEditComponent modalStatus={modalStatus} itemModel={itemModel} user={currentUser} />);
+
+            let seoTitle = 'Edit';
+            if (req.SeoTitle) {
+                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            }
+
+            const pricingTypeBodyClass = process.env.PRICING_TYPE == 'country_level' ? 'new-country' : '';
+
+            res.send(template(`page-seller seller-upload-page page-sidebar ${pricingTypeBodyClass}`, seoTitle, edit, appString, reduxState));
+        });
     });
 });
 
@@ -1412,7 +1210,7 @@ merchantUploadEditRouter.post('/customfield', ...handlers, function (req, res) {
     });
 });
 
-merchantUploadEditRouter.post('/uploadPdf', ...handlers, uploadMulter.any(), isAuthorizedToPerformAction('add-merchant-create-item-api'), function (req, res) {
+merchantUploadEditRouter.post('/uploadPdf', ...handlers, uploadMulter.any(), function (req, res) {
     let formData = new FormData();
 
     req.files.forEach(function (pdf, i) {
@@ -1433,15 +1231,6 @@ merchantUploadEditRouter.post('/uploadPdf', ...handlers, uploadMulter.any(), isA
     Promise.all([promiseFiles]).then((responses) => {
         const result = responses[0];
         res.send(result);
-    });
-});
-
-merchantUploadEditRouter.post('/geocode', authenticated, function (req, res) {
-
-    geocode(req.body, function (err, coordinates) {
-        if (!err) {
-            res.send(coordinates);
-        }
     });
 });
 

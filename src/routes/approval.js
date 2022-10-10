@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 const express = require('express');
 const React = require('react');
 const reactDom = require('react-dom/server');
@@ -17,12 +19,6 @@ const ApprovalWorkflowComponent = require('../views/approval/workflow/index').Ap
 const CreateApprovalWorkflowComponent = require('../views/approval/workflow/add').CreateApprovalWorkflowComponent;
 const ApprovalWorkflowViewComponent = require('../views/approval/workflow/workflow-view').ApprovalWorkflowViewComponent
 
-const { 
-    getUserPermissionsOnPage,
-    isAuthorizedToAccessViewPage,
-    isAuthorizedToPerformAction
-} = require('../scripts/shared/user-permissions');
-
 function getApprovalSettings(userId, callback) {
     const tableName = 'Settings';
     const pluginId = process.env.APPROVAL_PLUGIN;
@@ -30,7 +26,7 @@ function getApprovalSettings(userId, callback) {
     if (typeof pluginId == 'undefined' || !pluginId || process.env.CHECKOUT_FLOW_TYPE === 'b2c') {
         callback({ Enabled: false });
     } else {
-    
+
         const promiseApprovalSettings = new Promise((resolve, reject) => {
             const options = {
                 pluginId,
@@ -110,10 +106,10 @@ function getApprovalContents(userId, filters = null, tableName, callback) {
             });
         }
 
-        if (typeof min !== undefined && min !== null){ 
+        if (typeof min !== undefined && min !== null){
             min = parseInt(min);
             if (min > 0) {
-                query.push({ 
+                query.push({
                     Name: "WorkflowCount",
                     Operator: "gte",
                     Value: parseInt(min),
@@ -124,7 +120,7 @@ function getApprovalContents(userId, filters = null, tableName, callback) {
         if (typeof max !== 'undefined' && max !== null) {
             max = parseInt(max);
             if (max > 0) {
-                query.push({ 
+                query.push({
                     Name: "WorkflowCount",
                     Operator: "lte",
                     Value: parseInt(max),
@@ -145,7 +141,7 @@ function getApprovalContents(userId, filters = null, tableName, callback) {
     Promise.all([promiseApprovalContents]).then(responses => {
         let results = responses[0];
         callback(results);
-    });    
+    });
 }
 
 function paginate(array, pageSize, pageNumber) {
@@ -165,80 +161,34 @@ function sortAndPaginateData(data, sortKey, pageSize = 20, pageNumber = 1) {
     return data;
 }
 
-const viewApprovalSettingsData = {
-    code: 'view-consumer-approval-settings-api',
-    seoTitle: 'Approval Settings',
-    renderSidebar: true,
-};
-
-const viewApprovalWorkflowsData = {
-    code: 'view-consumer-approval-workflows-api',
-    seoTitle: 'Approval Workflow List',
-    renderSidebar: true,
-}
-
-const viewCreateApprovalWorkflowData = {
-    code: 'view-consumer-create-approval-workflow-api',
-    seoTitle: 'Create Approval Workflow',
-    renderSidebar: true,
-}
-
-const viewApprovalWorkflowDetailsData = {
-    code: 'view-consumer-approval-workflow-details-api',
-    seoTitle: 'Approval Workflow',
-    renderSidebar: true,
-}
-
-const viewApprovalDepartmentsData = {
-    code: 'view-consumer-approval-departments-api',
-    seoTitle: 'Approval Department List',
-    renderSidebar: true,
-}
-
-const viewCreateApprovalDepartmentData = {
-    code: 'view-consumer-create-approval-department-api',
-    seoTitle: 'Add/Edit Approval Department',
-    renderSidebar: true,
-}
-
-const editApprovalSettingsCode = 'edit-consumer-approval-settings-api';
-const deleteApprovalWorkflowsCode = 'delete-consumer-approval-workflows-api';
-const addCreateApprovalWorkflowCode = 'add-consumer-create-approval-workflow-api';
-const addCreateApprovalDepartmentCode = 'add-consumer-create-approval-department-api';
-const deleteApprovalDepartmentsCode = 'delete-consumer-approval-departments-api';
-
 /* settings */
 
-approvalRouter.get('/settings', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewApprovalSettingsData), function (req, res) {
-    getApprovalSettings(req.user.ID, function (settings) {
-        getUserPermissionsOnPage(req.user, 'Approval Settings', 'Consumer', (pagePermissions) => {
-            const store = Store.createApprovalStore({
-                userReducer: { 
-                    user: req.user,
-                    pagePermissions: pagePermissions
-                },
-                approvalReducer: {
-                    settings,
-                }
-            });
+approvalRouter.get('/settings', authenticated, authorizedUser, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
-            const reduxState = store.getState();
-            const props = { 
-                user: req.user,
-                pagePermissions,
-                settings
-            };
-            const approvalSettings = reactDom.renderToString(<ApprovalSettingsComponent  {...props} />);
-            let seoTitle = 'Approval Settings';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+    getApprovalSettings(req.user.ID, function (settings) {
+        const store = Store.createApprovalStore({
+            userReducer: { user: req.user },
+            approvalReducer: {
+                settings,
             }
-            res.send(template('page-seller approval-settings page-sidebar', seoTitle, approvalSettings, 'approval-settings', reduxState));
         });
+
+        const reduxState = store.getState();
+        const props = {
+            user: req.user,
+            settings
+        };
+        const approvalSettings = reactDom.renderToString(<ApprovalSettingsComponent  {...props} />);
+        let seoTitle = 'Approval Settings';
+        if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+        res.send(template('page-seller approval-settings page-sidebar', seoTitle, approvalSettings, 'approval-settings', reduxState));
     });
 });
 
-approvalRouter.put('/settings', authenticated, isAuthorizedToPerformAction(editApprovalSettingsCode), function (req, res) {
+approvalRouter.put('/settings', authenticated, function (req, res) {
 
     if (!req.body.rowId) return res.send({ success: false });
     const rowID =  req.body.rowId;
@@ -260,23 +210,28 @@ approvalRouter.put('/settings', authenticated, isAuthorizedToPerformAction(editA
 
     Promise.all([promiseUpdateSettings]).then(responses => {
         const result = responses[0];
-        res.send({ 
+        res.send({
             success: true,
-            data: { 
+            data: {
                 ID: result.Id,
-                Enabled: result && result.Enabled == 1 
+                Enabled: result && result.Enabled == 1
             }
         });
     });
 });
 
 approvalRouter.get('/getApprovalsettings', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     getApprovalSettings(req.user.ID, function (settings) {
         res.send(settings);
     });
 });
 
+
 approvalRouter.get('/search', authenticated, approvalEnabled, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const table = req.query.tableName || "Workflows";
     getApprovalContents(user.ID, req.query, table, function (results) {
@@ -292,75 +247,65 @@ approvalRouter.get('/search', authenticated, approvalEnabled, function (req, res
     });
 });
 
-/* department */ 
+/* department */
 
-approvalRouter.get('/departments', authenticated, authorizedUser, approvalEnabled, isAuthorizedToAccessViewPage(viewApprovalDepartmentsData), function (req, res) {
+approvalRouter.get('/departments', authenticated, authorizedUser, approvalEnabled, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const table = "Departments";
     getApprovalContents(user.ID, null, table, function (departments) {
         const sortBy = "Name";
         departments = sortAndPaginateData(departments, sortBy);
-        getUserPermissionsOnPage(user, 'Approval Departments', 'Consumer', (pagePermissions) => {
-            const store = Store.createApprovalStore({
-                userReducer: { 
-                    user,
-                    pagePermissions
-                },
-                approvalReducer: {
-                    departments,
-                }
-            });
-            const reduxState = store.getState();
-            const props = { 
-                user,
+        const store = Store.createApprovalStore({
+            userReducer: { user },
+            approvalReducer: {
                 departments,
-                pagePermissions
-            };
-            const approvalDepartment = reactDom.renderToString(<ApprovalDepartmentComponent  {...props} />);
-            let seoTitle = 'Approval Department List';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
             }
-            res.send(template('page-seller department-list page-sidebar', seoTitle, approvalDepartment, 'approval-department-list', reduxState));
         });
-        
+        const reduxState = store.getState();
+        const props = {
+            user,
+            departments,
+        };
+        const approvalDepartment = reactDom.renderToString(<ApprovalDepartmentComponent  {...props} />);
+        let seoTitle = 'Approval Department List';
+        if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+        res.send(template('page-seller department-list page-sidebar', seoTitle, approvalDepartment, 'approval-department-list', reduxState));
     });
 });
 
-approvalRouter.get('/create-department', authenticated, approvalEnabled, isAuthorizedToAccessViewPage(viewCreateApprovalDepartmentData), function (req, res) {
+approvalRouter.get('/create-department', authenticated, approvalEnabled, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const table = "Workflows";
     getApprovalContents(user.ID, null, table, function (workflows) {
-        getUserPermissionsOnPage(user, 'Create Approval Department', 'Consumer', (pagePermissions) => {
-            const store = Store.createApprovalStore({
-                userReducer: { 
-                    user,
-                    pagePermissions
-                },
-                approvalReducer: {
-                    workflows
-                }
-            });
-
-            const reduxState = store.getState();
-            const props = { 
-                user,
-                workflows,
-                pagePermissions
-            };
-
-            const approvalDepartmentAddEdit = reactDom.renderToString(<ApprovalDepartmentAddEditComponent  {...props} />);
-            let seoTitle = 'Add/Edit Approval Department';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const store = Store.createApprovalStore({
+            userReducer: { user },
+            approvalReducer: {
+                workflows
             }
-            res.send(template('page-seller page-department page-sidebar', seoTitle, approvalDepartmentAddEdit, 'add-edit-approval-department', reduxState));
         });
-        
+
+        const reduxState = store.getState();
+        const props = {
+            user,
+            workflows,
+        };
+
+        const approvalDepartmentAddEdit = reactDom.renderToString(<ApprovalDepartmentAddEditComponent  {...props} />);
+        let seoTitle = 'Add/Edit Approval Department';
+        if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+        res.send(template('page-seller page-department page-sidebar', seoTitle, approvalDepartmentAddEdit, 'add-edit-approval-department', reduxState));
     });
 });
 
-approvalRouter.post('/create-department', authenticated, approvalEnabled, isAuthorizedToPerformAction(addCreateApprovalDepartmentCode), function (req, res) {
+approvalRouter.post('/create-department', authenticated, approvalEnabled, function (req, res) {
     const user = req.user;
     const { Name, WorkflowID, WorkflowCount } = req.body;
     const promiseCreateApprovalDepartment = new Promise((resolve, reject) => {
@@ -386,7 +331,9 @@ approvalRouter.post('/create-department', authenticated, approvalEnabled, isAuth
     });
 });
 
-approvalRouter.get('/departments/:id', authenticated, approvalEnabled, isAuthorizedToAccessViewPage(viewCreateApprovalDepartmentData), function (req, res) {
+approvalRouter.get('/departments/:id', authenticated, approvalEnabled, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     if (req.params.id == 'undefined') return next();
     const promiseDepartment = new Promise((resolve, reject) => {
@@ -406,39 +353,32 @@ approvalRouter.get('/departments/:id', authenticated, approvalEnabled, isAuthori
         const selectedDepartment = result.Records[0];
         const table = "Workflows";
         getApprovalContents(user.ID, null, table, function (workflows) {
-            getUserPermissionsOnPage(user, 'Create Approval Department', 'Consumer', (pagePermissions) => {
-
-                const store = Store.createApprovalStore({
-                    userReducer: { 
-                        user,
-                        pagePermissions
-                    },
-                    approvalReducer: {
-                        workflows,
-                        selectedDepartment,
-                    }
-                });
-
-                const reduxState = store.getState();
-                const props = { 
-                    user,
+            const store = Store.createApprovalStore({
+                userReducer: { user },
+                approvalReducer: {
                     workflows,
                     selectedDepartment,
-                    pagePermissions
-                };
-
-                const approvalDepartmentAddEdit = reactDom.renderToString(<ApprovalDepartmentAddEditComponent  {...props} />);
-                let seoTitle = 'Add/Edit Approval Department';
-                if (req.SeoTitle) {
-                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
                 }
-                res.send(template('page-seller page-department page-sidebar', seoTitle, approvalDepartmentAddEdit, 'add-edit-approval-department', reduxState));
             });
+
+            const reduxState = store.getState();
+            const props = {
+                user,
+                workflows,
+                selectedDepartment,
+            };
+
+            const approvalDepartmentAddEdit = reactDom.renderToString(<ApprovalDepartmentAddEditComponent  {...props} />);
+            let seoTitle = 'Add/Edit Approval Department';
+            if (req.SeoTitle) {
+                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            }
+            res.send(template('page-seller page-department page-sidebar', seoTitle, approvalDepartmentAddEdit, 'add-edit-approval-department', reduxState));
         });
     });
 });
 
-approvalRouter.put('/departments/:id', authenticated, approvalEnabled, isAuthorizedToPerformAction(addCreateApprovalDepartmentCode), function (req, res) {
+approvalRouter.put('/departments/:id', authenticated, approvalEnabled, function (req, res) {
     const user = req.user;
     if (req.params.id == 'undefined') return next();
     const { Name, WorkflowCount, WorkflowID } = req.body;
@@ -446,8 +386,8 @@ approvalRouter.put('/departments/:id', authenticated, approvalEnabled, isAuthori
         const request = {
             Name,
             WorkflowCount,
-            WorkflowID, 
-            UserID: user.ID, 
+            WorkflowID,
+            UserID: user.ID,
         };
         const options = {
             tableName: 'Departments',
@@ -468,7 +408,7 @@ approvalRouter.put('/departments/:id', authenticated, approvalEnabled, isAuthori
     });
 });
 
-approvalRouter.delete('/departments/:id', authenticated, approvalEnabled, isAuthorizedToPerformAction(deleteApprovalDepartmentsCode), function(req, res, next) {
+approvalRouter.delete('/departments/:id', authenticated, approvalEnabled, function(req, res, next) {
     const user = req.user;
     if (req.params.id == 'undefined') return next();
     const promiseDeleteDepartment = new Promise((resolve, reject) => {
@@ -487,42 +427,40 @@ approvalRouter.delete('/departments/:id', authenticated, approvalEnabled, isAuth
     });
 });
 
-/* workflows */ 
-approvalRouter.get('/workflows', authenticated, authorizedUser, approvalEnabled, isAuthorizedToAccessViewPage(viewApprovalWorkflowsData), function (req, res) {
+/* workflows */
+approvalRouter.get('/workflows', authenticated, authorizedUser, approvalEnabled, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const table = "Workflows";
     getApprovalContents(user.ID, null, table, function (workflows) {
         const sortBy = "Reason";
         workflows = sortAndPaginateData(workflows, sortBy);
-        getUserPermissionsOnPage(user, 'Approval Workflows', 'Consumer', (pagePermissions) => {
-            const store = Store.createApprovalStore({
-                userReducer: { 
-                    user,
-                    pagePermissions
-                },
-                approvalReducer: {
-                    workflows
-                }
-            });
-
-            const reduxState = store.getState();
-            const props = { 
-                user: user,
-                workflows,
-                pagePermissions
-            };
-
-            const approvalWorkflow = reactDom.renderToString(<ApprovalWorkflowComponent  {...props} />);
-            let seoTitle = 'Approval Workflow List';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const store = Store.createApprovalStore({
+            userReducer: { user },
+            approvalReducer: {
+                workflows
             }
-            res.send(template('page-seller workflow-list page-sidebar', seoTitle, approvalWorkflow, 'approval-workflow-list', reduxState));
         });
-    });       
+
+        const reduxState = store.getState();
+        const props = {
+            user: user,
+            workflows,
+        };
+
+        const approvalWorkflow = reactDom.renderToString(<ApprovalWorkflowComponent  {...props} />);
+        let seoTitle = 'Approval Workflow List';
+        if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+        res.send(template('page-seller workflow-list page-sidebar', seoTitle, approvalWorkflow, 'approval-workflow-list', reduxState));
+    });
 });
 
-approvalRouter.get('/create-workflow', authenticated, approvalEnabled, isAuthorizedToAccessViewPage(viewCreateApprovalWorkflowData), function (req, res) {
+approvalRouter.get('/create-workflow', authenticated, approvalEnabled, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const promiseSubAccounts = new Promise((resolve, reject) => {
         const options = {
@@ -530,7 +468,6 @@ approvalRouter.get('/create-workflow', authenticated, approvalEnabled, isAuthori
             pageSize: 60,
             pageNumber: 1,
             keyword: '',
-            includes: 'AccountOwner'
         }
         client.Users.getSubAccounts(options, function (err, subaccounts) {
             resolve(subaccounts);
@@ -538,36 +475,33 @@ approvalRouter.get('/create-workflow', authenticated, approvalEnabled, isAuthori
     });
     Promise.all([ promiseSubAccounts ]).then(responses => {
         const subAccounts = responses[0];
-        getUserPermissionsOnPage(user, 'Create Approval Workflow', 'Consumer', (pagePermissions) => {
-            const store = Store.createApprovalStore({
-                userReducer: { 
-                    user,
-                    subAccounts,
-                    pagePermissions
-                },
-                approvalReducer: {
-                    currencyCode: req.CurrencyCode
-                }
-            });
 
-            const reduxState = store.getState();
-            const props = { 
+        const store = Store.createApprovalStore({
+            userReducer: {
                 user,
                 subAccounts,
-                pagePermissions,
+            },
+            approvalReducer: {
                 currencyCode: req.CurrencyCode
-            };
-            const createApprovalWorkflow = reactDom.renderToString(<CreateApprovalWorkflowComponent  {...props} />);
-            let seoTitle = 'Create Approval Workflow';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
             }
-            res.send(template('page-seller workflow-list page-sidebar', seoTitle, createApprovalWorkflow, 'add-approval-workflow', reduxState));
         });
+
+        const reduxState = store.getState();
+        const props = {
+            user,
+            subAccounts,
+            currencyCode: req.CurrencyCode
+        };
+        const createApprovalWorkflow = reactDom.renderToString(<CreateApprovalWorkflowComponent  {...props} />);
+        let seoTitle = 'Create Approval Workflow';
+        if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+        res.send(template('page-seller workflow-list page-sidebar', seoTitle, createApprovalWorkflow, 'add-approval-workflow', reduxState));
     });
 });
 
-approvalRouter.post('/create-workflow', authenticated, approvalEnabled, isAuthorizedToPerformAction(addCreateApprovalWorkflowCode), function (req, res) {
+approvalRouter.post('/create-workflow', authenticated, approvalEnabled, function (req, res) {
     const user = req.user;
     const { Reason, Workflows, WorkflowCount } = req.body;
     const promiseCreateApprovalWorkflow = new Promise((resolve, reject) => {
@@ -596,7 +530,7 @@ approvalRouter.post('/create-workflow', authenticated, approvalEnabled, isAuthor
     });
 });
 
-approvalRouter.put('/workflows/:id', authenticated, approvalEnabled, isAuthorizedToPerformAction(deleteApprovalWorkflowsCode),function(req, res, next) {
+approvalRouter.put('/workflows/:id', authenticated, approvalEnabled, function(req, res, next) {
     const user = req.user;
     if (req.params.id == 'undefined') return next();
     const promiseDeleteWorkflow = new Promise((resolve, reject) => {
@@ -621,7 +555,7 @@ approvalRouter.put('/workflows/:id', authenticated, approvalEnabled, isAuthorize
                 const deletedWorkflowID = req.params.id;
                 const options = { pluginId: process.env.APPROVAL_PLUGIN, tableName: "Departments" };
                 if (Records && Records.length > 0) {
-                    const promiseUpdateAffectedDept = (rec) => 
+                    const promiseUpdateAffectedDept = (rec) =>
                         new Promise((resolve, reject) => {
                             const delimeter = rec.WorkflowCount > 1 ? "," : "";
                             options.request = {
@@ -633,29 +567,30 @@ approvalRouter.put('/workflows/:id', authenticated, approvalEnabled, isAuthorize
                                 resolve(result);
                             });
                         });
-                    
-                    
+
+
                     const promiseUpdateAllAffectedDepts = Promise.all(Records.map(r => promiseUpdateAffectedDept(r)));
                     Promise.all([promiseUpdateAllAffectedDepts]).then(response => {
                         res.send({ success });
                     });
                 }
             } else res.send({ success });
-        });    
+        });
     });
 });
 
-approvalRouter.get('/workflows/:id', authenticated, approvalEnabled, isAuthorizedToAccessViewPage(viewApprovalWorkflowDetailsData), function (req, res, next) {
+approvalRouter.get('/workflows/:id', authenticated, approvalEnabled, function (req, res, next) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     if (req.params.id == 'undefined') return next();
 
     const promiseSubAccounts = new Promise((resolve, reject) => {
         const options = {
             userId: user.ID,
-            pageSize: 100,
+            pageSize: 9999,
             pageNumber: 1,
             keyword: '',
-            includes: 'AccountOwner'
         }
         client.Users.getSubAccounts(options, function (err, subaccounts) {
             resolve(subaccounts);
@@ -686,7 +621,7 @@ approvalRouter.get('/workflows/:id', authenticated, approvalEnabled, isAuthorize
         });
 
         const reduxState = store.getState();
-        const props = { 
+        const props = {
             user: user,
             selectedWorkflow: workflow.Records[0],
             subAccounts
@@ -697,7 +632,7 @@ approvalRouter.get('/workflows/:id', authenticated, approvalEnabled, isAuthorize
             seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
         }
         res.send(template('page-seller workflow-list page-sidebar', seoTitle, approvalWorkflowView, 'approval-workflow-view', reduxState));
-    });  
+    });
 });
 
 module.exports = { getApprovalSettings, approvalRouter };

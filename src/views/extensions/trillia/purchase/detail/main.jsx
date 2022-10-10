@@ -1,6 +1,6 @@
 'use strict';
 var React = require('react');
-var ReactRedux = require('react-redux'); 
+var ReactRedux = require('react-redux');
 
 var BaseComponent = require('../../../../shared/base');
 var TransactionDetailComponent = require('./transaction-detail');
@@ -12,6 +12,8 @@ var OrderDiaryComponent = require('../../order-diary/index');
 
 // Comparison
 var ComparisonActions = require('../../../../../redux/comparisonActions');
+
+const CommonModule = require('../../../../../public/js/common');
 
 class PurchaseDetailMain extends BaseComponent {
     onButtonClick() {
@@ -27,16 +29,16 @@ class PurchaseDetailMain extends BaseComponent {
             <div className="purchase-history-container">
                 <div className="container">
                     <div className="h-parent-child-txt full-width">
-                        <p><a href="/">Home</a></p>
+                        <p><a href={CommonModule.getAppPrefix()+"/"}>Home</a></p>
                         <i className="fa fa-angle-right"></i>
-                        <p><a href="/purchase/history">PO History</a></p>
+                        <p><a href={CommonModule.getAppPrefix()+"/purchase/history"}>PO History</a></p>
                         <i className="fa fa-angle-right"></i>
                         <p className="active">PO Details</p>
                     </div>
                     <div className="phc-content">
                         <div className="hrcc-top full-width">
                             <div className="pull-left">
-                                <a href="/purchase/history" className="btn-blue">
+                                <a href={CommonModule.getAppPrefix()+"/purchase/history"} className="btn-blue">
                                     <i className="fa fa-angle-left"></i>
                                 </a>
                                 <span className="h-title">Purchase Order Details</span>
@@ -71,7 +73,7 @@ class PurchaseDetailMain extends BaseComponent {
                     </div>
                 </div>
             </div>
-            
+
         );
     }
 }

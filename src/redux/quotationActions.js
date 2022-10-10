@@ -1,20 +1,42 @@
-'use strict';
-var actionTypes = require('./actionTypes');
+import axios from 'axios';
+import actionTypes from './actionTypes';
+import { getAppPrefix } from '../public/js/common';
+const prefix = getAppPrefix();
+import { chatConstants } from '../consts/chat-constants';
+import { quoteStatuses } from '../consts/rfq-quote-statuses';
 
+ 
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
 
-function filterQuotations(filters) {
-    return function (dispatch, getState) {
-        const { isMerchantAccess } = getState().quotationReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
+function sendSystemMessage(message, chatId, redirectUrl){
+    const systemName = chatConstants.systemName;
+    return axios.get(`${getAppPrefix()}/product-profile/token/${systemName}`).then(data => {
+        data = data.data;
+        return Twilio.Chat.Client.create(data.token).then(client => {
+            const chatClient = client;
+            return chatClient.getChannelByUniqueName(chatId)
+                .then(function(channel) {
+                    channel.join().finally(() => {
+                        return channel.sendMessage(message).then(()=>{
+                            window.location.href = redirectUrl;
+                        });
+                    }).catch(() => {});
+                }).catch(() => {});
+        }).catch(error => {
+            console.error(error);
+        });
+    })
+}
 
+function filterQuotations(filters) {
+    return function(dispatch, getState) {
         $.ajax({
-            url: `${extraPath}/quotation/filter`,
+            url: prefix + '/quotation/filter',
             type: 'GET',
             data: filters,
-            success: function (result) {               
+            success: function(result) {
                 return dispatch({
                     type: actionTypes.GET_QUOTATIONS,
                     quotationList: result,
@@ -22,7 +44,7 @@ function filterQuotations(filters) {
                 });
             },
 
-            error: function (jqXHR, textStatus, errorThrown) {
+            error: function(jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
             }
         });
@@ -30,81 +52,100 @@ function filterQuotations(filters) {
 }
 
 function goToPage(pageNumber) {
-    return function (dispatch, getState) {
-        const { isMerchantAccess, filters } = getState().quotationReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
-
+    return function(dispatch, getState) {
+        const filters = getState().quotationReducer.filters;
         $.ajax({
-            url: `${extraPath}/quotation/paging`,
-            type: "GET",
-            data: Object.assign({ "pageNumber": pageNumber }, filters),
-            success: function (result) {
+            url: prefix + '/quotation/paging',
+            type: 'GET',
+            data: Object.assign({ pageNumber: pageNumber }, filters),
+            success: function(result) {
                 return dispatch({
                     type: actionTypes.GET_QUOTATIONS,
                     quotationList: result,
                     filters: filters
                 });
             },
-            error: function (jqXHR, textStatus, errorThrown) {
+            error: function(jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
             }
         });
     };
 }
 
-function cancelQuotation(callback) {
-    
-    return function (dispatch, getState) {
-        const quotation = getState().quotationReducer.quotationDetail;
-        const { isMerchantAccess } = getState().quotationReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
+function cancelQuotation(quote) {
+    return function(dispatch, getState) {
+        const chatId = getState().quotationReducer.rfqDetails.chatId;
+        axios
+            .post(`${prefix}/cgi-quotation/cancel`, { quote, chatId })
+            .then((response) => {
+                const redirectUrl = response.data || prefix + '/';
+                sendSystemMessage(chatConstants.RFQDeclinedMsg, chatId, redirectUrl);
+            }, (error) => {
+                console.log(error);
+            });
+    };
+}
 
-        $(".btn-loader-cancel").addClass('btn-loading');
+function createQuotation(quote, callback) {
+    return function(dispatch, getState) {
+        const chatId = getState().quotationReducer.rfqDetails.chatId;
+        console.log('getState().quotationReducer.rfqDetails', getState().quotationReducer.rfqDetails);
+        const buyerId = getState().quotationReducer.rfqDetails.buyerId;
+        
         $.ajax({
-            url: `${extraPath}/quotation/cancel-quotation`,
+            url: prefix + '/cgi-quotation/create',
             type: 'POST',
             data: {
-                quotationId: quotation.ID,
-                channelId: quotation.ChannelID,
-                quotationMessage: quotation.Message
+                quote: JSON.stringify(quote),
+                chatId,
+                buyerId
             },
-            success: function (errorMessage) {
-                callback(errorMessage);
-
-                return dispatch({ type: '' });
+            success: function(result) {
+                console.log('result createQuotation action', result);
+                const chatUrl = `${prefix}/chat/chatRFQ/${quote.rfqId}/${chatId}`;
+                if (result) {
+                    if (callback) {
+                        callback(chatUrl);
+                    }
+                    else {
+                        window.location.href = chatUrl;
+                    }                    
+                }                
             },
-
-            error: function (jqXHR, textStatus, errorThrown) {
-                $(".btn-loader-cancel").removeClass('btn-loading');
+            error: function(jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
             }
         });
     };
 }
 
-function declineQuotation(callback) {
-    return function (dispatch, getState) {
-        const quotation = getState().quotationReducer.quotationDetail;
-        const { isMerchantAccess } = getState().quotationReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
-
-        $(".btn-loader-cancel").addClass('btn-loading');
+function updateQuotation(quote, callback) {
+    return function(dispatch, getState) {
+        const chatId = getState().quotationReducer.rfqDetails.chatId;
+        const cgiCompanyId = getState().quotationReducer.rfqDetails.cgiCompanyId;
+        
         $.ajax({
-            url: `${extraPath}/quotation/decline-accept-quotation`,
+            url: prefix + '/cgi-quotation/update',
             type: 'POST',
             data: {
-                quotationId: quotation.ID,
-                channelId: quotation.ChannelID,
-                isAccepted: false,
-                isDeclined: true
+                quote: JSON.stringify(quote),
+                chatId,
+                cgiCompanyId
             },
-            success: function (errorMessage) {                
-                callback(errorMessage);
-                return dispatch({ type: '' });
+            success: function (response) {
+                if (response && quote && quote.OfferDetails) {
+                    const [offerDetail] = quote.OfferDetails;
+                    const [otherInfo] = offerDetail.CustomFields;
+                    const url = `${prefix}/chat/chatRFQ/${otherInfo.rfqId}/${chatId}`;
+                    if (callback) {
+                        callback(url);
+                    }
+                    else {
+                        window.location.href = url;
+                    }                    
+                }                
             },
-
             error: function (jqXHR, textStatus, errorThrown) {
-                $(".btn-loader-cancel").removeClass('btn-loading');
                 console.log(textStatus, errorThrown);
             }
         });
@@ -112,14 +153,12 @@ function declineQuotation(callback) {
 }
 
 function generateInvoiceByCartItem(cartItemIDs, callback) {
-    return function (dispatch, getState) {
+    return function(dispatch, getState) {
         const isRequisition = process.env.CHECKOUT_FLOW_TYPE == 'b2b';
         const userID = getState().userReducer.user.ID;
-        const quotationReducer = getState().quotationReducer;
-        const quotationDetail = quotationReducer ? quotationReducer.quotationDetail : null;
-        
-        if (isRequisition)
-            return dispatch({ type: '' });
+        const quotationDetail = getState().quotationReducer.quotationDetail;
+
+        if (isRequisition) { return dispatch({ type: '' }); }
 
         const defaultPaymentTerms = [];
         if (quotationDetail && quotationDetail.PaymentTerm) {
@@ -128,24 +167,20 @@ function generateInvoiceByCartItem(cartItemIDs, callback) {
                 paymentTermId: quotationDetail.PaymentTerm.ID
             });
         }
-        $(".btn-loader").addClass('btn-loading');
+
         $.ajax({
-            url: "/cart/generateInvoiceByCartIDs",
-            type: "POST",
+            url: prefix + '/cart/generateInvoiceByCartIDs',
+            type: 'POST',
             data: {
                 userId: userID,
                 cartId: cartItemIDs,
-                defaultPaymentTerms: JSON.stringify(defaultPaymentTerms),
+                defaultPaymentTerms: JSON.stringify(defaultPaymentTerms)
             },
-            success: function (data) {
-                if (data && data.InvoiceNo) {
-                    callback(data.InvoiceNo);
-                } else {
-                    callback(null);
-                }
+            success: function(data) {
+                callback(data.InvoiceNo);
                 return dispatch({ type: '' });
             },
-            error: function (jqXHR, textStatus, errorThrown) {
+            error: function(jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
             }
         });
@@ -153,9 +188,9 @@ function generateInvoiceByCartItem(cartItemIDs, callback) {
 }
 
 function generateOrderByCartItem(cartItemIDs, callback) {
-    return function (dispatch, getState) {
+    return function(dispatch, getState) {
         const isRequisition = process.env.CHECKOUT_FLOW_TYPE == 'b2b';
-        const userID = getState().userReducer.user.ID;     
+        const userID = getState().userReducer.user.ID;
         const quotationDetail = getState().quotationReducer.quotationDetail;
 
         const defaultPaymentTerms = [];
@@ -165,28 +200,25 @@ function generateOrderByCartItem(cartItemIDs, callback) {
                 paymentTermId: quotationDetail.PaymentTerm.ID
             });
         }
-        
-        if (!isRequisition)
-            return dispatch({ type: '' });
 
-        $(".btn-loader").addClass('btn-loading');
+        if (!isRequisition) { return dispatch({ type: '' }); }
+
         $.ajax({
-            url: "/cart/generateOrderByCartIDs",
-            type: "POST",
+            url: prefix + '/cart/generateOrderByCartIDs',
+            type: 'POST',
             data: {
                 userId: userID,
                 cartId: cartItemIDs,
-                defaultPaymentTerms: JSON.stringify(defaultPaymentTerms),
+                defaultPaymentTerms: JSON.stringify(defaultPaymentTerms)
             },
-            success: function (data) {
+            success: function(data) {
                 if (data.length > 0) {
                     callback(data[0].ID);
                 }
 
                 return dispatch({ type: '' });
             },
-            error: function (jqXHR, textStatus, errorThrown) {
-                $(".btn-loader").removeClass('btn-loading');
+            error: function(jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
             }
         });
@@ -196,8 +228,10 @@ function generateOrderByCartItem(cartItemIDs, callback) {
 module.exports = {
     filterQuotations: filterQuotations,
     goToPage: goToPage,
-    cancelQuotation: cancelQuotation,
-    declineQuotation: declineQuotation,
     generateInvoiceByCartItem: generateInvoiceByCartItem,
-    generateOrderByCartItem: generateOrderByCartItem
-}
+    generateOrderByCartItem: generateOrderByCartItem,
+
+    createQuotation,
+    cancelQuotation,
+    updateQuotation
+};

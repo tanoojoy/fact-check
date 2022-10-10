@@ -7,37 +7,34 @@ class ModalAddEditComponent extends React.Component {
         super(props)
         this.saveData = this.saveData.bind(this);
     }
-
-    onSave(event) {
+    onSave(event)
+    {
         if (event.which === 13 || event.keyCode == 13 || event.which === undefined) {
             this.saveData();
         }
+
     }
-
     saveData() {
+        
         const self = this;
-        const { comparisonList } = this.props;
-        let permissionCode = typeof comparisonList.ID === 'undefined' ? 'add-consumer-comparison-tables-api' : 'edit-consumer-comparison-tables-api';
 
-        this.props.validatePermissionToPerformAction(permissionCode, () => {
-            var $form = $('#frm-comparison');
-            var $name = $form.find('#list_name');
-            var name = $.trim($name.val());
-
-            if (!name) {
-                $name.addClass('error-con');
-                return;
-            } else {
-                $name.removeClass('error-con');
-                $('#modal-add-comparison-list').modal('hide');
-            }
-
-            if (self.props.comparisonList.ID === undefined) {
-                self.props.addEvaluationList(name);
-            } else {
-                self.props.editEvaluationList(self.props.comparisonList.ID, name);
-            }
-        });      
+        var $form = $('#frm-comparison');
+        var $name = $form.find('#list_name');
+        var name = $.trim($name.val());
+        let Id = $name.data('id');
+        if (!name) {
+            $name.addClass('error-con');
+            return;
+        } else {
+            $name.removeClass('error-con');
+            $('#modal-add-comparison-list').modal('hide');
+        }
+       
+            if (self.props.comparisonList.ID === undefined) 
+                this.props.addEvaluationList(name);
+            else
+                this.props.editEvaluationList(self.props.comparisonList.ID, name);
+        
     }
 
     onChange(event) {
@@ -64,6 +61,8 @@ class ModalAddEditComponent extends React.Component {
     }
 
     render() {
+        const self = this;
+
         return (
             <div id="modal-add-comparison-list" className="modal fade x-boot-modal" role="dialog">
                 <div className="modal-dialog">

@@ -20,7 +20,7 @@ class InvoiceCreditCardPaymentComponent extends BaseComponent {
                 <div className="tccc-bot">
                     <span className="title">
                         <span className="title-separator">Your Invoice ID is:</span>
-                        <span className="inv-text">{invoiceDetail.Orders[0].PaymentDetails[0].CosmeticNo != null && invoiceDetail.Orders[0].PaymentDetails[0].CosmeticNo != "" ? invoiceDetail.Orders[0].PaymentDetails[0].CosmeticNo : invoiceDetail.InvoiceNo}</span>
+                        <span className="inv-text">{invoiceDetail.InvoiceNo}</span>
                     </span>
                     <span className="title">
                         <span className="title-separator">Total Cost :</span>

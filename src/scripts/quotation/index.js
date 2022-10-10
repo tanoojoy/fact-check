@@ -1,33 +1,67 @@
-'use strict';
-var React = require('react');
-var reactDom = require('react-dom');
-var Redux = require('redux');
-var ReactRedux = require('react-redux');
-var Store = require('../../redux/store.js');
+import React from 'react';
+import reactDom from 'react-dom';
+import { Provider } from 'react-redux';
+import Store from '../../redux/store';
+import { QuotationListHome } from '../../views/quotation/quotation-list';
+import { QuotationDetailHome } from '../../views/quotation/quotation-detail';
+import { QuotationDetailViewHome } from '../../views/quotation/quotation-detail-view';
+import { QuotationTemplateLayout } from '../../views/layouts/horizon-pages/quotation/create-quote-template';
+import { CreateRFQLayout } from '../../views/layouts/horizon-pages/create-rfq/create-rfq';
 
-if (window.APP == "quotation-list") {
-    var QuotationListHome = require('../../views/quotation/quotation-list/index').QuotationListHome;
-
+if (window.APP == 'quotation-list') {
     const store = Store.createQuotationStore(window.REDUX_DATA);
-
-    const app = document.getElementById("root");
+    const app = document.getElementById('root');
 
     reactDom.hydrate(
-        <ReactRedux.Provider store={store}>
+        <Provider store={store}>
             <QuotationListHome />
-        </ReactRedux.Provider>,
+        </Provider>,
         app);
 }
-if (window.APP == "quotation-detail") {
-    var QuotationDetailHome = require('../../views/quotation/quotation-detail/index').QuotationDetailHome;
-
+if (window.APP == 'quotation-template') {
     const store = Store.createQuotationStore(window.REDUX_DATA);
-
-    const app = document.getElementById("root");
+    const app = document.getElementById('root');
 
     reactDom.hydrate(
-        <ReactRedux.Provider store={store}>
+        <Provider store={store}>
             <QuotationDetailHome />
-        </ReactRedux.Provider>,
+        </Provider>,
         app);
 }
+
+// if (window.APP == 'view-rfq') {
+//     const store = Store.createRFQPageStore(window.REDUX_DATA);
+//     const app = document.getElementById('root');
+
+//     reactDom.hydrate(
+//         <Provider store={store}>
+//             <CreateRFQLayout />
+//         </Provider>,
+//         app);
+// }
+
+if (window.APP == 'quotation-detail') {
+    const store = Store.createQuotationStore(window.REDUX_DATA);
+    const app = document.getElementById('root');
+
+    reactDom.hydrate(
+        <Provider store={store}>
+            <QuotationDetailHome />
+        </Provider>,
+        app);
+}
+
+if (window.APP == 'quotation-view') {
+    const store = Store.createQuotationStore(window.REDUX_DATA);
+    const app = document.getElementById('root');
+
+    reactDom.hydrate(
+        <Provider store={store}>
+            <QuotationDetailViewHome />
+        </Provider>,
+        app);
+}
+
+
+
+

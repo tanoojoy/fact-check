@@ -3,6 +3,11 @@ var React = require('react');
 var EnumCoreModule = require('../../public/js/enum-core');
 var HtmlEntities = require('html-entities').AllHtmlEntities;
 var entities = new HtmlEntities();
+const CommonModule = require('../../public/js/common');
+import moment from 'moment';
+import { rfqStatusMessages, quoteStatusMessages, licensingInquiryStatusMessages } from '../../consts/rfq-quote-statuses';
+
+import { MESSAGES } from './limitation';
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -24,209 +29,227 @@ class ChatMessagesComponent extends React.Component {
         this.setState({ messagesContainerCss: 'right-message-bar' + (css ? ' ' + css : '') });
     }
 
-    setChatReady() {
+    setChatReady = (isReady = false) => {
         this.setState({
-            chatReady: true
+            chatReady: isReady
         });
     }
 
-    isChatReady() {
+    isChatReady = () => {
         return this.state.chatReady;
     }
 
-    sendMessage() {
+    sendMessage = () => {
         const self = this;
 
-        let message = $('.type-area-msg .moji-text').val();
+        let message = $('#chat-input').val();
         message = message && message.trim().length >= 0 ? message.trim() : '';
 
-        if (message.length <= 0 && self.state.enableSending && self.state.membersActive) {
+        if (message.length <= 0 && self.state.enableSending) {
             return;
         }
 
-        this.setState({ enableSending: false });
+        self.setState({ enableSending: false });
 
-        let type = EnumCoreModule.GetChatEmailTypes().MessageFromBuyer;
-        if (self.props.itemMerchantId === self.props.mainSenderDetail.ID) {
-            type = EnumCoreModule.GetChatEmailTypes().MessageFromSeller;
-        }
-
-        self.props.sendMessage(message, type, function (response) {
-            $('.type-area-msg .moji-text').val('');
-            self.setState({ enableSending: true });
-        });
+        self.props.sendMessage(message);
+        $('#chat-input').val('');
+        self.setState({ enableSending: true });
     }
 
-    addNewMessage(message, callback) {
-        let self = this;
-        let messages = self.state.messages;
-        messages.push({
-            Message: message.body,
-            SentDateTime: message.timestamp,
-            Sender: message.author
-        });
-
-        self.setState({ messages: messages });
-
-        if (callback) {
-            callback();
-        }
-    }
-
-    componentDidUpdate() {
-        document.querySelector('.messanger-outer').scrollTo(0, document.querySelector('.messanger-outer').scrollHeight);
-    }
-
-    renderAvatarSrc(sender) {
-        if (sender.Media && sender.Media.length > 0 && sender.Media[sender.Media.length - 1])
-            return true;
-        else
-            return false;
-    }
-
-    renderMessages() {
-        const self = this;
-        let counter = 0;
-
-        return (
-            self.state.messages.map(function (message) {
-                counter++;
-                const sender = self.props.senders.find(function (member) {
-                    return member.Email === message.Sender;
-                });
-                if (sender) {
-                    return (
-                        <li className="send-msg" key={counter}>
-                            <div className="user-avatar">
-                                <img src={self.renderAvatarSrc(sender) ? sender.Media[sender.Media.length - 1].MediaUrl : "/assets/images/default_user.svg"} alt="recive-avatar" title="recive-avatar"/>
-                            </div>
-                            <div className="msg-box">
-                                <div dangerouslySetInnerHTML={{ __html: entities.decode(message.Message) }}/>
-                                <span className="date-time-msg">{self.props.formatDateTime(message.SentDateTime, 'DD/MM/YYYY HH:mm')}</span>
-                            </div>
-                        </li>
-                    );
-                }
-                else {
-                    const recipient = self.props.recipients.find(function (member) {
-                        return member.Email === message.Sender;
-                    });
-
-                    if (recipient) {
-                        return (
-                            <li className="receive-msg" key={counter}>
-                                <div className="user-avatar">
-                                    <img src={self.renderAvatarSrc(recipient) ? recipient.Media[recipient.Media.length - 1].MediaUrl : "/assets/images/default_user.svg"} alt="recive-avatar" title="recive-avatar" />
-                                </div>
-                                <div className="msg-box">
-                                    <div dangerouslySetInnerHTML={{ __html: entities.decode(message.Message) }} />
-                                    <span className="date-time-msg">{self.props.formatDateTime(message.SentDateTime, 'DD/MM/YYYY HH:mm')}</span>
-                                </div>
-                            </li>
-                        );
-                    }
-                }
-            }));
-    }
-
-    renderMessageInput() {
-        const self = this;
-        if (self.state.chatReady && self.state.membersActive) {
+    renderMessageInput = () => {
+        
+        if (this.state.chatReady && !this.props.isLockedChat) {
             return (
-                <div className="type-area-msg">
-                    <textarea className="moji-text" placeholder="Enter your message..." onKeyPress={(e) => self.sendMesageOnKeyPress(e)} />
-                    <button className="msg-send-btn" onClick={() => { self.sendMessage() }}>
-                        <img src="/assets/images/send-btn-arrow.svg" alt="send" title="send" />
-                    </button>
-                </div>
+                <div className="view-chat-edit-sec" >
+                    <div className="padded-container">
+                        <textarea id='chat-input' className="moji-text" placeholder="Type here to reply" onKeyUp={(e) => this.sendMesageOnKeyPress(e)}></textarea>
+                        <div className="text-right" placeholder="Enter your message..." > 
+                            <a href="javascript:void(0);" className="btn-chat-send" onClick={this.sendMessage}>
+                                <svg width="21" height="18" viewBox="0 0 21 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M0.01 18L21 9L0.01 0L0 7L15 9L0 11L0.01 18Z" fill="#9D9D9C"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>                
             );
         }
         else {
             let statusMessage = "Enter your message...";
-            if (!self.state.chatReady) {
+            if (!this.state.chatReady) {
                 statusMessage = "Please wait while channel is loading";
             }
-            if (!self.state.membersActive) {
-                statusMessage = "User unavailable, contact marketplace administrator for more info";
+            if (this.props.isLockedChat) {
+                statusMessage = MESSAGES.chat;
             }
-
+            
             return (
-                <div className="type-area-msg">
-                    <textarea className="moji-text" placeholder={statusMessage} disabled style={{ background: !self.state.chatReady || !self.state.membersActive ? "#D2D2D2" : 'transparent' }}/>
-                    <button className="msg-send-btn" disabled>
-                        <img src="/assets/images/send-btn-arrow.svg" alt="send" title="send" />
-                    </button>
-                </div>
+                <div className="view-chat-edit-sec">
+                    <div className="padded-container type-area-msg">
+                        <textarea className="moji-text" placeholder="Type here to reply" placeholder={statusMessage} disabled style={{ background: !this.state.chatReady ? "#D2D2D2" : 'transparent' }}></textarea>
+                        <div className="text-right"> 
+                            <a href="javascript:void(0);" className="btn-chat-send">
+                                <svg width="18" height="18" viewBox="0 0 21 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M0.01 18L21 9L0.01 0L0 7L15 9L0 11L0.01 18Z" fill="#ffffff"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>                
             );
         }
     }
 
     sendMesageOnKeyPress(e) {
         const self = this;
-        if ($(".type-area-msg .moji-text").val() == "\n") {
-            $(".type-area-msg .moji-text").val('');
-        }
-
         var message = $(".type-area-msg .moji-text").val();
         if (e.which === 13 && message !== "") {
             self.sendMessage();
         }
+        if ($(".type-area-msg .moji-text").val() == "\n") {
+            $(".type-area-msg .moji-text").val('');
+        }
     }
 
     componentDidMount() {
-        const self = this;
-        if (self.props.messages.length > 0) {
-            const messagesLength = self.props.messages.length;
-            const recentMessage = self.props.messages[messagesLength - 1];
-            self.props.updateMemberLastSeenMessage(recentMessage.SID);
-        }
+        
+    }
 
-        if (self.props.mainSenderDetail && self.props.mainSenderDetail.Active && self.props.mainSenderDetail.Visible) {
-            if (self.props.mainRecipientDetail && self.props.mainRecipientDetail.Active && self.props.mainRecipientDetail.Visible) {
-                self.setState({ membersActive: true });
+    componentDidUpdate(prevProps) {
+        if (prevProps.messages && this.props.messages) {
+            if (prevProps.messages.length !== this.props.messages.length) {
+                document.querySelector('.view-chat-listsec').scrollTo(0, document.querySelector('.view-chat-listsec').scrollHeight);
             }
         }
-        if ($('#quotation-button').length > 0) {
-            $('#quotation-button').each((i, el) => {
-                if (!self.props.isAuthorizedToEdit) {
-                    $(el).addClass('disabled');
-                    $(el).wrap(`<span class="tool-tip inline" data-toggle="tooltip" 
-                    data-placement="top" data-original-title="You need permission to perform this action"></span>`)
-                }
+    }
 
-                let onClickHandler = $(el).attr("onclick");
+    displayStatusMessage = () => {
+        const { deal, quote } = this.props;
 
-                if (onClickHandler && onClickHandler.indexOf('/quotation/detail') >= 0) {
-                    if (self.props.showMerchantActions) {
-                        const index = onClickHandler.indexOf('/quotation/detail');
+        const statusMessages = quote && quote.id && quote.status ? quoteStatusMessages : deal.productType === 'api' ? rfqStatusMessages : licensingInquiryStatusMessages;
+        const status =  (quote && quote.id && quote.status) || deal.status;
+        const type = (this.props.isCurrentUserBuyer && 'buyerMessage') || 'sellerMessage';
 
-                        onClickHandler = onClickHandler.substring(0, index) + '/merchants' + onClickHandler.substring(index);
-
-                        $(el).attr("onclick", onClickHandler);
-                    }
-                }
-
-                $(el).unbind("click");
-                
-                $(el).on('click', function () {
-                    if (!self.props.isAuthorizedToEdit) return;
-                    self.props.validatePermissionToPerformAction('edit-consumer-chat-details-api', () => onClickHandler);
-                });
-            });
-        }
-        $('[data-toggle="tooltip"]').tooltip();
+        let statusColorClass = '';
+        switch (status) {
+            case 'submitted':
+                statusColorClass = 'received-new-quote';
+                break;
+            case 'accepted':
+                statusColorClass = 'quote-accepted-rgt';
+                break;
+            case 'declined':
+                statusColorClass = 'rfq-declined';
+                break;
+        } 
+        if (!statusColorClass) return;   
+        return (<div className={`${statusColorClass}`}>{statusMessages[status][`${type}`]}</div>)
     }
 
     render() {
-        var self = this;
-        return (
-            <div className={self.state.messagesContainerCss}>
-                <ul className="messanger-outer">
-                    {self.renderMessages()}
-                </ul>
-                {self.renderMessageInput()}
+        const { horizon_user, messages } = this.props;
+        return (   
+            <div className="view-chat-right col-sm-8">
+                <div className="view-chat-sec affix-top" data-spy="affix" data-offset-top="79">
+                    <div className="view-chat-listsec" tabindex="2">
+                        {
+                            messages && messages.map((chat) => {
+                                const { Message, Sender, SentDateTime } = chat;
+                                const messageSplit = Message.split('|');
+                                const msgLen = messageSplit.length;
+                                let userName = '';
+                                let senderName = '';
+                                let cleanMessage = '';
+                                
+                                if (msgLen == 3) {
+                                    userName = messageSplit[msgLen - 2].trim();
+                                    const companyName = messageSplit[msgLen - 1].trim();
+                                    senderName = `${userName} | ${companyName}`
+                                    messageSplit.splice(msgLen - 1, 1);
+                                    messageSplit.splice(msgLen - 2, 1);
+                                    cleanMessage = messageSplit.join('|');
+                                }
+                                else if (msgLen == 2) {
+                                    senderName = messageSplit[msgLen - 1].trim();
+                                    userName = senderName;
+                                    messageSplit.splice(msgLen - 1, 1);
+                                    cleanMessage = messageSplit.join('|');
+                                }
+                                else {
+                                    senderName = Sender;
+                                    userName = senderName;
+                                    cleanMessage = Message;
+                                }
+                                
+
+                                const momentDate = moment(SentDateTime);
+                                const sentDate = momentDate.format('LL');
+                                const sentTime = momentDate.format('LTS');
+                                
+                                let initials;
+                                let userNameArr = userName.split(' ');
+                                if (userNameArr.length > 1) {
+                                    initials = `${userNameArr[0][0]}${userNameArr[1][0]}`.toUpperCase();
+                                } else {
+                                    initials = `${userNameArr[0][0]}${userNameArr[0][1]}`.toUpperCase();
+                                }
+                                console.log('momentDate', momentDate);
+                                
+                                
+                                //let senderDisplayName = Sender.split('|');
+                                //if (senderDisplayName && senderDisplayName.length > 0) {
+                                //    senderDisplayName = senderDisplayName[0].trim();
+                                //}
+                                if (senderName.includes(horizon_user.DisplayName) ||
+                                    senderName.includes(horizon_user.Email) ||
+                                    senderName.includes(`${horizon_user.LastName} ${horizon_user.FirstName}`)) {
+                                    return (                                        
+                                        <React.Fragment>
+                                            <div className="view-chat-ind chat-ind-self ">
+                                                <div className="chat-user-icon">{initials}</div>
+                                                <div className="chat-msg-info">
+                                                    <span className="cmsg-cinfy">{senderName}</span>
+                                                    <div className="cmsg-time"><span className="date-format">{ sentDate }</span> <span className="time-format">{ sentTime }</span> </div>
+                                                </div>
+                                                <p>{cleanMessage}</p>
+                                            </div>
+                                            <div className="clearfix"></div>
+                                        </React.Fragment>
+                                    )
+                                }
+                                else {
+                                    return (
+                                        <React.Fragment>
+                                            <div className="view-chat-ind chat-ind-other ">
+                                                <div className="chat-user-icon">{initials}</div>
+                                                <div className="chat-msg-info">
+                                                    <span className="cmsg-cinfy">{senderName}</span>
+                                                    <div className="cmsg-time"><span className="date-format">{ sentDate }</span> <span className="time-format">{ sentTime }</span> </div>
+                                                </div>
+                                                <p>{cleanMessage }</p>
+                                            </div>
+                                            <div className="clearfix"></div>
+                                        </React.Fragment>
+                                    )
+                                }
+                            })
+                        }
+                        { this.props.quoteData && 
+                            (
+                                <div className="chat-mid-sec-status">
+                                    { this.displayStatusMessage() }
+                                </div>
+                            )
+                        }                            
+                    </div>
+                    
+                    {
+                        this.renderMessageInput()
+                    }
+                </div>
+                <div className="clearfix"></div>
             </div>
-        );
+        )        
     }
 }
 

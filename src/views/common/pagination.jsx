@@ -1,104 +1,113 @@
 'use strict';
+
+import { useEffect, useState } from 'react';
+
 var React = require('react');
-var Redux = require('redux');
-var ReactRedux = require('react-redux');
-var Store = require('../../redux/store.js');
-var actionTypes = require('../../redux/actionTypes');
+
+if (typeof window !== 'undefined') {
+    var $ = window.$;
+}
 
 class PaginationComponent extends React.Component {
-    showPrevious() {
-        if (typeof this.props.totalRecords === "undefined" || this.props.totalRecords <= 0 || this.props.totalRecords <= this.props.pageSize) {
-            return null;
-        }
 
-        return (
-            <li className="pag_prev">
-                <a href="#" aria-label="Previous" onClick={(e) => this.goToPage(this.props.pageNumber - 1)}>
-                    <span aria-hidden="true">&laquo;</span>
-                </a>
-            </li>
-        );
+    constructor(props) {
+        super(props);
+        this.state = {
+            showPaging: true
+        };
     }
 
-    showNext() {
-        if (typeof this.props.totalRecords === "undefined" || this.props.totalRecords <= 0 || this.props.totalRecords <= this.props.pageSize) {
-            return null;
-        }
+    pageSizes = [5, 10, 15];
 
-        return (
-            <li className="pag_next">
-                <a href="#" aria-label="Next" onClick={(e) => this.goToPage(this.props.pageNumber + 1)}>
-                    <span aria-hidden="true">&raquo;</span>
-                </a>
-            </li>
-        );
+    componentDidMount() {
+        this.initializePagination();
     }
 
-    showPages() {
-        if (typeof this.props.totalRecords === "undefined" || this.props.totalRecords <= 0) {
-            return null;
-        }
-        //use for pagination ellipsis
-        let totalPages = Math.ceil(this.props.totalRecords / this.props.pageSize);
-        var current = this.props.pageNumber,
-            last = totalPages,
-            delta = 4,
-            left = current - delta,
-            right = current + delta + 1,
-            range = [],
-            l;
-
-        let pageList = [];
-        range.push(1)
-        for (let i = current - delta; i <= current + delta; i++) {
-            if (i >= left && i < right && i < last && i > 1) {
-                range.push(i);
+    componentDidUpdate(prevProps, prevState) {
+        if (prevProps && this.props) {
+            if (prevProps.pageSize !== this.props.pageSize) {
+                this.initializePagination();
             }
         }
-        if (last != 1) range.push(last);
-        for (let i of range) {
-            if (l) {
-                if (i - l === 2) {
-                    pageList.push(l + 1);
-                } else if (i - l !== 1 && range.length >= 6) {
-                    pageList.push('...');
+    }
+
+    initializePagination = () => {
+        const { totalRecords, pageSize, pageNumber, onPageNumberClicked, pagingId } = this.props;
+        const totalPageCount = Math.ceil(totalRecords / pageSize);
+        const maxBtnCount = totalPageCount <= 5 ? totalPageCount - 1 : 5;
+
+        if (totalPageCount > 0) {
+            this.setState(() => ({ showPaging: true }));
+            $(`#${pagingId}`).pxpaginate({
+                currentpage: pageNumber,
+                totalPageCount: totalPageCount,
+                maxBtnCount: maxBtnCount,
+                align: 'center',
+                nextPrevBtnShow: true,
+                firstLastBtnShow: true,
+                prevPageName: '<i class="icon-pagination-arrow-left"></i>',
+                nextPageName: '<i class="icon-pagination-arrow-left rotate-180"></i>',
+                lastPageName: '<i class="icon-pagination-arrow-left"></i><i class="icon-pagination-arrow-left"></i>',
+                firstPageName: '<i class="icon-pagination-arrow-left rotate-180"></i><i class="icon-pagination-arrow-left rotate-180"></i>',
+                callback: function (pagenumber) {
+                    if (onPageNumberClicked) {
+                        onPageNumberClicked(Number(pagenumber));
+                    }
                 }
-            }
-            pageList.push(i);
-            l = i;
+            });
         }
-        //end ellipsis
-        return (
-            pageList.map((i, index) => {
-                let classValue = i === this.props.pageNumber ? "numeros active" : "numeros";
-                return (
-                    <li key={index} className={classValue}><a href="#" onClick={(e) => this.goToPage(i)}>{i}</a></li>
-                )
-            })
-        );
+        else {
+            this.setState(() => ({ showPaging: false }));
+        }
     }
 
-    goToPage(pageNo) {
-        if (typeof this.props.goToPage === "function") {
-            let totalPages = Math.ceil(this.props.totalRecords / this.props.pageSize);
-            if (pageNo != this.props.pageNumber && pageNo > 0 && pageNo <= totalPages) {
-                this.props.goToPage(pageNo, this.props.filters);
-            }
-        }
+    pageSizeChanged = (e) => {
+        const { value } = e.currentTarget;
+        if (this.props.onPageSizeChanged) {
+            this.props.onPageSizeChanged(Number(value));
+        }        
     }
 
     render() {
-        var self = this;
+        const { pageSize, pagingId } = this.props;
+        const { showPaging } = this.state;
+        console.log('paging props', this.props);
         return (
-            <nav className="text-center">
-                <ul className="pagination">
-                    {self.showPrevious()}
-                    {self.showPages()}
-                    {self.showNext()}
-                </ul>
+            <nav className="text-right row-reverse">
+                <div className="myPages" id={pagingId}></div>
+                <div className="per-page-con">
+                    Rows per page:
+                    <select name="per-page" id="per-page" onChange={this.pageSizeChanged} defaultValue={pageSize}>
+                        {this.pageSizes.map(size => {
+                            return (
+                                <option key={size} value={size} >{size}</option>
+                            )
+                        })}
+                    </select>
+                </div>
             </nav>
-        );
-    }
-}
+        )
+        //if (showPaging) {
+        //    return (
+        //        <nav className="text-right row-reverse">
+        //            <div className="myPages" id={pagingId}></div>
+        //            <div className="per-page-con">
+        //                Rows per page:
+        //                <select name="per-page" id="per-page" onChange={this.pageSizeChanged} defaultValue={pageSize}>
+        //                    {this.pageSizes.map(size => {
+        //                        return (
+        //                            <option key={size} value={size} >{size}</option>
+        //                        )
+        //                    })}
+        //                </select>
+        //            </div>
+        //        </nav>
+        //    )
+        //}
+        //else {
+        //    return null;
+        //}
+    }    
+};
 
-module.exports = PaginationComponent;
+export default PaginationComponent;

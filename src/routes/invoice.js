@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 const React = require('react');
 const reactDom = require('react-dom/server');
 const express = require('express');
@@ -14,11 +16,10 @@ const onboardedMerchant = require('../scripts/shared/onboarded-merchant');
 const client = require('../../sdk/client');
 
 const InvoiceDetailsComponent = require('../views/invoice/detail/index').InvoiceDetailsComponent;
+const AddEditInvoiceComponent = require('../views/invoice/add-edit/index').AddEditInvoiceComponent;
 const InvoiceListComponent = require('../views/invoice/list/index').InvoiceListComponent;
 const InvoicePaymentComponent = require('../views/invoice/payment/index').InvoicePaymentComponent;
 const InvoiceTransactionCompleteComponent = require('../views/invoice/transaction-complete/index').InvoiceTransactionCompleteComponent;
-
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage } = require('../scripts/shared/user-permissions');
 
 const EnumCoreModule = require('../public/js/enum-core');
 
@@ -26,19 +27,9 @@ const handlers = [authenticated, authorizedUser, onboardedMerchant];
 
 const validPaymentStatuses = ['Acknowledged', 'Processing', 'Waiting for Payment', 'Pending', 'Paid'];
 
-const viewInvoiceListData = {
-    code: 'view-consumer-invoices-api',
-    seoTitle: 'Invoice List',
-    renderSidebar: true,
-};
-
-const viewInvoiceDetailsData = {
-    code: 'view-consumer-invoice-details-api',
-    seoTitle: 'Invoice Details',
-    renderSidebar: true,
-};
-
 invoiceRouter.get('/payment/:invoiceNo', authenticated, authorizedUser, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const { user } = req;
     const { invoiceNo } = req.params;
 
@@ -196,6 +187,8 @@ invoiceRouter.post('/process-payment', authenticated, (req, res) => {
 });
 
 invoiceRouter.get('/payment-gateway/success', authenticated, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const { gateway, invoiceNo } = req.query;
     const sessionId = req.query['session_id'];
 
@@ -203,7 +196,7 @@ invoiceRouter.get('/payment-gateway/success', authenticated, (req, res) => {
         return res.send('Gateway not found');
 
     if (!gateway.startsWith('stripe'))
-        return res.send('Gateway not supported'); 
+        return res.send('Gateway not supported');
 
     if (!invoiceNo || !sessionId)
         return res.send('Required parameters not found');
@@ -331,6 +324,8 @@ invoiceRouter.get('/payment-gateway/success', authenticated, (req, res) => {
 });
 
 invoiceRouter.get('/order-details', authenticated, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const { gateway, invoiceNo, payKey, hashKey } = req.query;
 
     if (gateway && invoiceNo && payKey && hashKey && isValidHashKey(gateway, invoiceNo, hashKey)) {
@@ -442,6 +437,8 @@ invoiceRouter.get('/order-details', authenticated, (req, res) => {
 });
 
 invoiceRouter.get('/current-status', authenticated, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const { invoiceNo } = req.query;
 
     const promiseInvoice = new Promise((resolve, reject) => {
@@ -487,6 +484,8 @@ invoiceRouter.get('/current-status', authenticated, (req, res) => {
 });
 
 invoiceRouter.get('/transaction-status', authenticated, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const { gateway, invoiceNo, payKey, hashKey, status, isCallback } = req.query;
 
     const validStatuses = ['success', 'failed'];
@@ -520,10 +519,10 @@ invoiceRouter.get('/transaction-status', authenticated, (req, res) => {
             invoice.Orders.map((order) => {
                 order.PaymentDetails.map((payment) => {
                     if (payment.InvoiceNo == invoiceNo) {
-                        if (payment.GatewayPayKey != payKey || (payment.Status && payment.Status.toLowerCase() == 'success')) {                        
+                        if (payment.GatewayPayKey != payKey || (payment.Status && payment.Status.toLowerCase() == 'success')) {
                             isValid = false;
                         }
-                    }                    
+                    }
                 })
             });
 
@@ -568,6 +567,8 @@ invoiceRouter.get('/transaction-status', authenticated, (req, res) => {
 });
 
 invoiceRouter.get('/transaction-complete/:invoiceNo', authenticated, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const { user } = req;
     const { invoiceNo } = req.params;
 
@@ -641,7 +642,9 @@ invoiceRouter.get('/transaction-complete/:invoiceNo', authenticated, (req, res) 
     });
 });
 
-invoiceRouter.get('/detail/:invoiceNo', ...handlers, isAuthorizedToAccessViewPage(viewInvoiceDetailsData),(req, res) => {
+invoiceRouter.get('/detail/:invoiceNo', ...handlers, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const invoiceNo = req.params['invoiceNo'];
     if (!invoiceNo || typeof invoiceNo == 'undefined' || invoiceNo == 'undefined') return res.send('Invoice number is missing.');
@@ -682,45 +685,72 @@ invoiceRouter.get('/detail/:invoiceNo', ...handlers, isAuthorizedToAccessViewPag
                 const payMethod = paymentAcceptanceMethods.find(p => p.PaymentGateway.Code == paymentDetail.Gateway.Code);
                 if (payMethod) {
                     paymentMethods.push(payMethod);
-                }                
-            }
-            getUserPermissionsOnPage(user, 'Invoice Details', 'Consumer', (pagePermissions) => {
-                const store = Store.createInvoiceStore({
-                    userReducer: { 
-                        user,
-                        pagePermissions,
-                    },
-                    invoiceReducer: { 
-                        invoiceDetail: invoiceDetail,
-                        paymentMethods: paymentMethods,
-                    },
-                    marketplaceReducer: {
-                        locationVariantGroupId: req.LocationVariantGroupId
-                    }
-                });
-                const reduxState = store.getState();
-                const app = reactDom.renderToString(
-                    <InvoiceDetailsComponent 
-                        user={user}
-                        invoiceDetail={invoiceDetail}
-                        paymentMethods={paymentMethods}
-                        locationVariantGroupId={req.LocationVariantGroupId}
-                        pagePermissions={pagePermissions}
-                    />
-                );
-
-                let seoTitle = 'Invoice Details';
-                if (req.SeoTitle) {
-                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
                 }
-
-                res.send(template('page-seller page-invoice-view page-sidebar', seoTitle, app, appString, reduxState));
+            }
+            const store = Store.createInvoiceStore({
+                userReducer: { user },
+                invoiceReducer: {
+                    invoiceDetail: invoiceDetail,
+                    paymentMethods: paymentMethods,
+                }
             });
+            const reduxState = store.getState();
+            const app = reactDom.renderToString(
+                <InvoiceDetailsComponent user={user} invoiceDetail={invoiceDetail} paymentMethods={paymentMethods}/>
+            );
+
+            let seoTitle = 'Invoice Details';
+            if (req.SeoTitle) {
+                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            }
+
+            res.send(template('page-seller page-invoice-view page-sidebar', seoTitle, app, appString, reduxState));
         });
     });
 });
 
-invoiceRouter.get('/list', ...handlers, isAuthorizedToAccessViewPage(viewInvoiceListData),(req, res) => {
+invoiceRouter.get('/create', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
+    const user = req.user;
+    const purchaseOrderId = req.query['purchaseOrderId'];
+    const promisePurchaseOrder = new Promise((resolve, reject) => {
+        let options = {
+            userId: user.ID,
+            keyword: purchaseOrderId,
+            pageNumber: 1,
+            pageSize: 20,
+        }
+        client.Orders.getHistoryB2B(options, function (err, result) {
+            resolve(result);
+        });
+    });
+
+    Promise.all([promisePurchaseOrder]).then(responses => {
+        const appString = 'create-invoice';
+        const invoiceDetail = { Orders: responses[0].Records };
+        const store = Store.createInvoiceStore({
+            userReducer: { user },
+            invoiceReducer: { invoiceDetail }
+        });
+
+        const reduxState = store.getState();
+        const app = reactDom.renderToString(
+            <AddEditInvoiceComponent user={user} invoiceDetail={invoiceDetail} />
+        );
+
+        let seoTitle = 'Create Invoice';
+        if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+
+        res.send(template('page-seller page-sidebar page-create-invoice', seoTitle, app, appString, reduxState));
+    });
+});
+
+invoiceRouter.get('/list', ...handlers, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
 
     // list of purchase orders
@@ -741,7 +771,7 @@ invoiceRouter.get('/list', ...handlers, isAuthorizedToAccessViewPage(viewInvoice
 
             Promise.all([promise]).then((responses) => {
                 const result = responses[0];
-                records = records.concat(result.Records);                
+                records = records.concat(result.Records);
 
                 if (result.PageNumber * result.PageSize < result.TotalRecords) {
                     getPurchaseOrders(result.PageNumber + 1, records);
@@ -786,13 +816,12 @@ invoiceRouter.get('/list', ...handlers, isAuthorizedToAccessViewPage(viewInvoice
         keywords: null,
         pageNumber: 1,
         pageSize: 20,
-        pStatus: 'Processing,Pending,Paid.Failed,Refunded,Created,Acknowledged,Waiting For Payment,Invoiced,Overdue'
     }, function(data) {
         Promise.all([promisePurchaseOrders, promiseUsers, promisePaymentGateways]).then(responses => {
             const appString = 'invoice-list';
             const invoices = data ? data : { Records: [] };
             const purchaseOrders = responses[0];
-            let users = responses[1] || [];                
+            let users = responses[1] || [];
             let paymentGateways = responses[2].Records || [];
             let statuses = validPaymentStatuses.map((status) => {
                 return {
@@ -800,7 +829,7 @@ invoiceRouter.get('/list', ...handlers, isAuthorizedToAccessViewPage(viewInvoice
                     isChecked: false
                 };
             })
-                
+
             users.unshift({
                 ID: 0,
                 DisplayName: 'Select All'
@@ -827,34 +856,34 @@ invoiceRouter.get('/list', ...handlers, isAuthorizedToAccessViewPage(viewInvoice
             const s = Store.createInvoiceStore({
                 userReducer: {
                     user: user
-                }, 
+                },
                 invoiceReducer: {
                     invoiceList: invoices,
                     purchaseOrders: purchaseOrders,
                     users: users,
                     paymentGateways: paymentGateways,
-                    statuses: statuses 
+                    statuses: statuses
                 }
             });
 
             const reduxState = s.getState();
             try {
                 const invoiceListApp = reactDom.renderToString(
-                    <InvoiceListComponent 
+                    <InvoiceListComponent
                         user={user}
                         invoiceList={invoices}
                         purchaseOrders={purchaseOrders}
                         users={users}
                         paymentGateways={paymentGateways}
-                        statuses={statuses} 
+                        statuses={statuses}
                     />
                 );
-                    
+
                 let seoTitle = 'Invoice List';
                 if (req.SeoTitle) {
                     seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
                 }
-        
+
                 res.send(template('page-seller goods-receipt-list invoice-list page-sidebar', seoTitle, invoiceListApp, appString, reduxState));
             }
             catch(e) {
@@ -865,6 +894,8 @@ invoiceRouter.get('/list', ...handlers, isAuthorizedToAccessViewPage(viewInvoice
 });
 
 invoiceRouter.get('/filter', authenticated, function(req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const filters = req.query;
     filters.userId = user.ID;
@@ -1007,8 +1038,7 @@ function buildPaymentRequest(req, invoice, paymentGateway, paymentAcceptanceMeth
                         invoiceNo: invoice.InvoiceNo,
                         items: [],
                         gatewayAccount: null,
-                        email: payment.Payee.Email,
-                        CosmeticNo: payment.CosmeticNo
+                        email: payment.Payee.Email
                     };
 
                     let items = [];
@@ -1251,13 +1281,13 @@ function payStripe3ds(invoice, paymentRequest, callback) {
                     descriptions.push(`${item.quantity} x ${item.name}`);
                 }
             });
-            //ARC10131
+
             let request = {
                 success_url: settings.returnUrl,
                 cancel_url: settings.cancelUrl,
                 payment_method_types: ['card'],
                 line_items: [{
-                    name: 'Invoice: ' + payee.CosmeticNo != null && payee.CosmeticNo != "" ? payee.CosmeticNo : payee.invoiceNo,
+                    name: 'Invoice: ' + payee.invoiceNo,
                     description: descriptions.join(', '),
                     currency: payee.currency,
                     amount: (amount + applicationFeeAmount),
@@ -1319,10 +1349,10 @@ function payOmise(omiseRequest, invoice, paymentRequest, callback) {
                 amount = parseInt(payee.total * 100);
                 fee = parseInt(payee.fee * 100);
             }
-            //ARC10131
+
             totalAmount += (amount + fee);
             currencyCode = payee.currency;
-            invoiceNo = payee.CosmeticNo != null && payee.CosmeticNo != "" ? payee.CosmeticNo : payee.invoiceNo;
+            invoiceNo = payee.invoiceNo;
 
             transferRequests.push({
                 amount: amount,
@@ -1511,7 +1541,7 @@ function payCustom(req, invoice, paymentGateway, callback) {
                         isCallback: true
                     }
                 };
-                
+
                 requestApi(options, (err, result) => {
                     if (err) {
                         return callback(err);
@@ -1601,7 +1631,7 @@ function promiseUpdateOrders(invoice, request) {
     return promises;
 }
 
-function getInvoices(options, callback) {    
+function getInvoices(options, callback) {
     const promiseInvoices = new Promise((resolve, reject) => {
         client.Purchases.getHistory(options, function (err, result) {
             resolve(result);

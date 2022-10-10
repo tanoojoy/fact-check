@@ -4,6 +4,7 @@ var React = require('react');
 var UserMenuComponentTemplate = require('./user-menu')
 var LanguageMenuComponentTemplate = require('./language-menu')
 var ExtraMenuComponent = require('./extra-menu');
+const CommonModule = require('../../public/js/common');
 
 class HeaderMenuComponentTemplate extends React.Component {
 
@@ -30,7 +31,7 @@ class HeaderMenuComponentTemplate extends React.Component {
 
     getLoginUrl() {
         let loc = (location.pathname + location.search).substr(1)
-        return `/accounts/non-private/sign-in?returnUrl=${loc}`
+        return `${CommonModule.getAppPrefix()}/accounts/non-private/sign-in?returnUrl=${loc}`
     }
 
     handleMobileToggleClick(e) {
@@ -45,7 +46,7 @@ class HeaderMenuComponentTemplate extends React.Component {
                 });
             $('body').append( $overlay )
         }
-        else 
+        else
         {
             $('.menu-overlay').remove();
         }

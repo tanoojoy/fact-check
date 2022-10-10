@@ -10,7 +10,7 @@ class InvoiceOrderSummaryComponent extends BaseComponent {
             <span>
                 <span className="title">Invoice No</span>
                 <div className="item-price">
-                    <span className="currencyCode">{invoiceDetail.Orders[0].PaymentDetails[0].CosmeticNo != null && invoiceDetail.Orders[0].PaymentDetails[0].CosmeticNo != "" ? invoiceDetail.Orders[0].PaymentDetails[0].CosmeticNo : invoiceDetail.InvoiceNo}</span>
+                    <span className="currencyCode">{invoiceDetail.InvoiceNo}</span>
                 </div>
             </span>
         );
@@ -60,7 +60,7 @@ class InvoiceOrderSummaryComponent extends BaseComponent {
                     {this.renderTotal()}
                     <div className="pccr-btn">
                         <div className="btn-green" onClick={(e) => proceedPayment()}>
-                            <a href="#" className="btn-loader" onClick={(e) => e.preventDefault()}>Pay Now</a>
+                            <a href="#" onClick={(e) => e.preventDefault()}>Pay Now</a>
                         </div>
                         <div className="btn-white">
                             <a href={`/invoice/detail/${invoiceDetail.InvoiceNo}`}>Previous</a>

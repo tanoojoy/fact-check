@@ -1,4 +1,5 @@
 'use strict';
+const prefix  = require('../public/js/common.js').getAppPrefix();
 var actionTypes = require('./actionTypes');
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -7,7 +8,7 @@ if (typeof window !== 'undefined') {
 function getInfo() {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/marketplace/getInfo',
+            url: prefix+'/marketplace/getInfo',
             type: 'GET',
             data: {},
             success: function (result) {
@@ -24,8 +25,7 @@ function getInfo() {
                     isPrivateEnabled: result.IsPrivateEnabled,
                     googleAnalytics: result.GoogleAnalytics,
                     favIconData: result.FavIconData,
-                    ControlFlags: result.ControlFlags,
-                    locationVariantGroupId: result.LocationVariantGroupId
+                    ControlFlags: result.ControlFlags
                 });
             },
             error: function (jqXHR, textStatus, errorThrown) {

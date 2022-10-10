@@ -17,22 +17,13 @@ class FeaturePurchaseOrderListB2bComponent extends BaseComponent {
     renderInvoiceList(order) {
         let links = [];
         if (order && order.PaymentDetails && order.PaymentDetails.length > 0) {
-            //let invoiceNos = order.PaymentDetails.map((payment) => payment.InvoiceNo);
-            //invoiceNos = [...new Set(invoiceNos)];
+            let invoiceNos = order.PaymentDetails.map((payment) => payment.InvoiceNo);
+            invoiceNos = [...new Set(invoiceNos)];
 
-            //invoiceNos.map((invoiceNo, index) => {
-            //    links.push(<a href={`/invoice/detail/${invoiceNo}`} key={index}>{invoiceNo}</a>);
-            //    links.push(<span key={'comma-' + index}>, </span>);
-            //});
-
-            //ARC10131
-            let uniquePayments = this.getUnique(order.PaymentDetails, 'InvoiceNo');
-            if (uniquePayments) {
-                uniquePayments.forEach(function (payment, index) {
-                    links.push(<a href={`/invoice/detail/${payment.InvoiceNo}`} key={index}>{payment.CosmeticNo != null && payment.CosmeticNo != "" ? payment.CosmeticNo : payment.InvoiceNo}</a>);
-                    links.push(<span key={'comma-' + index}> , </span>);
-                });
-            }
+            invoiceNos.map((invoiceNo, index) => {
+                links.push(<a href={`/invoice/detail/${invoiceNo}`} key={index}>{invoiceNo}</a>);
+                links.push(<span key={'comma-' + index}>, </span>);
+            });
 
             links.pop();
 
@@ -51,7 +42,7 @@ class FeaturePurchaseOrderListB2bComponent extends BaseComponent {
         if (order && order.ReceivingNotes && order.ReceivingNotes.length > 0) {
             order.ReceivingNotes.map((note, index) => {
                 if (!note.Void) {
-                    links.push(<a href={`/receiving-note/detail?id=${note.ID}`} key={index}>{note.CosmeticNo != null && note.CosmeticNo != "" ? note.CosmeticNo : note.ReceivingNoteNo}</a>);
+                    links.push(<a href={`/receiving-note/detail?id=${note.ID}`} key={index}>{note.ReceivingNoteNo}</a>);
                     links.push(<span key={'comma-' + index}>, </span>);
                 }
             });
@@ -74,7 +65,7 @@ class FeaturePurchaseOrderListB2bComponent extends BaseComponent {
             var html = this.props.Records.map(function (obj, index) {
                 return (
                     <tr key={obj.ID} className="account-row " data-key="item" data-id={1}>
-                        <td><a href={"/purchase/detail/orderid/" + obj.ID}>{obj.CosmeticNo != null & obj.CosmeticNo != "" ? obj.CosmeticNo : obj.PurchaseOrderNo}</a></td>
+                        <td><a href={"/purchase/detail/orderid/" + obj.ID}>{obj.PurchaseOrderNo}</a></td>
                         <td><a href={"/purchase/detail/orderid/" + obj.ID}>{obj.RequisitionDetail ? self.formatDateTime(obj.RequisitionDetail.CreatedDateTime) : ''}</a></td>
                         <td><a href={"/purchase/detail/orderid/" + obj.ID}>{obj.MerchantDetail.DisplayName}</a></td>
                         <td className="wrap-col" data-th="Receiving Notes"><div className="ids-wrap single-line">{self.renderReceivingNoteList(obj)}</div></td>

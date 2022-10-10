@@ -2,26 +2,21 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 const BaseComponent = require('../../shared/base');
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 
 const RequisitionOrderDetail = require('./order-detail');
 const RequisitionOrderItems = require('./order-items');
 const RequisitionOrderTotal = require('./order-total');
 const RequisitionOrderDiary = require('../../order-diary/index');
-const PermissionTooltip = require('../../common/permission-tooltip');
 
 const OrderDiaryActions = require('../../../redux/orderDiaryActions');
 const RequisitionActions = require('../../../redux/requisitionActions');
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
 
 const sections = [
     { key: 'Approvals', value: 'Approvals' },
     { key: 'Comments', value: 'Comments' },
 ];
-
-const editRequisitionOrderDetailsCode = 'edit-consumer-requisition-order-details-api';
-const addRequisitionOrderDetailsCode = 'add-consumer-requisition-order-details-api';
 
 class RequisitionDetailComponent extends BaseComponent {
 
@@ -93,51 +88,26 @@ class RequisitionDetailComponent extends BaseComponent {
     }
 
     handleApproveBtnClick() {
-        if (!this.props.isAuthorizedToEdit) return;
-        this.props.validatePermissionToPerformAction(editRequisitionOrderDetailsCode, () => {
-            $('#cover').fadeIn(function() {
-                $('.order-state-popup.order-approved').fadeIn();
-            })
-        });
-        
+        $('#cover').fadeIn(function() {
+            $('.order-state-popup.order-approved').fadeIn();
+        })
     }
 
     handleRejectBtnClick() {
-        if (!this.props.isAuthorizedToEdit) return;
-        this.props.validatePermissionToPerformAction(editRequisitionOrderDetailsCode, () => {
-            $('#cover').fadeIn(function() {
-                $('.order-state-popup.order-rejected').fadeIn();
-            });
+        $('#cover').fadeIn(function() {
+            $('.order-state-popup.order-rejected').fadeIn();
         });
     }
 
     renderApprovalActions() {
-        const { isAuthorizedToEdit } = this.props;
         if (this.props.isApprover && !this.props.hasApprovedOrRejected) {
-            const extraClass = isAuthorizedToEdit ? '' : 'disabled';
             return (
                 <div className="top-snackbar">
                     <div className="orderlist-container">
                         <div className="order-actions snack-slide active">
                             <label htmlFor="">This order needs your approval: </label>
-                            <PermissionTooltip isAuthorized={isAuthorizedToEdit} placement="bottom">
-                                <button
-                                    type="button"
-                                    className={`order-act-btn btn-approve ${extraClass}`}
-                                    onClick={() => this.handleApproveBtnClick()}
-                                >
-                                    Approve
-                                </button>
-                            </PermissionTooltip>
-                            <PermissionTooltip isAuthorized={isAuthorizedToEdit} placement="bottom">
-                                <button
-                                    type="button"
-                                    className={`order-act-btn btn-reject ${extraClass}`}
-                                    onClick={() => this.handleRejectBtnClick()}
-                                >
-                                    Reject
-                                </button>
-                            </PermissionTooltip>
+                            <button type="button" className="order-act-btn btn-approve " onClick={() => this.handleApproveBtnClick()}>Approve</button>
+                            <button type="button" className="order-act-btn btn-reject" onClick={() => this.handleRejectBtnClick()}>Reject</button>
                         </div>
                         <div className="snack-slide slide-approved">
                             <div className="message">You have <strong>Approved</strong> this requisition order. </div>
@@ -205,9 +175,6 @@ class RequisitionDetailComponent extends BaseComponent {
                                     setUploadFile={this.props.setUploadFile}
                                     createEvent={this.props.createEvent}
                                     showDropdownPlaceholder={false}
-                                    isAuthorizedToAdd={this.props.isAuthorizedToAdd}
-                                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                    permissionCode={addRequisitionOrderDetailsCode}
                                 />
                             </div>
                         </div>
@@ -230,7 +197,6 @@ function mapStateToProps(state, ownProps) {
         hasApprovedOrRejected: state.requisitionReducer.hasApprovedOrRejected,
         flow: state.requisitionReducer.flow,
         pendingOffer: state.requisitionReducer.pendingOffer,
-        locationVariantGroupId: state.marketplaceReducer.locationVariantGroupId,
         // Order Diary
         eventCustomField: state.orderDiaryReducer.eventCustomField,
         events: state.orderDiaryReducer.events,
@@ -240,9 +206,6 @@ function mapStateToProps(state, ownProps) {
         uploadFile: state.orderDiaryReducer.uploadFile,
         isValidUpload: state.orderDiaryReducer.isValidUpload,
         isSuccessCreate: state.orderDiaryReducer.isSuccessCreate,
-        //permissions
-        isAuthorizedToAdd: state.userReducer.pagePermissions.isAuthorizedToAdd,
-        isAuthorizedToEdit: state.userReducer.pagePermissions.isAuthorizedToEdit
     };
 }
 
@@ -255,8 +218,7 @@ function mapDispatchToProps(dispatch) {
         setUploadFile: (file, isValid) => dispatch(OrderDiaryActions.setUploadFile(file, isValid)),
         createEvent: (event, formData, page) => dispatch(OrderDiaryActions.createEvent(event, formData, page)),
         addRequisitionStatus: (options, callback) => dispatch(RequisitionActions.addRequisitionStatus(options, callback)),
-        addUserRequisitionApproval: (options, callback) => dispatch(RequisitionActions.addUserRequisitionApproval(options, callback)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
+        addUserRequisitionApproval: (options, callback) => dispatch(RequisitionActions.addUserRequisitionApproval(options, callback))
     };
 }
 

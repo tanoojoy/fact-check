@@ -2,7 +2,7 @@
 var React = require('react');
 var FooterLayout = require('../../layouts/footer').FooterLayoutComponent;
 var ReactRedux = require('react-redux');
-var HeaderLayout = require('../../layouts/header').HeaderLayoutComponent;
+var HeaderLayout = require('../../layouts/header/index').HeaderLayoutComponent;
 var Breadcrumb = require('../comparison-detail/breadcrumb');
 var ComparisonDetailTable = require('../comparison-detail/detail');
 var ComparisonList = require('../comparison-detail/list');
@@ -24,7 +24,6 @@ class ComparisonDetailComponent extends BaseComponent {
     }
 
     render() {
-        
         return (
             <React.Fragment>
                 <div className="header mod" id="header-section">
@@ -43,7 +42,6 @@ class ComparisonDetailComponent extends BaseComponent {
                                         selectedComparisonId={this.props.comparison.ID}
                                         setComparisonToUpdate={this.props.setComparisonToUpdate}
                                         exportToPDF={this.props.exportToPDF}
-                                        permissions={this.props.permissions}
                                     />
                                 </div>
                             </div>
@@ -54,7 +52,6 @@ class ComparisonDetailComponent extends BaseComponent {
                                     setComparisonDetailToUpdate={this.props.setComparisonDetailToUpdate}
                                     createPurchaseDetail={this.props.createPurchaseDetail}
                                     comparableCustomFields={this.props.comparableCustomFields}
-                                    permissions={this.props.permissions}
                                 />
                             </div>
                         </div>
@@ -78,8 +75,7 @@ function mapStateToProps(state, ownProps) {
         invoiceNumber: state.comparisonReducer.invoiceNumber,
         redirectToDelivery: state.comparisonReducer.redirectToDelivery,
         comparableCustomFields: state.comparisonReducer.comparableCustomFields,
-        user: state.userReducer.user,
-        permissions: state.userReducer.permissions
+        user: state.userReducer.user
     }
 }
 

@@ -1,13 +1,14 @@
 ﻿'use strict';
 var React = require('react');
 var BaseComponent = require('../../../shared/base');
+const CommonModule = require('../../../../public/js/common.js');
 
-class ItemList extends BaseComponent {    
+class ItemList extends BaseComponent {
     renderItemList() {
         const self = this;
         return (
             this.props.itemDetails.Records.map(function (itemDetail) {
-                let detailLink = "/items/" + self.generateSlug(itemDetail.Name) + '/' + itemDetail.ID;
+                let detailLink = CommonModule.getAppPrefix()+"/items/" + self.generateSlug(itemDetail.Name) + '/' + itemDetail.ID;
                 return (
                     <div key={itemDetail.ID} className="col-md-2 col-sm-4 col-xs-6 xs-mb-15">
                         <a href={detailLink} className="item-box-small">
@@ -33,7 +34,7 @@ class ItemList extends BaseComponent {
             self.props.searchStoreFront(self.props.keyword, self.props.merchantID, self.props.itemDetails.PageNumber);
         }
         else {
-            self.props.updateKeyWord(e);     
+            self.props.updateKeyWord(e);
         }
     }
 

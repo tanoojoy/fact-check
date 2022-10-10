@@ -5,7 +5,6 @@ if (typeof window !== 'undefined') {
 }
 
 let EnumCoreModule = require('../../../../../../public/js/enum-core');
-const PermissionTooltip =  require('../../../../../common/permission-tooltip');
 
 class EventFormComponent extends React.Component {
     componentDidUpdate() {
@@ -79,25 +78,21 @@ class EventFormComponent extends React.Component {
     }
 
     addNewEvent() {
-        if (!this.props.isAuthorizedToAdd) return;
-        const self = this;
-        this.props.validatePermissionToPerformAction('add-consumer-purchase-order-details-api', () => {
-            if (self.validInput()) {
-                const event = $('input[name="entry_event"]').val();
-                let formData;
+        if (this.validInput()) {
+            const event = $('input[name="entry_event"]').val();
+            let formData;
 
-                if (self.props.uploadFile !== '') {
-                    formData = new FormData();
-                    $.each($('#order-diary-file[type="file"]')[0].files, function (i, file) {
-                        formData.append('file-' + i, file);
-                    });
-                }
-
-                self.props.createEvent(event, formData);
-
-                $('#order-diary-file[type="file"]')[0].value = '';
+            if (this.props.uploadFile !== '') {
+                formData = new FormData();
+                $.each($('#order-diary-file[type="file"]')[0].files, function (i, file) {
+                    formData.append('file-' + i, file);
+                });
             }
-        });
+
+            this.props.createEvent(event, formData);
+
+            $('#order-diary-file[type="file"]')[0].value = '';
+        }
     }
 
     validInput() {
@@ -132,8 +127,6 @@ class EventFormComponent extends React.Component {
     }
 
     render() {
-        const { isAuthorizedToAdd } = this.props;
-        const addEntryBtnClass = `sassy-black-btn ${isAuthorizedToAdd ? '' : 'disabled'}`;
         return (
             <div className="order-grey-box">
                 <div className="entry-form-prnt">
@@ -159,9 +152,7 @@ class EventFormComponent extends React.Component {
                         <span>{this.props.uploadFile}</span>
                         <div className="added-entry"></div>
                         <div className="entry-btns">
-                            <PermissionTooltip isAuthorized={isAuthorizedToAdd}>
-                                <button className={addEntryBtnClass} id="addNewEntry" onClick={(e) => this.addNewEvent()}>Add new entry</button>
-                            </PermissionTooltip>
+                            <button className="sassy-black-btn" id="addNewEntry" onClick={(e) => this.addNewEvent()}>Add new entry</button>
                         </div>
                     </div>
                 </div>

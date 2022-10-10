@@ -1,5 +1,6 @@
 'use strict';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -7,7 +8,7 @@ if (typeof window !== 'undefined') {
 function createPaymentAcceptanceMethodAsync(options, callback) {
     return function (dispatch) {
         $.ajax({
-            url: "/merchants/settings/createPaymentAcceptanceMethodAsync",
+            url: prefix+"/merchants/settings/createPaymentAcceptanceMethodAsync",
             type: "POSt",
             data: options,
             contentType: 'application/json',
@@ -29,7 +30,7 @@ function createPaymentAcceptanceMethodAsync(options, callback) {
 function getPaymentAcceptanceMethods(options, callback) {
     return function (dispatch) {
         $.ajax({
-            url: "/merchants/settings/getPaymentAcceptanceMethods",
+            url: prefix+"/merchants/settings/getPaymentAcceptanceMethods",
             type: "POSt",
             data: options,
             contentType: 'application/json',
@@ -51,7 +52,7 @@ function getPaymentAcceptanceMethods(options, callback) {
 function saveOmiseAccount(options, callback) {
     return function (dispatch) {
         $.ajax({
-            url: "/merchants/settings/saveOmiseAccount",
+            url: prefix+"/merchants/settings/saveOmiseAccount",
             type: "POST",
             data: options,
             contentType: 'application/json',

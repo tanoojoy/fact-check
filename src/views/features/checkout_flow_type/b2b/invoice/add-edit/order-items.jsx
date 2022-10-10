@@ -6,49 +6,40 @@ class FeatureCreateInvoiceB2bOrderItemsComponent extends React.Component {
     renderItem(cart, hasQuotation) {
         const { ItemDetail } = cart;
 
-            //ARC10053  the discountamount should not be round off to have the correct value.
         return (
             <tr className={hasQuotation ? 'brdt' : ''} key={cart.ID}>
                 <td>
-                    <div className="flex-wrap">
-                        <div className="thumb-group mr-15">
-                            <img src={ItemDetail.Media[0].MediaUrl} alt="Item" style={{ maxWidth: '64px' }} />
-                        </div>
-                        {this.renderAdditionalDetails(ItemDetail)}
+                    <div className="thumb-group">
+                        <img src={ItemDetail.Media[0].MediaUrl} alt="Item" style={{ maxWidth: '64px' }} />
+                        <span>{ItemDetail.Name}</span>
                     </div>
+                    {this.renderVariants(ItemDetail.Variants)}
                 </td>
                 <td>{cart.Quantity}</td>
                 <td>{this.props.renderFormatMoney(cart.CurrencyCode, ItemDetail.Price)}</td>
-                <td>{this.props.renderFormatMoney(cart.CurrencyCode, (cart.ItemDetail.Price * cart.Quantity) - (cart.DiscountAmountNotRoundOff || 0))}</td>
+                <td>{this.props.renderFormatMoney(cart.CurrencyCode, cart.SubTotal - (cart.DiscountAmount || 0))}</td>
             </tr>
         );
     }
 
-    renderAdditionalDetails(ItemDetail) {
-        return (
-            <div className="text-left">
-                <span>{ItemDetail.Name}</span>
-                <div className="item-field">
-                    {
-                        ItemDetail.SKU ?
-                            <span className="if-txt">
-                                <span>SKU:</span>
-                                <span>{ItemDetail.SKU}</span>
-                            </span> : ""
-
-                    }
-                    {
-                        ItemDetail.Variants && ItemDetail.Variants.length > 0 &&
-                        ItemDetail.Variants.filter(v => v.GroupID != this.props.locationVariantGroupId).map(v =>
-                            <span key={v.ID} className="if-txt">
-                                <span>{v.GroupName}:</span>
-                                <span>{v.Name}</span>
+    renderVariants(variants) {
+        if (variants && variants.length > 0) {
+            return (
+                <div className="item-field" style={{ marginLeft: '84px', textAlign: 'left'}}>
+                {
+                    variants.map((variant, index) => {
+                        return (
+                            <span className="if-txt" key={index}>
+                                <span>{variant.GroupName}:</span>
+                                <span>{variant.Name}</span>
                             </span>
                         )
-                    }
+                    })
+                }
                 </div>
-            </div>
-        );
+            );
+        }
+        return null;
     }
 
     renderOfferDetails(offerDetails, currencyCode) {

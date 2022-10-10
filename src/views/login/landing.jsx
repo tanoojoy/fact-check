@@ -6,8 +6,8 @@ let actionTypes = require('../../redux/actionTypes');
 let BaseComponent = require('../shared/base');
 let EnumCoreModule = require('../../public/js/enum-core');
 
-let ExtraLandingComponentTemplate = require('../extensions/' + process.env.TEMPLATE + '/login/landing');
-let CommonModule = require('../../../src/public/js/common.js');
+let CommonModule = require('../../public/js/common.js');
+let ExtraLandingComponentTemplate = require('../extensions/' + CommonModule.getTemplateEnv() + '/login/landing');
 
 class LandingComponent extends BaseComponent {
 

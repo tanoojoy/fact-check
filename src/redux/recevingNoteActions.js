@@ -1,7 +1,7 @@
 'use strict';
 
 var actionTypes = require('./actionTypes');
-
+const prefix  = require('../public/js/common.js').getAppPrefix();
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -41,7 +41,7 @@ function filterReceivingNotes(options, callback) {
         const filters = getState().receivingNoteReducer.filters;
 
         $.ajax({
-            url: '/receiving-note/filter',
+            url: prefix+'/receiving-note/filter',
             type: 'GET',
             data: Object.assign({}, filters, options),
             success: function (result) {
@@ -86,7 +86,7 @@ function createReceivingNote(options, callback) {
         options.receivingNoteDetails = JSON.stringify(options.receivingNoteDetails);
 
         $.ajax({
-            url: '/receiving-note/create-receiving-note',
+            url: prefix+'/receiving-note/create-receiving-note',
             type: 'POST',
             data: options,
             success: function (result) {
@@ -115,7 +115,7 @@ function voidReceivingNote(receivingNoteId, callback) {
         }
 
         $.ajax({
-            url: '/receiving-note/void-receiving-note',
+            url: prefix+'/receiving-note/void-receiving-note',
             type: 'PUT',
             data: { 
                 ...receivingNoteDetails,

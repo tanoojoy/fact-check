@@ -1,48 +1,46 @@
 'use strict';
-var React = require('react');
-var ReactRedux = require('react-redux');
-var BaseComponent = require('../shared/base');
-var EnumCoreModule = require('../../public/js/enum-core');
-let CommonModule = require('../../public/js/common.js');
+import React from 'react';
+import { connect } from 'react-redux';
+import EnumCoreModule from '../../public/js/enum-core';
+import CommonModule from '../../public/js/common';
+import AccountActions from '../../redux/accountAction';
+import BackgroundLoginPage from './background-login-page';
+import HorizonFooterComponent from '../layouts/horizon-components/footer';
 
 // ARC-8702
 const iconStyles = {
     fontFamily: 'FontAwesome',
     fontWeight: 'normal'
-}
+};
 
-class NonPrivateLoginComponent extends BaseComponent {
+class NonPrivateLoginComponent extends React.Component {
     componentDidMount() {
-
-        let self = this;
-
+        const self = this;
+        this.state = { isClarivatelogin: false };
         if (typeof window !== 'undefined') {
             var $ = window.$;
         }
-        
+
         if (this.props.errorMessage) {
             this.showMessage({
-                type: 'error', 
+                type: 'error',
                 body: this.props.errorMessage
             });
-            window.history.pushState("", "", '/accounts/non-private/sign-in?error=1');
-        }
-        else {
-            if (this.props.error && this.props.error == '5') {
-                this.showMessage(EnumCoreModule.GetToastStr().Error.UNREGISTERED_LOGIN_ACCOUNT);
-            }
-            else if (this.props.error && this.props.error === '2') {
+            window.history.pushState('', '', CommonModule.getAppPrefix() + '/accounts/non-private/sign-in?error=1');
+        } else {
+            if (this.props.error && this.props.error === '2') {
                 this.showMessage(EnumCoreModule.GetToastStr().Error.INVALID_TOKEN);
-            }
-            else if (this.props.error) {
+            } else if (this.props.error && typeof this.props.error != 'undefined' && this.props.error != 'undefined') {
                 this.showMessage(EnumCoreModule.GetToastStr().Error.INVALID_LOGIN_CREDENTIALS);
             }
         }
+
+        console.log('the errors', this.props);
     }
 
     loginWithUsernameAndPassword() {
-        let username = $('input[name="username"]').val().trim();
-        let password = $('input[name="password"]').val().trim();
+        const username = $('input[name="username"]').val().trim();
+        const password = $('input[name="password"]').val().trim();
 
         if (username == '' || password == '') {
             this.showMessage(EnumCoreModule.GetToastStr().Error.REQUIRED_LOGIN_CREDENTIALS);
@@ -54,9 +52,8 @@ class NonPrivateLoginComponent extends BaseComponent {
 
     handleKeyPress(event) {
         if (event.which === 13 || event.keyCode == 13) {
-            if ($("#password").val() == "" || $("#username").val() == "") {
+            if ($('#password').val() == '' || $('#username').val() == '') {
                 this.showMessage(EnumCoreModule.GetToastStr().Error.REQUIRED_LOGIN_CREDENTIALS);
-                return;
             } else {
                 $('#frmlogin').submit();
             }
@@ -64,12 +61,12 @@ class NonPrivateLoginComponent extends BaseComponent {
     }
 
     getSortedLogins() {
-        let sortedLogins = [];
+        const sortedLogins = [];
 
         if (this.props.loginConfigurationSettings) {
             const loginConfigurationSettings = this.props.loginConfigurationSettings;
 
-            Object.keys(loginConfigurationSettings).forEach(function (key) {
+            Object.keys(loginConfigurationSettings).forEach(function(key) {
                 if (key.indexOf('enable-') >= 0 && loginConfigurationSettings[key] == 'true') {
                     const loginType = key.replace('enable-', '');
 
@@ -90,9 +87,9 @@ class NonPrivateLoginComponent extends BaseComponent {
         const self = this;
 
         const sortedLogins = this.getSortedLogins();
-        let logins = [];
+        const logins = [];
 
-        sortedLogins.forEach(function (config, index) {
+        sortedLogins.forEach(function(config, index) {
             if (config.key.toLowerCase() === 'facebook') {
                 logins.push(self.renderFacebook());
             } else if (config.key.toLowerCase() === 'google') {
@@ -126,9 +123,9 @@ class NonPrivateLoginComponent extends BaseComponent {
 
     renderGoogle() {
         return (
-            <div key="google"  className="btn-google">
+            <div key='google' className='btn-google'>
                 <a href={this.props.googleLoginUrl}>
-                    <i style={iconStyles} className="fa fa-google"></i><span>Continue with Google</span>
+                    <i style={iconStyles} className='fa fa-google' /><span>Continue with Google</span>
                 </a>
             </div>
         );
@@ -136,61 +133,77 @@ class NonPrivateLoginComponent extends BaseComponent {
 
     renderFacebook() {
         return (
-            <div key="facebook" className="btn-fb">
+            <div key='facebook' className='btn-fb'>
                 <a href={this.props.facebookLoginUrl}>
-                    <i style={iconStyles} className="fa fa-facebook-square"></i><span>Continue with Facebook</span>
+                    <i style={iconStyles} className='fa fa-facebook-square' /><span>Continue with Facebook</span>
                 </a>
             </div>
         );
     }
 
-
-
     renderCustomLogin() {
         if (typeof window !== 'undefined') {
-            let urlAction = "/accounts/non-private/sign-in";
+            const urlAction = CommonModule.getAppPrefix() + '/accounts/non-private/sign-in';
             const query = new URLSearchParams(window.location.search);
-            //const isSeller = query.get('isSeller');
+            // const isSeller = query.get('isSeller');
             let isMerge = false;
             if (this.props) {
                 isMerge = this.props.isMerge;
             }
 
-            if (!isMerge && window.location.href.indexOf('returnUrl=cart') > 0) {
+            if (!isMerge && window.location.href.indexOf('returnUrl=' + CommonModule.getAppPrefix() + '/cart') > 0) {
                 isMerge = true;
             }
 
-            const returnUrl = query.get('returnUrl')
+            const returnUrl = query.get('returnUrl');
 
             return (
-                <form key="custom-login" id="frmlogin" action={urlAction} className="custom-login" method="post" autoComplete="off">
-                    <div className="lbb-input">
-                        <input type="hidden" id="returnUrl" name="returnUrl" value={returnUrl} />
-                        <input type="hidden" id="isMerge" name="isMerge" value={isMerge} />
-                        <input type="text" className="input-text" placeholder="Email/Username" id="username" name="username" onKeyDown={(e) => this.avoidWhiteSpaceOnKeyDown(e)} onKeyPress={(e) => this.handleKeyPress(e)} />
-                        <input type="password" className="input-text" placeholder="Password" id="password" name="password" onKeyDown={(e) => this.avoidWhiteSpaceOnKeyDown(e)} onKeyPress={(e) => this.handleKeyPress(e)} autoComplete="off" />
-                        <input type="isSeller" className="hidden" id="isSeller" name="isSeller" value={this.props.isSeller || false} />
+                <form
+                    key='custom-login' id='frmlogin' action={urlAction} className='custom-login' method='post'
+                    autoComplete='off'
+                >
+                    <div className='lbb-input'>
+                        <input type='hidden' id='returnUrl' name='returnUrl' value={returnUrl} />
+                        <input type='hidden' id='isMerge' name='isMerge' value={isMerge} />
+                        <input
+                            type='text' className='input-text' placeholder='Email/Username' id='username'
+                            name='username' onKeyDown={(e) => this.avoidWhiteSpaceOnKeyDown(e)}
+                            onKeyPress={(e) => this.handleKeyPress(e)}
+                        />
+                        <input
+                            type='password' className='input-text' placeholder='Password' id='password'
+                            name='password' onKeyDown={(e) => this.avoidWhiteSpaceOnKeyDown(e)}
+                            onKeyPress={(e) => this.handleKeyPress(e)} autoComplete='off'
+                        />
+                        <input
+                            type='isSeller' className='hidden' id='isSeller' name='isSeller'
+                            value={this.props.isSeller || false}
+                        />
                     </div>
-                    <span className="lbb-text">
-                        <a href={`/accounts/non-private/forgot-password?isSeller=${this.props.isSeller || false}`}>Forgotten your password?</a>
+                    <span className='lbb-text'>
+                        <a href={`${CommonModule.getAppPrefix()}/accounts/non-private/forgot-password?isSeller=${this.props.isSeller || false}`}>Forgotten your password?</a>
                     </span>
-                    <div className="btn-signin">
-                        <a href="#" onClick={(e) => this.loginWithUsernameAndPassword()}>Sign In</a>
+                    <div className='btn-signin'>
+                        <a href='#' onClick={(e) => this.loginWithUsernameAndPassword()}>Sign In</a>
                     </div>
-                    <div className="signup-btn">
-                        <a href={`/accounts/non-private/register?isSeller=${this.props.isSeller || false}`}>Create Account</a>
+                    <div className='signup-btn'>
+                        <a href={`${CommonModule.getAppPrefix()}/accounts/non-private/register?isSeller=${this.props.isSeller || false}`}>Create
+                            Account
+                        </a>
                     </div>
                 </form>
             );
         }
-
     }
 
     renderCustomFacebook() {
         return (
-            <div key="custom-facebook" className="btn-fb">
+            <div key='custom-facebook' className='btn-fb'>
                 <a href={this.props.customFacebookLoginUrl}>
-                    <i style={iconStyles} className="fa fa-facebook-square"></i><span>{this.props.customFacebookDisplayName || 'Continue with Admin Facebook'}</span>
+                    <i
+                        style={iconStyles}
+                        className='fa fa-facebook-square'
+                    /><span>{this.props.customFacebookDisplayName || 'Continue with Admin Facebook'}</span>
                 </a>
             </div>
         );
@@ -198,9 +211,12 @@ class NonPrivateLoginComponent extends BaseComponent {
 
     renderCustomGoogle() {
         return (
-            <div key="custom-google" className="btn-google">
+            <div key='custom-google' className='btn-google'>
                 <a href={this.props.customGoogleLoginUrl}>
-                    <i style={iconStyles} className="fa fa-google"></i><span>{this.props.customGoogleDisplayName || 'Continue with Admin Google'}</span>
+                    <i
+                        style={iconStyles}
+                        className='fa fa-google'
+                    /><span>{this.props.customGoogleDisplayName || 'Continue with Admin Google'}</span>
                 </a>
             </div>
         );
@@ -208,76 +224,37 @@ class NonPrivateLoginComponent extends BaseComponent {
 
     renderDivider(index) {
         return (
-            <span key={'divider-' + index} className="lbb-line or-container">
+            <span key={'divider-' + index} className='lbb-line or-container'>
                 <p>or</p>
             </span>
         );
     }
 
     acceptCookie() {
-        CommonModule.createCookie("acceptCookiePolicy", 1, 1);
-        $('.cookie-bar').fadeOut(1000, function () {
+        CommonModule.createCookie('acceptCookiePolicy', 1, 1);
+        $('.cookie-bar').fadeOut(1000, function() {
             $('.cookie-bar').remove();
         });
     }
 
-    renderCookie() {
-        let learnMoreTitle = '';
-        let cookieTitle = '';
-        let learnMoreUrl = '#';
-        let acceptButtonTitle = '';
-
-        if (this.props.cookieData) {
-            this.props.cookieData.forEach(function (cf) {
-                if (cf.Name.toLowerCase() === "message" && cf.Values) {
-                    cookieTitle = cf.Values[0];
-                }
-                if (cf.Name.toLowerCase() === "accept button" && cf.Values) {
-                    acceptButtonTitle = cf.Values[0];
-                }
-                if (cf.Name.toLowerCase() === "cookie policy link button" && cf.Values) {
-                    learnMoreTitle = cf.Values[0];
-                }
-                if (cf.Name.toLowerCase() === "button url" && cf.Values) {
-                    learnMoreUrl = cf.Values[0];
-                }
-            });
-            if (typeof window !== 'undefined') {
-                if (CommonModule.getCookie("acceptCookiePolicy") !== 1) {
-                    return (
-                        <div className="container-fluid">
-                            <div className="cookie-bar">
-                                <div className="flex-cookier-bar">
-                                    <p>{cookieTitle} <a href={learnMoreUrl} target="_blank">{learnMoreTitle}</a></p>
-                                    <a className="cookie-btn" href={null} onClick={(e) => this.acceptCookie(e)}>{acceptButtonTitle}</a>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                }
-            }
-        }
+    switchLoginMethod() {
+        console.log(this);
+        this.setState(prevState => ({
+            isClarivatelogin: !prevState.isClarivatelogin
+        })
+        );
     }
 
     render() {
         return (
             <React.Fragment key='login-component'>
-                <div className='login-container'>
-                    <div className="icon-logo">
-                        <img src={this.props.marketplaceLogoUrl}></img>
+                <BackgroundLoginPage>
+                    <div className='login-additional-info'>
+                        <a href='#' className='login-additional-info__link'>Not yet a subscriber? Learn more</a>
                     </div>
-                    <div className="login-box">
-                        <div className="lb-head full-width head-buyer">
-                            <a href="/">
-                                <img src="/assets/images/back.svg" />
-                            </a>
-                            <span>Register / Sign In</span>
-                        </div>
-                        <div className="lb-body full-width">
-                            {this.renderLogins()}
-                        </div>
-                    </div>
-                    {this.renderCookie()}
+                </BackgroundLoginPage>
+                <div className='footer' id='footer-section'>
+                    <HorizonFooterComponent />
                 </div>
             </React.Fragment>
         );
@@ -300,19 +277,23 @@ function mapStateToProps(state, ownProps) {
         customGoogleDisplayName: state.customGoogleDisplayName,
         guestUserID: state.guestUserID,
         isMerge: state.isMerge,
-        isSeller: state.isSeller, 
-        errorMessage: state.errorMessage
-    }
+        isSeller: state.isSeller,
+        errorMessage: state.errorMessage,
+        isClarivatelogin: state.isClarivatelogin
+    };
 }
 
 function mapDispatchToProps(dispatch) {
-    return {}
+    return {
+        switchLoginMethod: isClarivatelogin => dispatch(AccountActions.switchLoginMethod(isClarivatelogin)),
+        authorizeCgiUser: cgiOptions => dispatch(AccountActions.authorizeCgiUser(cgiOptions))
+    };
 }
 
-const NonPrivateLoginHome = ReactRedux.connect(
+const NonPrivateLoginHome = connect(
     mapStateToProps,
     mapDispatchToProps
-)(NonPrivateLoginComponent)
+)(NonPrivateLoginComponent);
 
 module.exports = {
     NonPrivateLoginHome,

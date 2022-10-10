@@ -1,5 +1,5 @@
 'use strict';
-const React = require('React');
+const React = require('react');
 const BaseComponent = require('../../../shared/base');
 
 if (typeof window !== 'undefined') {
@@ -74,16 +74,16 @@ class ReviewsComponent extends BaseComponent {
 
 			</React.Fragment>
 		);
-		
+
 	}
 	renderReviewList() {
 		const { feedback } = this.props;
 		if (!feedback) return;
 		const { ItemReviews } = feedback;
 		return (
-			<ul> 
+			<ul>
 				{
-					ItemReviews.map((review, index) => 
+					ItemReviews.map((review, index) =>
 						<li key={index}>
 			            	<div className="review-box">
 				                <div className="user-avtar"> <a href="#"><img src={this.getUserMedia(review.User)} alt=""/></a> </div>
@@ -101,7 +101,7 @@ class ReviewsComponent extends BaseComponent {
 				                </div>
 				            </div>
 				            {
-				            	review.Replies && review.Replies.length > 0 ? 
+				            	review.Replies && review.Replies.length > 0 ?
 					            	this.renderReplies(review.Replies)
 					            : null
 				            }
@@ -127,11 +127,11 @@ class ReviewsComponent extends BaseComponent {
 		const getClassName = key => getValue(key) > 0 ? 'text-black' : '';
 		return (
 			<tbody>
-				{arr.map(val => 
+				{arr.map(val =>
 					<tr className={getClassName(val)} key={val}>
 						<td style={{ width: '145px'}}><span className="stars"><span style={{ width: `${getValue(val) > 0 ? val*20 : 0}%`}}></span></span></td>
 						<td>{summaryEval[val-1]}</td>
-						<td>{getValue(val)}</td>    
+						<td>{getValue(val)}</td>
 					</tr>
 				)}
 			</tbody>
@@ -156,7 +156,7 @@ class ReviewsComponent extends BaseComponent {
 	            </div>
 	            <div className="rating-summary" style={{ display: 'none' }}>
 	            	<h6>Rating Summary</h6>
-	            	<table className="w-100">	
+	            	<table className="w-100">
 						{this.renderSummaryTable()}
 			    	</table>
 	            </div>

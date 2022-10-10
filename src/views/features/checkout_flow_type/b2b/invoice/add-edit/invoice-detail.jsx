@@ -2,8 +2,7 @@
 var React = require('react');
 var Moment = require('moment');
 var toastr = require('toastr');
-
-const PermissionTooltip = require('../../../../../common/permission-tooltip');
+const CommonModule = require('../../../../../../public/js/common.js');
 
 class FeatureCreateInvoiceB2bInvoiceDetailComponent extends React.Component {
     constructor(props) {
@@ -74,56 +73,53 @@ class FeatureCreateInvoiceB2bInvoiceDetailComponent extends React.Component {
     }
 
     createInvoice() {
-        const self = this;
 
-        this.props.validatePermissionToPerformAction('add-merchant-create-invoice-api', () => {
-            var hasError = false;
-            $('.required-invoice').each(function () {
-                $(this).removeClass('error-con');
-                if (!$.trim($(this).val())) {
-                    $(this).addClass('error-con');
-                    hasError = true;
-                }
-            });
-
-            if (!hasError) {
-                const { invoiceDetail } = self.props;
-                const orderDetail = invoiceDetail.Orders[0];
-
-                if (parseFloat($('#invoice-total').val()) > self.getBalance(orderDetail)) {
-                    toastr.error('Amount to be collected should be equal or less than the balance amount.', 'Oops! Something went wrong.');
-                    return;
-                }
-                if (self.state.isButtonDisabled) {
-                    return;
-                }
-                self.setState({
-                    isButtonDisabled: true
-                });
-
-                let paymetnDueDateTime = $('#payment-due-time').val().length > 0 ? $('#payment-due-time').val() : '12:00 AM'
-                paymetnDueDateTime = Moment($('#payment-due-date').val() + ' ' + paymetnDueDateTime, 'DD/MM/YYYY HH:mm A', true).format('X');
-
-                const options = {
-                    currencyCode: orderDetail.CurrencyCode,
-                    total: $('#invoice-total').val(),
-                    orderId: orderDetail.ID,
-                    payeeId: orderDetail.MerchantDetail.ID,
-                    payerId: orderDetail.ConsumerDetail.ID,
-                    paymentDueDateTime: paymetnDueDateTime,
-                    gatewayTransactionId: $('#invoice-ref').val()
-                };
-
-                self.props.createInvoice(options, function (result) {
-                    if (result) {
-                        window.location.href = '/merchants/invoice/list';
-                    }
-                    else {
-                        toastr.error('Error creating invoice.', 'Oops! Something went wrong.');
-                    }
-                });
+        var hasError = false;
+        $('.required-invoice').each(function () {
+            $(this).removeClass('error-con');
+            if (!$.trim($(this).val())) {
+                $(this).addClass('error-con');
+                hasError = true;
             }
         });
+
+        if (!hasError) {
+            const { invoiceDetail } = this.props;
+            const orderDetail = invoiceDetail.Orders[0];
+
+            if (parseFloat($('#invoice-total').val()) > this.getBalance(orderDetail)) {
+                toastr.error('Amount to be collected should be equal or less than the balance amount.', 'Oops! Something went wrong.');
+                return;
+            }
+            if (this.state.isButtonDisabled) {
+                return;
+            }
+            this.setState({
+                isButtonDisabled: true
+            });
+
+            let paymetnDueDateTime = $('#payment-due-time').val().length > 0 ? $('#payment-due-time').val() : '12:00 AM'
+            paymetnDueDateTime = Moment($('#payment-due-date').val() + ' ' + paymetnDueDateTime, 'DD/MM/YYYY HH:mm A', true).format('X');
+
+            const options = {
+                currencyCode: orderDetail.CurrencyCode,
+                total: $('#invoice-total').val(),
+                orderId: orderDetail.ID,
+                payeeId: orderDetail.MerchantDetail.ID,
+                payerId: orderDetail.ConsumerDetail.ID,
+                paymentDueDateTime: paymetnDueDateTime,
+                gatewayTransactionId: $('#invoice-ref').val()
+            };
+
+            this.props.createInvoice(options, function (result) {
+                if (result) {
+                    window.location.href = '/merchants/invoice/list';
+                }
+                else {
+                    toastr.error('Error creating invoice.', 'Oops! Something went wrong.');
+                }
+            });
+        }
     }
 
     render() {
@@ -144,7 +140,7 @@ class FeatureCreateInvoiceB2bInvoiceDetailComponent extends React.Component {
                                 </div>
                                 <div className="form-group spacer-left-30">
                                     <label htmlFor="">Invoice Ref. No. (External)
-                                        &nbsp;<a data-toggle="tooltip" title="This is not the same number as the system generated invoice no.<br/> This is the invoice reference number you can tag to this invoice, e.g. from an invoice generated by an external software. You're responsible for verifying that your issued invoices meet local tax requirements" data-placement="bottom" data-html="true" href=""><img src="/assets/images/Info.svg" alt="" /></a>
+                                        &nbsp;<a data-toggle="tooltip" title="This is not the same number as the system generated invoice no.<br/> This is the invoice reference number you can tag to this invoice, e.g. from an invoice generated by an external software. You're responsible for verifying that your issued invoices meet local tax requirements" data-placement="bottom" data-html="true" href=""><img src={CommonModule.getAppPrefix() + "/assets/images/Info.svg"} alt="" /></a>
                                     </label>
                                     <div>
                                         <input type="text" id="invoice-ref" className="border-input invoice-ref" placeholder="" />
@@ -153,9 +149,7 @@ class FeatureCreateInvoiceB2bInvoiceDetailComponent extends React.Component {
                             </div>
                         </div>
                         <div className="r-side" disabled={this.state.isButtonDisabled}>
-                            <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                                <a href="#" className="sassy-btn sassy-btn-bg btn-create-invoice" onClick={() => this.createInvoice()}>Create Invoice</a>
-                            </PermissionTooltip>
+                            <a href="#" className="sassy-btn sassy-btn-bg btn-create-invoice" onClick={() => this.createInvoice()}>Create Invoice</a>
                         </div>
                     </div>
                 </section>

@@ -98,12 +98,6 @@ function orderReducer(state = initialState, action) {
                 detail: action.detail
             })
         }
-        case actionTypes.UPDATE_BOOKING_SLOT: {
-            return Object.assign({}, state, {
-                detail: action.detail,
-                isShowSuccessMessage: action.isShowSuccessMessage
-            })
-        }
         case actionTypes.UPDATE_DETAIL_ORDER_PAYMENT_STATUS: {
             let { detail } = state;
             let order = detail.Orders[0];

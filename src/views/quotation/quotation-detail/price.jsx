@@ -1,7 +1,6 @@
 'use strict';
 const React = require('react');
 const BaseComponent = require('../../shared/base');
-const PermissionTooltip = require('../../common/permission-tooltip');
 
 class PriceComponent extends BaseComponent {
     getChargeTotal() {
@@ -36,46 +35,33 @@ class PriceComponent extends BaseComponent {
 
     getSubTotal() {
         const { details } = this.props;
-        var subTotal = details ? details[0].TotalAmount : 0;
-        return subTotal
+        return details ? details[0].TotalAmount : 0;
     }
 
-
     getTotalCost() {
-        return this.getSubTotal() + this.getChargeTotal() - this.getDiscountTotal()
+        return this.getSubTotal() + this.getChargeTotal() - this.getDiscountTotal();
     }
 
     renderButtons() {
-        const { status, isMerchant, generateInvoiceByCartItem, generateOrderByCartItem, buyerdocs, isAuthorizedToEdit } = this.props;
+        const { status, isMerchant, generateInvoiceByCartItem, generateOrderByCartItem, buyerdocs } = this.props;
         const handleAcceptQuotation = process.env.CHECKOUT_FLOW_TYPE == 'b2b' ? generateOrderByCartItem : generateInvoiceByCartItem;
 
         if (status == 'Pending') {
             if ((buyerdocs == 'true') || !isMerchant) {
-                const acceptBtnClass = `sassy-btn btn-loader sassy-btn-bg line ${!isAuthorizedToEdit ? 'disabled' : ''}`;
-                const declineBtnClass = `sassy-btn sassy-btn-border openModalRemove ${!isAuthorizedToEdit ? 'disabled' : ''}`
                 return (
                     <div className="full-width">
                         <div className="flex btn-area">
-                            <PermissionTooltip isAuthorized={isAuthorizedToEdit}>
-                                <a href="#" className={declineBtnClass} onClick={() => this.props.openRemoveModal('DECLINE QUOTATION')}>
-                                    Decline
-                                </a>
-                            </PermissionTooltip>
-                            <PermissionTooltip isAuthorized={isAuthorizedToEdit}>
-                                <button id="itemAddCompare" className={acceptBtnClass} onClick={() => handleAcceptQuotation()}>Accept</button>
-                            </PermissionTooltip>
+                            <a href="#" className="sassy-btn sassy-btn-border openModalRemove" onClick={() => this.props.openRemoveModal('DECLINE QUOTATION')}>Decline</a>
+                            <button id="itemAddCompare" className="sassy-btn sassy-btn-bg line" onClick={() => handleAcceptQuotation()}>Accept</button>
                         </div>
                     </div>
                 )
             }
 
-            const cancelBtnClass = `sassy-btn sassy-btn-bg line openModalRemove ${!isAuthorizedToEdit ? 'disabled' : ''}`;
             return (
                 <div className="full-width">
                     <div className="flex btn-area flex-float-reverse">
-                        <PermissionTooltip isAuthorized={isAuthorizedToEdit}>
-                            <button id="cancel-quotation" className={cancelBtnClass} data-toggle="" data-target="" onClick={() => this.props.openRemoveModal('CANCEL QUOTATION')}>Cancel Quotation</button>
-                        </PermissionTooltip>
+                        <button id="cancel-quotation" className="sassy-btn sassy-btn-bg line openModalRemove" data-toggle="" data-target="" onClick={() => this.props.openRemoveModal('CANCEL QUOTATION')}>Cancel Quotation</button>
                     </div>
                 </div>
             )
@@ -98,7 +84,7 @@ class PriceComponent extends BaseComponent {
 
     render() {
         const self = this;
-        const { currencyCode, buyerdocs } = this.props
+        const { currencyCode, buyerdocs } = this.props        
 
         return (
             <div className="col-md-4">

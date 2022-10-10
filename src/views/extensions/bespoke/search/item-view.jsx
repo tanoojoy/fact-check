@@ -1,6 +1,7 @@
 'use strict';
 var React = require('react');
 var BaseComponent = require('../../../shared/base');
+const CommonModule = require('../../../../public/js/common.js');
 
 class SearchItemViewComponent extends BaseComponent {
     renderRating(stars) {
@@ -11,7 +12,7 @@ class SearchItemViewComponent extends BaseComponent {
         );
     }
     render() {
-        
+
         var self = this;
         return (
             <div className="items-content behavior2" id="items-list">
@@ -20,7 +21,7 @@ class SearchItemViewComponent extends BaseComponent {
                 	const stars = AverageRating ? AverageRating * 20 : 0;
                     return (
                         <div className="item-box" key={item.ID}>
-                            <a href={"/items/" + self.generateSlug(item.Name) + "/" + item.ID + "?name="+ item.Name}>
+                            <a href={CommonModule.getAppPrefix()+"/items/" + self.generateSlug(item.Name) + "/" + item.ID + "?name="+ item.Name}>
                                 <div className="item-image">
                                     <img src={item.Media[0].MediaUrl} />
                                 </div>

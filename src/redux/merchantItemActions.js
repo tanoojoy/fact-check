@@ -1,8 +1,13 @@
 ﻿'use strict';
-const actionTypes = require('./actionTypes');
-const EnumCoreModule = require('../public/js/enum-core');
-const toastr = require('toastr');
-const Moment = require('moment');
+import axios from 'axios';
+import toastr from 'toastr';
+import Moment from 'moment';
+import cloneDeep from 'lodash/cloneDeep';
+import actionTypes from './actionTypes';
+import EnumCoreModule from '../public/js/enum-core';
+import { getAppPrefix } from '../public/js/common.js';
+
+const prefix = getAppPrefix();
 
 toastr.options.preventDuplicates = true;
 
@@ -32,7 +37,7 @@ function getItemDetails(itemId) {
     return function (dispatch) {
         getActivityCookie(0, null, function (cookie) {
             $.ajax({
-                url: '/items/getItemDetails',
+                url: prefix+'/items/getItemDetails',
                 type: 'GET',
                 data: {
                     itemId: itemId
@@ -73,7 +78,7 @@ function createLogForItemVisibilityUpdate(itemId, isAvailable) {
     return function (dispatch) {
         getActivityCookie(0, null, function (cookie) {
             $.ajax({
-                url: '/merchants/activity-logs/createItemActivityLog',
+                url: prefix+'/merchants/activity-logs/createItemActivityLog',
                 type: 'POST',
                 data: {
                     itemId: itemId,
@@ -106,57 +111,49 @@ function editItemPurchasable(itemId, isAvailable, callback) {
 
 
         $.ajax({
-            url: '/items/getItemDetails',
+            url: prefix+'/items/getItemDetails',
             type: 'GET',
             data: {
                 itemId: itemId
             },
             success: function (result) {
-                if (result.IsLocked) {
-                    if (callback)
-                        callback('not-available')
-                    toastr.error(EnumCoreModule.GetToastStr().Error.FAILED_ITEM_VISIBILITY_UPDATE.body, EnumCoreModule.GetToastStr().Error.FAILED_ITEM_VISIBILITY_UPDATE.header);
-                    return dispatch({
-                        type: ''
+
+                if (result.IsVisibleToCustomer || !controlFlags.AdminVetting) {
+                    $.ajax({
+                        url: prefix+'/merchants/items/edit',
+                        type: 'PUT',
+                        data: {
+                            itemId: itemId,
+                            isAvailable: isAvailable
+                        },
+                        success: function (result) {
+                            newItems.splice(index, 0, result);
+                            toastr.success("Item's availability was successfully updated.");
+                            if (callback)
+                                callback('available')
+                            return dispatch({
+                                type: actionTypes.EDIT_ITEM_PURCHASABLE,
+                                items: newItems
+                            });
+
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            if (callback)
+                                callback('not-available')
+                            console.log(textStatus, errorThrown);
+                        }
+
                     });
                 }
                 else {
-                    if (result.IsVisibleToCustomer || !controlFlags.AdminVetting) {
-                        $.ajax({
-                            url: '/merchants/items/edit/' + itemId,
-                            type: 'PUT',
-                            data: {
-                                IsAvailable: isAvailable
-                            },
-                            success: function (result) {
-                                newItems.splice(index, 0, result);
-                                toastr.success("Item's availability was successfully updated.");
-                                if (callback)
-                                    callback('available')
-                                return dispatch({
-                                    type: actionTypes.EDIT_ITEM_PURCHASABLE,
-                                    items: newItems
-                                });
+                    if (callback)
+                        callback('not-available')
+                    toastr.error('Error. This item was mark unpurchsable by the admin!');
+                    return dispatch({
+                        type: ''
+                    });
 
-                            },
-                            error: function (jqXHR, textStatus, errorThrown) {
-                                if (callback)
-                                    callback('not-available')
-                                console.log(textStatus, errorThrown);
-                            }
-
-                        });
-                    }
-                    else {
-                        if (callback)
-                            callback('not-available')
-                        toastr.error('Error. This item was mark unpurchsable by the admin!');
-                        return dispatch({
-                            type: ''
-                        });
-
-                    }
-                }                
+                }
             },
             error: function (jqXHR, textStatus, errorThrown) {
                 console.log(textStatus, errorThrown);
@@ -193,7 +190,7 @@ function deleteItem() {
         let newItems = [];
 
         $.ajax({
-            url: '/merchants/items/delete',
+            url: prefix+'/merchants/items/delete',
             type: 'DELETE',
             data: {
                 itemId: itemToDelete.ID
@@ -207,7 +204,7 @@ function deleteItem() {
 
                 getActivityCookie(0, null, function (cookie) {
                     $.ajax({
-                        url: '/merchants/activity-logs/createItemActivityLog',
+                        url: prefix+'/merchants/activity-logs/createItemActivityLog',
                         type: 'POST',
                         data: {
                             itemId: itemToDelete.ID,
@@ -254,7 +251,7 @@ function deleteItem() {
 function searchItemList(keyword, pageNumber, pageSize, callback) {
 
     $.ajax({
-        url: '/merchants/items/search',
+        url: prefix+'/merchants/items/search',
         type: 'GET',
         data: {
             keyword: keyword,
@@ -272,13 +269,13 @@ function searchItemList(keyword, pageNumber, pageSize, callback) {
 
 function getActivityCookie(loginActivityId, alternateId, callback) {
     $.ajax({
-        url: '/merchants/activity-logs/getCookie',
+        url: prefix+'/merchants/activity-logs/getCookie',
         type: 'GET',
         data: {},
         success: function (getCookieResult) {
             if (!getCookieResult) {
                 $.ajax({
-                    url: '/merchants/activity-logs/setCookie',
+                    url: prefix+'/merchants/activity-logs/setCookie',
                     type: 'GET',
                     data: {
                         loginActivityId: loginActivityId,
@@ -330,7 +327,7 @@ function setUploadFile(file) {
 
             if (process.env.PRICING_TYPE == 'country_level') {
                 const locationItem = locationItems.find(l => l.locationId == file.LocationId);
- 
+
                 if (locationItem) {
                     if (itemModel.hasVariants) {
                         itemVariant = locationItem.itemVariants.find(i => i.id == file.VariantId);
@@ -410,7 +407,7 @@ function selectAllOrNone(selected) {
         }
 
         $.ajax({
-            url: '/merchants/customfields',
+            url: prefix+'/merchants/customfields',
             type: 'post',
             data: {
                 categoryids: selectedCategoryIds,
@@ -593,7 +590,7 @@ function selectUnselectCategory(categoryid) {
         }
 
         $.ajax({
-            url: '/merchants/customfields',
+            url: prefix+'/merchants/customfields',
             type: 'post',
             data: {
                 categoryids: categoryIDToPass,
@@ -721,7 +718,7 @@ function onTextChange(value, code) {
         }
 
         if (code === "itemname") {
-            itemModel.listingName = value;
+            itemModel.listingName = value; 
         }
 
         if (code === "itemprice") {
@@ -1088,25 +1085,7 @@ function unliOrPurchasableChanged(type, code) {
     };
 }
 
-function convertToMilitaryTime(time) {
-    var hours = Number(time.match(/^(\d+)/)[1]);
-    var minutes = Number(time.match(/:(\d+)/)[1]);
-    var ampm = "";
-    if (time.match(/\s(.*)$/)) {
-        ampm = time.match(/\s(.*)$/)[1];
-    }
-    if (ampm === "PM" && hours < 12) hours = hours + 12;
-    if (ampm === "AM" && hours === 12) hours = hours - 12;
-    var sHours = hours.toString();
-    var sMinutes = minutes.toString();
-    if (hours < 10) sHours = "0" + sHours;
-    if (minutes < 10) sMinutes = "0" + sMinutes;
-    var convertedTime = sHours + ":" + sMinutes;
-    return convertedTime;
-}
-
 function uploadOrEditData() {
-
     return function (dispatch, getState) {
         let current = getState().uploadEditItemReducer.itemModel;
         const hasError = validateItemDetails(current, true);
@@ -1160,7 +1139,7 @@ function uploadOrEditData() {
                     const code = $(el).attr('data-code');
                     if (cf.Code === code) {
                         if (cf.DataFieldType.toLowerCase() == 'date') {
-                            let date = Moment($(el).val(), 'DD/MM/YYYY');
+                            let date = Moment.utc($(el).val(), 'DD/MM/YYYY');
                             date = new Date(date) / 1000;
                             values.push(date);
                         }
@@ -1184,7 +1163,7 @@ function uploadOrEditData() {
                         let time = $(el).val();
                         if (time !== "") {
                             if (cf.Values && cf.Values[0].length > 1) {
-                                let date = Moment(cf.Values[0] + " " + time, 'DD/MM/YYYY hh:mm A').format('MM/DD/YYYY hh:mm A');
+                                let date = Moment.utc(cf.Values[0] + " " + time, 'DD/MM/YYYY hh:mm A').format('MM/DD/YYYY hh:mm A');
                                 let newDateUnix = new Date(date) / 1000;
                                 cf.Values = [];
                                 cf.Values.push(newDateUnix);
@@ -1229,15 +1208,6 @@ function uploadOrEditData() {
                         });
                     }
 
-                    if (cf.Code.toLowerCase().indexOf('-weight-') >= 0) {
-                        if (cf.Values) {
-                            weightValue = cf.Values[0];
-                            if (!cf.Values[0]) {
-                                values = [];
-                            }
-                        }
-                    }
-                    
                     let customFieldModel = {
                         Code: cf.Code,
                         Values: values
@@ -1247,9 +1217,14 @@ function uploadOrEditData() {
                     if (cf.DataInputType.toLowerCase() == "upload") {
                         pdfCustomFields.push(customFieldModel);
                     }
+                    if (cf.Code.toLowerCase().indexOf('-weight-') >= 0) {
+                        if (cf.Values) {
+                            weightValue = cf.Values[0];
+                        }
+                    }
                 }
 
-                if (cf.DataFieldType === 'string' && cf.Values.length > 0 && cf.IsSearchable == true) {
+                if (cf.DataFieldType === 'string' && cf.Values.length > 0) {
                     itemKeywords.push(cf.Values[0]);
                 }
             });
@@ -1525,18 +1500,16 @@ function uploadOrEditData() {
                         CustomFields: customfields,
                         Weight: weightValue,
                         Keywords: itemKeywords.length > 0 ? itemKeywords.join() : null,
-                        Scheduler: process.env.PRICING_TYPE == 'service_level' ? {
-                            Overnight: false,
-                            AllDay: false,
-                            StartDateTime: "", 
-                            EndDateTime: ""
-                        } : null
                     };
 
                     if (process.env.PRICING_TYPE == 'country_level') {
                         itemData.SKU = null;
+                        itemData.IsVisibleToCustomer = false;
+                        itemData.IsAvailable = false;
                     } else {
                         itemData.SKU = current.sku || null;
+                        itemData.IsVisibleToCustomer = true;
+                        itemData.IsAvailable = true;
                         itemData.Price = parseFloat(current.price);
                         itemData.StockLimited = !current.isUnlimitedStock;
                         itemData.StockQuantity = parseFloat(current.quantity || 0);
@@ -1544,150 +1517,19 @@ function uploadOrEditData() {
 
                     itemData.Media = images.filter(i => i.Key == null || !i.Key.startsWith("item-variant-media-"));
 
+                    console.log(itemData, 'itemData');
+                    //return;
+
                     if (current.negotiation || current.instantbuy) {
                         itemData.Negotiation = current.negotiation;
                         itemData.InstantBuy = current.instantbuy;
                     }
-                    //Spacetime
-                    if (process.env.PRICING_TYPE === "service_level") {
-                        if (current.geoLocation) {
-                            let country = EnumCoreModule.GetCountries().filter(c => c.name.toLowerCase() === current.geoLocation.name.toLowerCase());
-                            itemData.Location = {
-                                City: current.geoLocation.city,
-                                PostCode: current.geoLocation.postal,
-                                Country: current.geoLocation.name,
-                                State: current.geoLocation.state,
-                                CountryCode: country && country.length !== 0 ? country[0].alpha2code : "",
-                                Line1: current.geoLocation.location,
-                                Longitude: current.geoLocation.long,
-                                Latitude: current.geoLocation.lat
-                            };
-                        }
-                        if (current.durationUnit) {
 
-                            itemData.DurationUnit = current.durationUnit;
-
-                            if (current.implementationBookings.MarketplaceBookingType === "book by duration and unit") {
-                               // itemData.PriceUnit = current.durationUnit  + " per " + current.bookingUnit;
-                                itemData.PriceUnit = current.bookingUnit + " per " + current.durationUnit;
-                            } else if (current.implementationBookings.MarketplaceBookingType === "book by duration") {
-                                itemData.PriceUnit = current.durationUnit;
-                            } else {
-                                itemData.PriceUnit = current.bookingUnit;
-                            }
-
-                            //need to remove for saving.
-                         //   itemData.PriceUnit = itemData.PriceUnit.replace("(s)", "");
-
-                        }
-
-                        if (current.bookingUnit) {
-                            itemData.BookingUnit = current.bookingUnit;
-                        }
-
-                        if (current.isAllDay) {
-                            itemData.Scheduler.AllDay = current.isAllDay;
-                        }
-                        if (current.isOverNight) {
-                            itemData.Scheduler.Overnight = current.isOverNight;
-                        }
-                        if (current.addOns) {
-                            itemData.AddOns = [];
-                            if (current.addOns) {
-                                //current.addOns.forEach(function (addon) {
-                                //    itemData.AddOns.push({
-                                //        Name: addon.Name,
-                                //        PriceChange: addon.PriceChange,
-                                //        GroupID: addon.GroupID,
-                                //        ID: addon.ID,
-                                //        Active: addon.Active
-                                //    });
-                                //});
-
-                                $("#sortable-list").find(".has-subitems").each(function (i, datos) {
-          
-                                    let data = {
-                                        Name: $(datos).find(".item-name").text(),
-                                        PriceChange: $(datos).find(".priceAmount").text(),
-                                        GroupID: $(datos).find(".item-name").attr("addOnGroupID"),
-                                        ID: $(datos).find(".item-name").attr("addonID"),
-                                        Active: true,
-                                        SortOrder: i
-                                    };
-                                    itemData.AddOns.push(data);
-                                });
-                                //For Rermoving Logic
-                                current.addOns.filter(a=>a.Active === false).forEach(function (addon) {
-                                    itemData.AddOns.push({
-                                        Name: addon.Name,
-                                        PriceChange: addon.PriceChange,
-                                        GroupID: addon.GroupID,
-                                        ID: addon.ID,
-                                        Active: addon.Active
-                                    });
-                                });
-
-                            }
-                        }
-                        if (current.isOverNight === true) {
-
-                            //let checkinMoment = Moment($("#upload_sched_chin").val(), 'hh:mm A').format('MM/DD/YYYY hh:mm A');                     
-                            //let newDateUnixStart = new Date(checkinMoment) / 1000;
-                            //itemData.Scheduler.StartDateTime = null;
-
-                            //let checkOutMoment = Moment($("#upload_sched_chout").val(), 'hh:mm A').format('MM/DD/YYYY hh:mm A');
-                            //let newDateUnixEnd = new Date(checkOutMoment) / 1000;
-                            //itemData.Scheduler.EndDateTime = null;
-
-                            itemData.Scheduler.StartDateTime = null;
-                            itemData.Scheduler.EndDateTime = null;
-                            let data = {
-                                Day: 2,
-                                IsRestDay: false,
-                                StartTime: convertToMilitaryTime($("#upload_sched_chin").val()),
-                                EndTime: convertToMilitaryTime($("#upload_sched_chout").val()),
-                                Value: 'Monday',
-                                SortOrder: 1
-                            };
-                            itemData.Scheduler.OpeningHours = [];
-                            itemData.Scheduler.OpeningHours.push(data);
-                        } else {
-                            itemData.Scheduler.OpeningHours = [];
-                            itemData.Scheduler.StartDateTime = null;
-                            itemData.Scheduler.EndDateTime = null;
-                            if (!itemData.Scheduler.AllDay) {
-                                current.scheduler.OpeningHours.map(function (data) {
-
-                                    let passData = {
-                                        Day: data.Day,
-                                        IsRestDay: data.IsRestDay,
-                                        StartTime: convertToMilitaryTime(data.StartTime),
-                                        EndTime: convertToMilitaryTime(data.EndTime)
-                                    };
-                                    itemData.Scheduler.OpeningHours.push(passData);
-                                });
-                            }
-                        } 
-
-                        if (current.scheduler && current.scheduler.Unavailables) {
-                            itemData.Scheduler.Unavailables = [];
-                            current.scheduler.Unavailables.forEach(function (date) {
-
-                                let data = {
-                                    StartDateTime: date.StartDateTime,
-                                    EndDateTime: date.EndDateTime,
-                                    Active: date.Active
-                                };
-                                itemData.Scheduler.Unavailables.push(data);
-                            });
-                        }
-                    }
-                    
-                    let url = '/merchants/' + current.isUpload;
+                    let url = prefix+'/merchants/' + current.isUpload;
                     let type = 'post';
                     let activityType = EnumCoreModule.GetItemActivityLogTypes().Add;
                     if (current.isUpload.toLowerCase() === "edititem") {
-                        url = '/merchants/' + current.isUpload + "/" + itemId;
+                        url = prefix+'/merchants/' + current.isUpload + "/" + itemId;
                         type = 'put';
                         activityType = EnumCoreModule.GetItemActivityLogTypes().Edit;
                     }
@@ -1699,14 +1541,8 @@ function uploadOrEditData() {
                                 itemData.IsVisibleToCustomer = false;
                                 itemData.IsAvailable = false;
                             } else {
-                                if (current.isUpload.toLowerCase() !== "edititem") {
-                                    itemData.IsVisibleToCustomer = true;
-                                    itemData.IsAvailable = true;
-                                } else {
-                                    //ARC-10370: retain what is current value when edit
-                                    itemData.IsVisibleToCustomer = null;
-                                    itemData.IsAvailable = null;
-                                }
+                                itemData.IsVisibleToCustomer = true;
+                                itemData.IsAvailable = true;
                             }
                         }
                         postCreatedItem(url, type, itemData).done(function (data) {
@@ -1714,7 +1550,7 @@ function uploadOrEditData() {
                                 isSaving = false;
                                 getActivityCookie(0, null, function (cookie) {
                                     $.ajax({
-                                        url: '/merchants/activity-logs/createItemActivityLog',
+                                        url: prefix+'/merchants/activity-logs/createItemActivityLog',
                                         type: 'POST',
                                         data: {
                                             itemId: data.ID,
@@ -1723,9 +1559,9 @@ function uploadOrEditData() {
                                         },
                                         success: function () {
                                             if (current.isUpload.toLowerCase() === "edititem") {
-                                                window.location = '/merchants/items';
+                                                window.location = prefix+'/merchants/items';
                                             } else {
-                                                window.location = 'items';
+                                                window.location = prefix+'/items';
                                             }
                                         },
                                         error: function (jqXHR, textStatus, errorThrown) {
@@ -1994,7 +1830,7 @@ function closeDeletePopUp() {
 function createCustomField(data, callback) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/merchants/customfield',
+            url: prefix+'/merchants/customfield',
             type: 'POST',
             data: data,
             success: function (result) {
@@ -2053,7 +1889,7 @@ function uploadPdf(pdfCustomFields, callback) {
 
     if (pdfCustomFields.length > 0) {
         $.ajax({
-            url: '/merchants/uploadPdf',
+            url: prefix+'/merchants/uploadPdf',
             data: pdfFormData,
             cache: false,
             contentType: false,
@@ -2090,7 +1926,7 @@ function uploadMedia(uploads, callback) {
         });
 
         $.ajax({
-            url: '/merchants/uploadMedia',
+            url: prefix+'/merchants/uploadMedia',
             data: formData,
             cache: false,
             contentType: false,
@@ -2268,76 +2104,6 @@ function onToggleChange(value, code) {
             itemModel.hasVariants = value;
         }
 
-        if (code === "is24") {
-            itemModel.isAllDay = value;
-            if (itemModel.isOverNight === false && itemModel.scheduler.OpeningHours.length === 1) {
-
-                let defaultStartTime = '00:00 AM';
-                let defaultEndTime = '00:00 AM';
-                let restDayStartTime = '00:00 AM';
-                let restDayEndTime = '00:00 AM';
-
-                itemModel.scheduler.OpeningHours = [
-                    {
-                        Day: 1,
-                        IsRestDay: true,
-                        StartTime: restDayStartTime,
-                        EndTime: restDayEndTime,
-                        Value: 'Sunday',
-                        SortOrder: 7
-                    },
-                    {
-                        Day: 2,
-                        IsRestDay: false,
-                        StartTime: defaultStartTime,
-                        EndTime: defaultEndTime,
-                        Value: 'Monday',
-                        SortOrder: 1
-                    },
-                    {
-                        Day: 3,
-                        IsRestDay: false,
-                        StartTime: defaultStartTime,
-                        EndTime: defaultEndTime,
-                        Value: 'Tuesday',
-                        SortOrder: 2
-                    },
-                    {
-                        Day: 4,
-                        IsRestDay: false,
-                        StartTime: defaultStartTime,
-                        EndTime: defaultEndTime,
-                        Value: 'Wednesday',
-                        SortOrder: 3,
-                    },
-                    {
-                        Day: 5,
-                        IsRestDay: false,
-                        StartTime: defaultStartTime,
-                        EndTime: defaultEndTime,
-                        Value: 'Thursday',
-                        SortOrder: 4,
-                    },
-                    {
-                        Day: 6,
-                        IsRestDay: false,
-                        StartTime: defaultStartTime,
-                        EndTime: defaultEndTime,
-                        Value: 'Friday',
-                        SortOrder: 5,
-                    },
-                    {
-                        Day: 7,
-                        IsRestDay: true,
-                        StartTime: restDayStartTime,
-                        EndTime: restDayEndTime,
-                        Value: 'Saturday',
-                        SortOrder: 6,
-                    }
-                ];
-            }
-        }
-
         return dispatch({
             type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
             itemModel: itemModel
@@ -2467,7 +2233,7 @@ function updateItemVariants(itemModel) {
         locationItem.itemVariants.forEach((itemVariant) => {
             const existing = current.find(i => JSON.stringify(i.variantGroups) == JSON.stringify(itemVariant.variantGroups));
 
-            if (existing) { 
+            if (existing) {
                 itemVariant = Object.assign(itemVariant, existing);
             }
         });
@@ -2781,7 +2547,7 @@ function validateItemDetails(itemModel, isValidatePricing = false) {
             return value.Selected != '';
         });
 
-        // commented condition below: 
+        // commented condition below:
         // check if needed this since it will be catched later in the code
         //if (addedShipping.length < 1) {
         //    $('.delivery-tab-class').addClass("error-con");
@@ -2854,7 +2620,7 @@ function validateItemDetails(itemModel, isValidatePricing = false) {
             }
         }
     });
-    
+
     $("input[name='custom-field'].emailOnly:not(.required)").each(function () {
         $(this).removeClass("error-con");
         if ($(this).val() !== '') {
@@ -2864,7 +2630,7 @@ function validateItemDetails(itemModel, isValidatePricing = false) {
                 hasError = true;
             }
         }
-    
+
     });
 
     $('.numberDecimalOnly').each(function () {
@@ -3018,360 +2784,123 @@ function validateItemDetails(itemModel, isValidatePricing = false) {
 
     return hasError;
 }
-//spacetime
-function locationChanged(data) {
-    return function (dispatch, getState) {
-        let current = Object.assign({}, getState().uploadEditItemReducer.itemModel);
-        current.geoLocation.name = data.name;
-        current.geoLocation.location = data.location;
-        current.geoLocation.city = data.city;
-        current.geoLocation.postal = data.postal;
-        current.geoLocation.state = data.state;
-        current.geoLocation.long = data.long;
-        current.geoLocation.lat = data.lat;
 
-        let country = EnumCoreModule.GetCountries().filter(c => c.name.toLowerCase() === data.name.toLowerCase());
+const updateItemData = (key, value, isCustomField = false) => (dispatch, getState) => {
+    const { item } = getState().uploadEditItemReducer;
 
-        let address = {
-            Country: current.geoLocation.name,
-            CountryCode: country && country.length !== 0 ? country[0].alpha2code : "",
-            Line1: current.geoLocation.location,
-            City: current.geoLocation.city,
-            Latitude: current.geoLocation.lat,
-            Longitude: current.geoLocation.long,
-            PostCode: current.geoLocation.postal,
-            State: current.geoLocation.state
+    const updatedItem = Object.assign({}, item);
+
+    if (!isCustomField) {
+        switch(key) {
+            case 'Categories': 
+                updatedItem.Categories = [
+                    {
+                        Name: value
+                    }
+                ]
+                break;
+            default: 
+                updatedItem[key] = value;
+                break;
         }
-        current.initializeFormattedText = false;
-
-        getCoordinates(address, function (coordinate) {
-            if (coordinate) {
-                current.geoLocation.lat = coordinate.lat;
-                current.geoLocation.long = coordinate.lng;
-       
-            } 
-            return dispatch({
-                type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
-                itemModel: current
-            });
-        });
-
-    }
-}
-
-function getCoordinates(address, callback) {
-
-    if (address) {
-        $.ajax({
-            url: '/merchants/geocode',
-            contentType: 'application/json; charset=utf-8',
-            data: JSON.stringify(address),
-            type: 'POST', // For jQuery < 1.9
-            success: function (result) {
-
-                if (result && result.lat && result.lng) {
-                    callback(result);
-                }
-
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log(textStatus, errorThrown);
-            }
-        });
-
     } else {
-        callback(address);
+        const customField = updatedItem.CustomFields.find(cf => cf.Code === key);
+        if (customField) {
+            customField.Values = [value];
+        } else {
+            const newCustomField = {
+                Code: key,
+                Name: key,
+                Values: [value]
+            }
+            updatedItem.CustomFields.push(newCustomField);
+        }
     }
+    return dispatch({
+        type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
+        item: updatedItem
+    });
 }
 
-function bookingTypeChanged(type) {
-    return function (dispatch, getState) {
-        let current = Object.assign({}, getState().uploadEditItemReducer.itemModel);
-        current.durationUnit = "";
-        current.bookingUnit = type;
-
-        let bookingTypes = current.implementationBookings.BookingUnits;
-        let selectedBooking = bookingTypes.find(b => b.Name.toLowerCase() === type.toLowerCase());
-        let selectedDuration = bookingTypes.find(b => b.Name.toLowerCase() === type.toLowerCase()).Durations.split("|")[0];
-
-        current.durationUnit = selectedDuration;
-
-        if (current.implementationBookings.MarketplaceBookingType === "book by duration and unit") {
-           // current.priceUnit = type + " per " + selectedDuration + "(s)";
-            current.priceUnit = type + " per " + selectedDuration;
-            //this situation only for custom and non other when selecting
-            if (selectedDuration.toLowerCase() === "custom") {
-               // current.priceUnit = "15 Minutes(s) per " + type;
-                current.priceUnit = type + "per 15 Minutes(s)";
-            }
-        } else if (current.implementationBookings.MarketplaceBookingType === "book by duration") {
-            current.priceUnit = selectedDuration;
-            //this situation only for custom and non other when selecting
-            if (selectedDuration.toLowerCase() === "custom") {
-                current.priceUnit = "15 Minutes(s)";
-            }
-        } else {
-            current.priceUnit = type;
+const updateSelectedRowInfo = (code = '', id = null) => (dispatch) => {
+    return dispatch({
+        type: actionTypes.SET_SELECTED_ROW,
+        selectedRow: {
+            code: code,
+            id: id,
         }
-
-        if (selectedBooking.IsOvernight === true) {
-            current.isOverNight = true;
-        } else {
-            current.isOverNight = false;
-        }
-
-        //Always Hide when clicking BookingType since it goes back to first select which is not custom.
-        jQuery('.itmupld-srvcs-durationlst-sec .itmupld-srvcs-durspecifycon').hide();
-
-        return dispatch({
-            type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
-            itemModel: current
-        });
-    }
+    });
 }
 
-function durationChanged(duration) {
-    return function (dispatch, getState) {
-        let current = Object.assign({}, getState().uploadEditItemReducer.itemModel);
-        let theDuration = duration;
-        if (duration.toLowerCase() === "custom") {
-            current.durationUnit = $('#itmupld_srvcs_specify1').val() + ' ' + $('#itmupld_srvcs_specify2').val()
-        } else {
-            current.durationUnit = duration;
-        }
+const resetToInitialItemData = () => (dispatch, getState) => {
+    const { referenceItem } = getState().uploadEditItemReducer;
+    return dispatch({
+        type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
+        item: cloneDeep(referenceItem)
+    });
+}
 
-        if (current.implementationBookings.MarketplaceBookingType === "book by duration and unit") {
-            //current.priceUnit = current.bookingUnit + " per " + current.durationUnit + (duration.toLowerCase() === "custom" ? "" : "(s)");
-          //  current.priceUnit = current.durationUnit + " per " + current.bookingUnit;
-            current.priceUnit = current.bookingUnit + " per " + current.durationUnit;
-            if (duration.includes("customDur") === true) {
-                var r = /\d+/;
-                var thenum = duration.match(r);
-
-                current.durationUnit = thenum[0] + ' ' + $('#itmupld_srvcs_specify2').val()
-                //current.priceUnit = current.durationUnit + " per " + current.bookingUnit;
-                current.priceUnit = current.bookingUnit + " per " + current.durationUnit;
-            }
-        } else if (current.implementationBookings.MarketplaceBookingType === "book by duration") {
-            current.priceUnit = current.durationUnit;
-
-            if (duration.includes("customDur") === true) {
-                var r = /\d+/;
-                var thenum = duration.match(r);
-
-                current.durationUnit = thenum[0] + ' ' + $('#itmupld_srvcs_specify2').val()
-                current.priceUnit = current.durationUnit;
-            }
-
-        } else {
-            current.priceUnit = current.bookingUnit;
-        }
-
-        if (theDuration.toLowerCase() == 'custom') {
-            jQuery('.itmupld-srvcs-durationlst-sec .itmupld-srvcs-durspecifycon').show();
-        } else {
-            jQuery('.itmupld-srvcs-durationlst-sec .itmupld-srvcs-durspecifycon').hide();
-        }
-
-        //with stepper 
-        if (duration.includes("customDur") === true) {
-            jQuery('.itmupld-srvcs-durationlst-sec .itmupld-srvcs-durspecifycon').show();
-        } 
-        if (duration.includes("customDur") === false) {
-            //for changing back to default when selecting 
-            var $ob_time = jQuery(".srvcs_specify_time");
-            var $ob_val = jQuery(".min_srvcs_speci");
-            if ($ob_time.val() == 'Minute(s)') {
-                $ob_val.attr('step', 5);
-                $ob_val.attr('min', 14);
-                $ob_val.attr('max', 151);
-                $ob_val.val('15');
-            } else if ($ob_time.val() == 'Hour(s)') {
-                $ob_val.attr('step', 1);
-                $ob_val.attr('min', 0);
-                $ob_val.attr('max', 24);
-                $ob_val.val('1');
+const updateItem = (callback) => (dispatch, getState) => {
+    const { item } = getState().uploadEditItemReducer;
+    axios.put(`${prefix}/product-profile/update`, item)
+        .then(({ data }) => {
+            const { updatedItem = {} } = data;
+            const success = updatedItem && updatedItem.ID;
+            callback({ success });
+            if (success) {
+                return dispatch({
+                    type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
+                    item: updatedItem,
+                    referenceItem: cloneDeep(updatedItem)
+                });
             } else {
-                $ob_val.attr('step', 1);
-                $ob_val.attr('min', 0);
-                $ob_val.attr('max', 29);
-                $ob_val.val('1');
+                return dispatch({ type: ''});
             }
-            if (duration.toLowerCase() === "custom") {
-                jQuery('.itmupld-srvcs-durationlst-sec .itmupld-srvcs-durspecifycon').show();
-                if (current.implementationBookings.MarketplaceBookingType === "book by duration and unit") {
+        })
+        .catch(err => {
+            callback({ success: false });
+            return dispatch({ type: ''});
+        });
+};
 
-                    if ($ob_time.val() == 'Minute(s)') {
-                        current.priceUnit = current.bookingUnit + " per 15 " + $ob_time.val();
-                    } else {
-                        current.priceUnit = current.bookingUnit + " per 1 " + $ob_time.val();
-                    }
-                    // if ($ob_time.val() == 'Minute(s)') {
-                    //     current.priceUnit = "15 " + $ob_time.val() + " per " + current.bookingUnit;
-                    //} else {
-                    //     current.priceUnit = "1 " + $ob_time.val() + " per " + current.bookingUnit;
-                    //}
+const createItem = (newProduct, callback) => (dispatch, getState) => {
+    const { item } = getState().uploadEditItemReducer;
+    const data =  {
+        newProduct,
+        item,
+    }
 
+    axios.post(`${prefix}/company/update/add-new-exist-product`, data)
+        .then(({ data }) => {
+            callback({ success: data?.success || false });
+            return dispatch({ type: ''});
+        })
+        .catch(err => {
+            callback({ success: false });
+            return dispatch({ type: ''});
+        });
+}
 
-                } else if (current.implementationBookings.MarketplaceBookingType === "book by duration") {
-                    if ($ob_time.val() == 'Minute(s)') {
-                        current.priceUnit = "15 " + $ob_time.val();
-                    } else {
-                        current.priceUnit = "1 " + $ob_time.val();
-                    }
-
-                } else {
-                    current.priceUnit = current.bookingUnit;
-                }
-            }
-            //Fix for defaulting
-            if (current.durationUnit === "1 Minute(s)") {
-                current.durationUnit = "15 Minute(s)";
-            }
+const searchCompaniesByFilters = (filters, callback) => (dispatch, getState) => {
+    const { keywords = '', country = '', city = '' } = filters;
+    axios.post(getAppPrefix() + '/search/cgi-search/companies', {
+        keywords,
+        country,
+        city: city ? city + "*" : null,
+        isLinking: true
+    }).then(({
+        data: {
+            items,
+            countriesList
         }
-        if (theDuration.includes("durReset")) {
-            if (current.implementationBookings.MarketplaceBookingType === "book by duration and unit") {
-                let duration = theDuration.replace("durReset", "");
-                if (duration.includes("minutes")) {
-                    current.priceUnit = current.bookingUnit + " per 15 " + duration;
-                } else {
-                    current.priceUnit = current.bookingUnit + " per 1 " + duration;
-                }
-
-                //if (duration.includes("minutes")) {
-                //    current.priceUnit = " 15 " + duration + " per " + current.bookingUnit;
-                //} else {
-                //    current.priceUnit = " 1 " + duration + " per " + current.bookingUnit;
-                //}
-
-            } else if (current.implementationBookings.MarketplaceBookingType === "book by duration") {
-                let duration = theDuration.replace("durReset", "");
-                if (duration.includes("minutes")) {
-                    current.priceUnit = "15 " + duration;
-                } else {
-                    current.priceUnit = "1 " + duration;
-                }
-
-            } else {
-                current.priceUnit = current.bookingUnit;
-            }
-
-            //for changing back to default when selecting 
-            var $ob_time = jQuery(".srvcs_specify_time");
-            var $ob_val = jQuery(".min_srvcs_speci");
-            if ($ob_time.val() == 'Minute(s)') {
-                $ob_val.attr('step', 5);
-                $ob_val.attr('min', 14);
-                $ob_val.attr('max', 151);
-                $ob_val.val('15');
-            } else if ($ob_time.val() == 'Hour(s)') {
-                $ob_val.attr('step', 1);
-                $ob_val.attr('min', 0);
-                $ob_val.attr('max', 24);
-                $ob_val.val('1');
-            } else {
-                $ob_val.attr('step', 1);
-                $ob_val.attr('min', 0);
-                $ob_val.attr('max', 29);
-                $ob_val.val('1');
-            }
-            jQuery('.itmupld-srvcs-durationlst-sec .itmupld-srvcs-durspecifycon').show();
-            current.durationUnit = $('#itmupld_srvcs_specify1').val() + ' ' + $('#itmupld_srvcs_specify2').val();
-        }
-        return dispatch({
-            type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
-            itemModel: current
-        });
-    }
+    }) => {
+        callback({ companies: items, countries: countriesList });
+        return dispatch({ type: ''});
+    }).catch(err => {
+        callback({ companies: [], countries: [] });
+        return dispatch({ type: ''});
+    });
 }
-
-function dayOrNightSwitch(isOverNight) {
-    return function (dispatch, getState) {
-        let current = Object.assign({}, getState().uploadEditItemReducer.itemModel);
-        current.isOverNight = isOverNight;
-        return dispatch({
-            type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
-            itemModel: current
-        });
-    }
-}
-
-function handleItemChange(scheduler) {
-    return function (dispatch, getState) {
-        let current = Object.assign({}, getState().uploadEditItemReducer.itemModel);
-        current.scheduler = scheduler;
-        return dispatch({
-            type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
-            itemModel: current
-        });
-    }
-}
-
-function addOnAdd(data) {
-    return function (dispatch, getState) {
-        let current = Object.assign({}, getState().uploadEditItemReducer.itemModel);
-        current.addOns.push(data);
-        return dispatch({
-            type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
-            itemModel: current
-        });
-    }
-}
-
-function addOnDelete(id) {
-    return function (dispatch, getState) {
-        let current = Object.assign({}, getState().uploadEditItemReducer.itemModel);
-
-        if (current.addOns) {
-            current.addOns.map(function (addOn) {
-                if (addOn.ID === id) {
-                    addOn.Active = false;
-                }
-            });
-        }
-        return dispatch({
-            type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
-            itemModel: current
-        });
-    }
-}
-
-function addBlockDate(data) {
-    return function (dispatch, getState) {
-        let current = Object.assign({}, getState().uploadEditItemReducer.itemModel);
-
-        if (!current.scheduler.Unavailables) {
-            current.scheduler.Unavailables = [];
-        }
-
-        current.scheduler.Unavailables.push(data);
-
-        return dispatch({
-            type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
-            itemModel: current
-        });
-    }
-}
-
-function deleteBlockDate(id) {
-    return function (dispatch, getState) {
-        let current = Object.assign({}, getState().uploadEditItemReducer.itemModel);
-
-        if (current.scheduler && current.scheduler.Unavailables) {
-            current.scheduler.Unavailables.map(function (data,e) {
-                if (data.ID === id) {
-                    data.Active = false;
-                }
-            });
-        }
-
-        return dispatch({
-            type: actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA,
-            itemModel: current
-        });
-    }
-}
-
 module.exports = {
     searchItemName: searchItemName,
     goToPage: goToPage,
@@ -3419,13 +2948,10 @@ module.exports = {
     removeLocation: removeLocation,
     removeAllLocations: removeAllLocations,
     validateNonPricingDetails: validateNonPricingDetails,
-    locationChanged: locationChanged,
-    bookingTypeChanged: bookingTypeChanged,
-    durationChanged: durationChanged,
-    dayOrNightSwitch: dayOrNightSwitch,
-    addOnAdd: addOnAdd,
-    addOnDelete: addOnDelete,
-    handleItemChange: handleItemChange,
-    addBlockDate: addBlockDate,
-    deleteBlockDate: deleteBlockDate
+    updateItemData: updateItemData,
+    updateSelectedRowInfo: updateSelectedRowInfo,
+    resetToInitialItemData: resetToInitialItemData,
+    updateItem: updateItem,
+    createItem: createItem,
+    searchCompaniesByFilters: searchCompaniesByFilters
 };
