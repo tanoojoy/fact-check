@@ -1,0 +1,60 @@
+application:
+  family: newport
+  application: archorizonfrontend
+  description: "Horizon frontend"
+  owner_email: jordi.ferret@clarivate.com
+  cloud_providers: aws
+  aws_accounts: ["cortellis-dev", "cortellis-prod"]
+
+horizon arcadier frontend deploy to snapshot (us-west-2):
+  template_id: standard_dev_bake_deploy_v1
+  application: archorizonfrontend
+  aws_deploy_account: cortellis-dev
+  deploy_clusters_stack: horizon
+  deploy_clusters_subnetType: internal
+  deploy_clusters_keyPair: horizon-developer
+  deploy_clusters_tags:
+    Name: archorizonfrontend
+    tr:appName: horizon
+    tr:appFamily: newport
+    tr:environment-type: snapshot
+    tr:role: middleware
+    ca:owner: jordi.ferret@clarivate.com
+    telemetry: false
+  deploy_clusters_iamRole: horizon_iam_profile
+  deploy_clusters_securityGroups: ["internal_allow_all", "mid_nphorizonmain"]
+  deploy_clusters_freeFormDetails: d0snapshot-r01
+  deploy_clusters_instanceType: t2.small
+  deploy_clusters_capacity: { 'desired': '1', 'max': '1', 'min': '1' }
+  jenkins_server_name: LS-Jenkins
+  trigger_job_name: "SYS-Generics/job/Newport-Arcadian-poc-all/job/horizon-frontend/job/master"
+  trigger_job_properties_file: "build.properties"
+  find_base_ami_job_name: LS-Automation/job/LS-DevOps/job/find-base-ami/job/master
+  parent_ami: docker-compose
+  parent_ami_release: snapshot
+  bake_packer_template_name: "standard-docker-compose/application_multi_region.json"
+
+horizon arcadier frontend deploy to stable (us-west-2):
+  template_id: standard_non_prod_promotion_amiid_from_aws_v1
+  application: archorizonfrontend
+  aws_deploy_account: cortellis-dev
+  deploy_clusters_stack: horizon
+  deploy_clusters_subnetType: internal
+  deploy_clusters_securityGroups: ["internal_allow_all", "mid_nphorizonmain"]
+  deploy_clusters_freeFormDetails: d0stable-r01
+  deploy_clusters_instanceType: t2.small
+  deploy_clusters_capacity: { 'desired': '1', 'max': '1', 'min': '1' }
+  deploy_clusters_iamRole: horizon_iam_profile
+  deploy_clusters_keyPair: horizon-developer
+  deploy_clusters_tags:
+    Name: archorizonfrontend
+    tr:appName: horizon
+    tr:appFamily: newport
+    tr:environment-type: stable
+    tr:role: middleware
+    ca:owner: jordi.ferret@clarivate.com
+    telemetry: false
+  jenkins_server_name: LS-Jenkins
+  trigger_job_name: "SYS-Generics/job/Newport-Arcadian-poc-all/job/horizon-frontend/job/master"
+  trigger_job_properties_file: "build.properties"
+  find_ami_job_name: LS-Automation/job/LS-DevOps/job/find-app-ami/job/master

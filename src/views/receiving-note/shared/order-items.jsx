@@ -78,8 +78,10 @@ class OrderItemsComponent extends BaseComponent {
                                     {
                                         ItemDetail.SKU ?
                                             <span className="if-txt">
-                                                <span>SKU: </span>
-                                                <span>{ItemDetail.SKU}</span>
+                                                <span className="if-txt">
+                                                    <span>SKU: </span>
+                                                    <span>{ItemDetail.SKU}</span>
+                                                </span>
                                             </span> : ""
                                     }
                                     {self.renderVariants(ItemDetail.Variants)}
@@ -113,7 +115,7 @@ class OrderItemsComponent extends BaseComponent {
             return (
                 <React.Fragment>
                     {
-                        variants.filter(v => v.GroupID != this.props.locationVariantGroupId).map((variant, index) => {
+                        variants.map((variant, index) => {
                             return (
                                 <span className="if-txt" key={index}>
                                     <span>{variant.GroupName}:</span>

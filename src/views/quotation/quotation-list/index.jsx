@@ -1,9 +1,11 @@
 'use strict';
+import HorizonFooterComponent from '../../layouts/horizon-components/footer';
+
 const React = require('react');
 const ReactRedux = require('react-redux');
 const Moment = require('moment');
 const BaseComponent = require('../../shared/base');
-const HeaderLayoutComponent = require('../../layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../layouts/header/index').HeaderLayoutComponent;
 const SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 const FilterComponent = require('../quotation-list/filters');
 const ListComponent = require('../quotation-list/list');
@@ -50,8 +52,8 @@ class QuotationListComponent extends BaseComponent {
                                 </div>
                                 <ListComponent
                                     quotations={quotationList.Records}
-                                    isMerchant={isMerchant} 
-                                    isMerchantAccess={this.props.isMerchantAccess}
+                                    isMerchant={isMerchant}
+                                    buyerdocs={this.props.buyerdocs}
                                 />
                                 <PaginationComponent
                                     totalRecords={totalRecords}
@@ -62,6 +64,9 @@ class QuotationListComponent extends BaseComponent {
                         </div>
                     </div>
                 </div>
+                <div className='footer' id='footer-section'>
+                    <HorizonFooterComponent />
+                </div>
             </React.Fragment>
         );
     }
@@ -71,8 +76,8 @@ function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
         quotationList: state.quotationReducer.quotationList,
-        filters: state.quotationReducer.filters, 
-        isMerchantAccess: state.quotationReducer.isMerchantAccess
+        filters: state.quotationReducer.filters,
+        buyerdocs: state.quotationReducer.buyerdocs
     };
 }
 

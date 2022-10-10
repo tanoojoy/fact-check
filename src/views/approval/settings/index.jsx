@@ -1,12 +1,11 @@
 'use strict';
 const React = require('react');
 const ReactRedux = require('react-redux');
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayoutComponent = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
-const PermissionTooltip = require('../../common/permission-tooltip');
+const CommonModule = require('../../../public/js/common.js');
 
 const approvalActions = require('../../../redux/approvalActions');
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
 
 if (typeof window !== 'undefined') { var $ = window.$; }
 
@@ -19,13 +18,9 @@ class ApprovalSettingsComponent extends React.Component {
 	}
 
 	toggleApprovalSettings() {
-		const self = this;
-		if (!this.props.isAuthorizedToEdit) return;
-		this.props.validatePermissionToPerformAction('edit-consumer-approval-settings-api', () => {
-			const data = { enabled: !self.state.approvalEnabled, rowId: self.props.settings.ID };
-			self.props.updateApprovalSettings(data);
-			self.setState({ approvalEnabled: !self.state.approvalEnabled });
-		});
+		const data = { enabled: !this.state.approvalEnabled, rowId: this.props.settings.ID };
+		this.props.updateApprovalSettings(data);
+		this.setState({ approvalEnabled: !this.state.approvalEnabled });
 	}
 
 	loadApprovalSettings() {
@@ -61,30 +56,27 @@ class ApprovalSettingsComponent extends React.Component {
 			                                <div className="col-md-8">
 			                                    <h4>
 			                                    	Enable Approval Flow before making a purchase with this account
-			                                    	<a href="https://support.arcadier.com/hc/en-us"><img src="/assets/images/Info.svg" /></a>
+			                                    	<a href="https://support.arcadier.com/hc/en-us"><img src={CommonModule.getAppPrefix() + "/assets/images/Info.svg"} /></a>
 			                                    </h4>
 			                                    <p>You will need to setup with the approval workflow and the department to use this feature</p>
 			                                </div>
 			                                <div className="col-md-4">
 			                                    <div className="pull-right">
 			                                        <span>
-			                                        	<PermissionTooltip isAuthorized={this.props.isAuthorizedToEdit} extraClassOnUnauthorized={"icon-grey"}>
-				                                            <div className="onoffswitch">
-				                                                <input 
-				                                                	type="checkbox"
-				                                                	name="onoffswitch"
-				                                                	className="onoffswitch-checkbox"
-				                                                	id="approval-check"
-				                                                	disabled={!this.props.isAuthorizedToEdit}
-				                                                	checked={this.state.approvalEnabled}
-				                                                	onChange={() => this.toggleApprovalSettings()} 
-				                                                />
-				                                                <label className="onoffswitch-label" htmlFor="approval-check">
-				                                                	<span className="onoffswitch-inner"/>
-				                                                	<span className="onoffswitch-switch"/>
-				                                                </label>
-				                                            </div>
-				                                        </PermissionTooltip>
+			                                            <div className="onoffswitch">
+			                                                <input
+			                                                	type="checkbox"
+			                                                	name="onoffswitch"
+			                                                	className="onoffswitch-checkbox"
+			                                                	id="approval-check"
+			                                                	checked={this.state.approvalEnabled}
+			                                                	onChange={() => this.toggleApprovalSettings()}
+			                                                />
+			                                                <label className="onoffswitch-label" htmlFor="approval-check">
+			                                                	<span className="onoffswitch-inner"/>
+			                                                	<span className="onoffswitch-switch"/>
+			                                                </label>
+			                                            </div>
 			                                        </span>
 			                                    </div>
 			                                </div>
@@ -98,20 +90,18 @@ class ApprovalSettingsComponent extends React.Component {
 			</React.Fragment>
 		);
 	}
-} 
+}
 
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
         settings: state.approvalReducer.settings,
-        isAuthorizedToEdit: state.userReducer.pagePermissions.isAuthorizedToEdit
     };
 }
 
 function mapDispatchToProps(dispatch) {
     return {
     	updateApprovalSettings: (settings, callback) => dispatch(approvalActions.updateApprovalSettings(settings, callback)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
     };
 }
 

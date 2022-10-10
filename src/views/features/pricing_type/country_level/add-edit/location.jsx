@@ -2,8 +2,7 @@
 const React = require('react');
 const BaseComponent = require('../../../../shared/base');
 const PricingModalComponent = require('./pricing-modal');
-
-const PermissionTooltip = require('../../../../common/permission-tooltip');
+const CommonModule = require('../../../../../public/js/common.js');
 
 class LocationComponent extends BaseComponent {
     constructor(props) {
@@ -26,43 +25,37 @@ class LocationComponent extends BaseComponent {
     }
 
     showPricingModal(locationItem) {
-        const self = this;
+        const { pricing } = locationItem;
+        this.pricingModal.setPricing(Object.assign({}, pricing));
 
-        this.props.validatePermissionToPerformAction("add-merchant-create-item-api", () => {
-            const { pricing } = locationItem;
-            self.pricingModal.setPricing(Object.assign({}, pricing));
+        if (pricing.bulkPricing.length > 0) {
+            const records = JSON.parse(pricing.bulkPricing).find((price) => { return price.Onward === "1" });
+            if (typeof records != 'undefined' && records != null
+                && $.isArray(records) ? records.length > 0 : ($.isPlainObject(records) && !$.isEmptyObject(records))) {
 
-            if (pricing.bulkPricing.length > 0) {
-                const records = JSON.parse(pricing.bulkPricing).find((price) => { return price.Onward === "1" });
-                if (typeof records != 'undefined' && records != null
-                    && $.isArray(records) ? records.length > 0 : ($.isPlainObject(records) && !$.isEmptyObject(records))) {
-
-                    self.pricingModal.setState({ errorMessages: ["Unable to add new calculation if latest is set to 'onwards'"] });
-                }
+                this.pricingModal.setState({ errorMessages: ["Unable to add new calculation if latest is set to 'onwards'"] });
             }
+        }
 
-            $('#myModalEditPricing').modal('show');
-            $('#myModalEditPricing .modal-content, #myModalEditPricing .bulk-pricing').niceScroll({
-                cursorcolor: "#b3b3b3", zindex: "99999999", cursorwidth: "6px",
-                cursorborderradius: "5px", cursorborder: "1px solid transparent",
-                touchbehavior: true
-            });
+        $('#myModalEditPricing').modal('show');
+        $('#myModalEditPricing .modal-content, #myModalEditPricing .bulk-pricing').niceScroll({
+            cursorcolor: "#b3b3b3", zindex: "99999999", cursorwidth: "6px",
+            cursorborderradius: "5px", cursorborder: "1px solid transparent",
+            touchbehavior: true
         });
     }
 
     browseImage(locationId, itemVariantId) {
-        this.props.validatePermissionToPerformAction("add-merchant-create-item-api", () => {
-            $(".tools").addClass("hide");
-            var canvas = document.getElementById("visbleCanvas");
+        $(".tools").addClass("hide");
+        var canvas = document.getElementById("visbleCanvas");
 
-            if ($(".imageBox").find(canvas).length !== 0) {
-                canvas.remove();
-            }
+        if ($(".imageBox").find(canvas).length !== 0) {
+            canvas.remove();
+        }
 
-            $(".upload-wapper > .upload-wrapper-container > input").val("");
-            $(".upload-wapper > .upload-wrapper-container > input").attr("data-location-id", locationId);
-            $(".upload-wapper > .upload-wrapper-container > input").attr("data-variant-id", itemVariantId);
-        });
+        $(".upload-wapper > .upload-wrapper-container > input").val("");
+        $(".upload-wapper > .upload-wrapper-container > input").attr("data-location-id", locationId);
+        $(".upload-wapper > .upload-wrapper-container > input").attr("data-variant-id", itemVariantId);
     }
 
     getLocationGroupName() {
@@ -76,30 +69,25 @@ class LocationComponent extends BaseComponent {
     }
 
     showRemoveLocationModal(locationId) {
-        this.props.validatePermissionToPerformAction("delete-merchant-create-item-api", () => {
-            const $modal = $('#modalRemoveLocation');
-            const $button = $modal.find('#btnRemove')
+        const $modal = $('#modalRemoveLocation');
+        const $button = $modal.find('#btnRemove')
 
-            $button.attr('data-location-id', locationId);
-            $modal.modal('show');
-        });
+        $button.attr('data-location-id', locationId);
+        $modal.modal('show');
     }
 
     removeLocation(event) {
-        this.props.validatePermissionToPerformAction("delete-merchant-create-item-api", () => {
-            const locationId = $(event.target).attr('data-location-id');
+        const locationId = $(event.target).attr('data-location-id');
 
-            $('.sol-option input[value="' + locationId + '"]').removeAttr('checked');
-            this.props.removeLocation(locationId);
+        $('.sol-option input[value="' + locationId + '"]').removeAttr('checked');
+        this.props.removeLocation(locationId);
 
-            $('#modalRemoveLocation').modal('hide');
-        });
+        $('#modalRemoveLocation').modal('hide');
     }
 
     renderPricingModal() {
         return (
             <PricingModalComponent
-                validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
                 ref={(ref) => this.pricingModal = ref}
                 closeDeletePopUp={this.props.closeDeletePopUp}
                 saveBulkPricing={this.props.saveBulkPricing} />
@@ -224,11 +212,9 @@ class LocationComponent extends BaseComponent {
                     <tr key={itemVariant.id}>
                         <td className="table-cell cell-image image-upload-container">
                             <div>
-                                <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                                    <a href="#" className="btn-varient-img model-btn image-placeholder" id={"btn-browse-" + itemVariant.id} data-target="#myModal" data-toggle="modal" data-width={600} data-height={600} onClick={(e) => this.browseImage(locationId, itemVariant.id)}>
-                                        <img src={itemVariant.media ? itemVariant.media.MediaUrl : "/assets/images/image_add.svg"} alt="add" />
-                                    </a>
-                                </PermissionTooltip>
+                                <a href="#" className="btn-varient-img model-btn image-placeholder" id={"btn-browse-" + itemVariant.id} data-target="#myModal" data-toggle="modal" data-width={600} data-height={600} onClick={(e) => this.browseImage(locationId, itemVariant.id)}>
+                                    <img src={itemVariant.media ? itemVariant.media.MediaUrl : CommonModule.getAppPrefix() + "/assets/images/image_add.svg"} alt="add" />
+                                </a>
                             </div>
                             <div className="variant-img-bottom">
                                 <span>
@@ -297,7 +283,7 @@ class LocationComponent extends BaseComponent {
                                 <label htmlFor={itemVariant.id + '-' + locationId + "-unlimited"} />
                             </div>
                         </td>
-                    </tr>   
+                    </tr>
                 )
             })
         );
@@ -331,15 +317,11 @@ class LocationComponent extends BaseComponent {
                                             {this.renderDiscount(pricing.bulkPricing, pricing.currencyCode)}
                                         </td>
                                         <td className="btn-table">
-                                            <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToDelete} extraClassOnUnauthorized={'icon-grey delete-con-row'}>
-                                                <span className="delete-con-row" onClick={() => this.showRemoveLocationModal(locationId)}>
-                                                    <i className="fa fa-times" />
-                                                </span>
-                                            </PermissionTooltip>
+                                            <span className="delete-con-row" onClick={() => this.showRemoveLocationModal(locationId)}>
+                                                <i className="fa fa-times" />
+                                            </span>
                                             <span className="btn-pricing-toggle active">Pricing <i className="fa fa-angle-up" /></span>
-                                            <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey btn-edit liner'}>
-                                                <span className="btn-edit open-bulk-modal liner" data-id="rowPric-AF" onClick={(e) => this.showPricingModal(locationItem)}>Bulk Pricing</span>
-                                            </PermissionTooltip>
+                                            <span className="btn-edit open-bulk-modal liner" data-id="rowPric-AF" onClick={(e) => this.showPricingModal(locationItem)}>Bulk Pricing</span>
                                         </td>
                                     </tr>
                                     <tr>

@@ -2,12 +2,10 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayoutComponent = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
-const PermissionTooltip = require('../../common/permission-tooltip');
 
 const { createApprovalDepartment, updateApprovalDepartment } = require('../../../redux/approvalActions');
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
 
 if (typeof window !== 'undefined') { var $ = window.$; }
 
@@ -35,44 +33,40 @@ class ApprovalDepartmentAddEditComponent extends React.Component {
 	handleCheckAll() {
         //Check all
         const self = this;
-        if (!this.props.isAuthorizedToEdit) return;
-        this.props.validatePermissionToPerformAction('edit-consumer-create-approval-department-api', () => {
-			const parentCheck = $(".advanced-select .parent-check input[type=checkbox]")
-	        const $this = $(parentCheck);
-	        const $ul = $this.parents('ul');
+    	const parentCheck = $(".advanced-select .parent-check input[type=checkbox]")
+        const $this = $(parentCheck);
+        const $ul = $this.parents('ul');
 
-	        if ($this.is(":checked")) {
-	            $ul.find('input[type=checkbox]').prop("checked", true);
-	            $('.item-tags').empty();
-	            $('.advanced-select .dropdown-menu li a input[type=checkbox]:checked').each(function(i, obj) {
-	                const selected_val = $(obj).attr('name');
-	                const selectedKey = self.escapeHtml(selected_val.replace(/\s/g, ''));
-	                const dataID = $(obj).data('id');
-	                $("<span>" + selected_val + "<a key=" + selectedKey + " href=" + "# data-id=" + dataID +">×</a></span>").appendTo('.item-tags');
-	                $(".item-tags span a").each(function(i, obj) {
-	                    if ($(obj).attr('key') === 'status_0') {
-	                        $(this).parent().remove();
-	                    } else {
-	                    	$(obj).on("click", function () {
-								const theKey = $(this).attr('key');
-						        $(".advanced-select .dropdown-menu li a input[type=checkbox]:checked").each(function(i, obj) {
-						            if ($(this).attr('id') === theKey) {
-						                $(this).attr('id', theKey).prop("checked", false);
-						            }
-						        });
-						        $(this).parent().remove();
-	                    	});
-	                    }
-	                });
-	            });
-	        } else {
-	            $ul.find('input[type=checkbox]').prop("checked", false);
-	            $('.advanced-select .dropdown-menu li a input[type=checkbox]').each(function(i, obj) {
-	                $('.item-tags span').remove();
-	            });
-	        }
-        });
-    	
+        if ($this.is(":checked")) {
+            $ul.find('input[type=checkbox]').prop("checked", true);
+            $('.item-tags').empty();
+            $('.advanced-select .dropdown-menu li a input[type=checkbox]:checked').each(function(i, obj) {
+                const selected_val = $(obj).attr('name');
+                const selectedKey = self.escapeHtml(selected_val.replace(/\s/g, ''));
+                const dataID = $(obj).data('id');
+                $("<span>" + selected_val + "<a key=" + selectedKey + " href=" + "# data-id=" + dataID +">×</a></span>").appendTo('.item-tags');
+                $(".item-tags span a").each(function(i, obj) {
+                    if ($(obj).attr('key') === 'status_0') {
+                        $(this).parent().remove();
+                    } else {
+                    	$(obj).on("click", function () {
+							const theKey = $(this).attr('key');
+					        $(".advanced-select .dropdown-menu li a input[type=checkbox]:checked").each(function(i, obj) {
+					            if ($(this).attr('id') === theKey) {
+					                $(this).attr('id', theKey).prop("checked", false);
+					            }
+					        });
+					        $(this).parent().remove();
+                    	});
+                    }
+                });
+            });
+        } else {
+            $ul.find('input[type=checkbox]').prop("checked", false);
+            $('.advanced-select .dropdown-menu li a input[type=checkbox]').each(function(i, obj) {
+                $('.item-tags span').remove();
+            });
+        }
 	}
 
 	handleQKeyUp(e) {
@@ -109,61 +103,57 @@ class ApprovalDepartmentAddEditComponent extends React.Component {
         //Count
         const self = this;
         $('.advanced-select .x-check input[type=checkbox]').on('change', function() {
-        	if (!self.props.isAuthorizedToEdit) return;
-        	const $this = $(this);
-        	self.props.validatePermissionToPerformAction('edit-consumer-create-approval-department-api', () => {
-	        	const $control = $this.parents('.advanced-select');
-		        const model = $control.data('model');
-		        const $input = $control.find('.trigger');
-		        const default_val = $input.attr('data-default');
-		        const selected_val = $this.data('clicked', true).attr('name');
-		        const checked = $control.find('.x-check:not(.parent-check) input[type=checkbox]:checked').length;
-		        const selectedKey = self.escapeHtml(selected_val.replace(/\s/g, ''));
-		        const theId = $this.attr('id');
-		        const dataID = $this.data('id');
+        	const $control = $(this).parents('.advanced-select');
+	        const model = $control.data('model');
+	        const $input = $control.find('.trigger');
+	        const default_val = $input.attr('data-default');
+	        const selected_val = $(this).data('clicked', true).attr('name');
+	        const checked = $control.find('.x-check:not(.parent-check) input[type=checkbox]:checked').length;
+	        const selectedKey = self.escapeHtml(selected_val.replace(/\s/g, ''));
+	        const theId = $(this).attr('id');
+	        const dataID = $(this).data('id');
 
-		        if (checked > 0) {
-		            $control.addClass('choosen');
-		            $("<span>" + selected_val + "<a key=" + selectedKey + " href=" + "javascript:void(0) data-id=" + dataID + ">×</a></span>").appendTo('.item-tags');
+	        if (checked > 0) {
+	            $control.addClass('choosen');
+	            $("<span>" + selected_val + "<a key=" + selectedKey + " href=" + "javascript:void(0) data-id=" + dataID + ">×</a></span>").appendTo('.item-tags');
 
-		            $(".item-tags span a").each(function(i, obj) {
-		                if ($(obj).attr('key') === 'status_0') {
-		                    $(this).parent().remove();
-		                } else {
-		                	$(obj).on("click", function () {
-								const theKey = $(this).attr('key');
-						        $(".advanced-select .dropdown-menu li a input[type=checkbox]:checked").each(function(i, obj) {
-						            if ($(this).attr('id') === theKey) {
-						                $(this).attr('id', theKey).prop("checked", false);
-						            }
-						        });
-						        $(this).parent().remove();
-	                    	});
-		                }
-		            });
-		        } else {
-		            $input.val(default_val);
-		            $control.removeClass('choosen');
-		        }
+	            $(".item-tags span a").each(function(i, obj) {
+	                if ($(obj).attr('key') === 'status_0') {
+	                    $(this).parent().remove();
+	                } else {
+	                	$(obj).on("click", function () {
+							const theKey = $(this).attr('key');
+					        $(".advanced-select .dropdown-menu li a input[type=checkbox]:checked").each(function(i, obj) {
+					            if ($(this).attr('id') === theKey) {
+					                $(this).attr('id', theKey).prop("checked", false);
+					            }
+					        });
+					        $(this).parent().remove();
+                    	});
+	                }
+	            });
+	        } else {
+	            $input.val(default_val);
+	            $control.removeClass('choosen');
+	        }
 
-		        if (!$this.is(":checked")) {
-		            $(".item-tags span a").each(function(i, obj) {
-		                if ($(obj).attr('key') === theId) {
-		                    $(this).parent().remove();
-		                }
-		            });
-		        	$(".advanced-select .x-check.parent-check input[type=checkbox").prop('checked', false);
-				}
-				
-				//status_0
-				const unchecked = $control.find('.x-check:not(.parent-check) input[type=checkbox]:not(:checked)').length;
-				if (unchecked > 0) {
-					$('#status_0').prop("checked", false);
-				}
-				else {
-					$('#status_0').prop("checked", true);
-				}
-        	});
+	        if (!$(this).is(":checked")) {
+	            $(".item-tags span a").each(function(i, obj) {
+	                if ($(obj).attr('key') === theId) {
+	                    $(this).parent().remove();
+	                }
+	            });
+	        	$(".advanced-select .x-check.parent-check input[type=checkbox").prop('checked', false);
+			}
+			
+			//status_0
+			const unchecked = $control.find('.x-check:not(.parent-check) input[type=checkbox]:not(:checked)').length;
+			if (unchecked > 0) {
+				$('#status_0').prop("checked", false);
+			}
+			else {
+				$('#status_0').prop("checked", true);
+			}
         });
 
         //Count on ready
@@ -194,6 +184,7 @@ class ApprovalDepartmentAddEditComponent extends React.Component {
 					const exists = this.props.workflows.Records.find(p => p.Id == w);
 					if (typeof exists !== 'undefined' && exists !==  null  && exists.Id) {
 						$(`.advanced-select .x-check:not(.parent-check) input[data-id=${w}]`).prop('checked', true);
+						$(`.advanced-select .x-check:not(.parent-check) input[data-id=${w}]`).trigger('change');
 					}
 				});
 				if (this.props.workflows.TotalRecords && workflows.length == this.props.workflows.TotalRecords) {
@@ -207,7 +198,7 @@ class ApprovalDepartmentAddEditComponent extends React.Component {
 							const theKey = $(this).attr('key');
 					        $(".advanced-select .dropdown-menu li a input[type=checkbox]:checked").each(function(i, obj) {
 					            if ($(this).attr('id') === theKey) {
-					                $(this).attr('id', theKey).prop("checked", false)
+					                $(this).attr('id', theKey).prop("checked", false);
 					            }
 					        });
 					        $(this).parent().remove();
@@ -218,8 +209,7 @@ class ApprovalDepartmentAddEditComponent extends React.Component {
 		}
 	}
 
-	renderWorkflowOptions() {
-		const { isAuthorizedToEdit } = this.props;       
+	renderWorkflowOptions() {       
         if (this.props.workflows && this.props.workflows.TotalRecords && this.props.workflows.TotalRecords > 0) {
         	const { Records } = this.props.workflows;
         	if (Records && Records.length > 0) {
@@ -227,12 +217,10 @@ class ApprovalDepartmentAddEditComponent extends React.Component {
 	        		<React.Fragment>
 		        		{Records.map(workflow => 
 		        			<li key={workflow.Id}>
-						        	<a className="x-check" href="#">
-		                        		<PermissionTooltip isAuthorized={isAuthorizedToEdit} placement="right">
-						        			<input type="checkbox" disabled={!isAuthorizedToEdit} name={workflow.Reason} id={workflow.Reason.split(' ').join('')} data-id={workflow.Id} />
-						        			<label htmlFor={workflow.Reason.split(' ').join('')}>{workflow.Reason}</label>
-								        </PermissionTooltip>
-						        	</a>
+					        	<a className="x-check" href="#">
+					        		<input type="checkbox" name={workflow.Reason} id={workflow.Reason.split(' ').join('')} data-id={workflow.Id} />
+					        		<label htmlFor={workflow.Reason.split(' ').join('')}>{workflow.Reason}</label>
+					        	</a>
 					        </li>
 		        		)}
 	        		</React.Fragment>
@@ -265,46 +253,42 @@ class ApprovalDepartmentAddEditComponent extends React.Component {
 	createUpdateDepartment() {
 		const hasError = this.validateFields();
 		if (hasError) return;
-
 		const self = this;
-		if (!this.props.isAuthorizedToAdd) return;
-		this.props.validatePermissionToPerformAction('add-consumer-create-approval-department-api', () => {
-			let { departmentName } = self.state;
-			departmentName = departmentName.trim();	
-			if (departmentName !== null && departmentName.length > 0) {
-				const workflowArr = [];
-				$('.item-tags span a').each(function(i, obj) {
-					if ($(obj).attr('key') !== 'status_0') {
-						const rowID = $(obj).data('id');
-						if (rowID && rowID.length > 0) {
-							workflowArr.push(rowID);
-						}
-					}
-				});
-				if (workflowArr.length > 0) {
-					const workflows = workflowArr.join(',');
-					const request = {
-						Name: departmentName,
-						WorkflowID: workflows,
-						WorkflowCount: workflowArr.length,
-					};
-					if (self.props.selectedDepartment && self.props.selectedDepartment.Id) {
-						self.props.updateApprovalDepartment(self.props.selectedDepartment.Id,request, function (result) {
-							if (result.success) window.location.href = "/approval/departments";
-						});
-					} else {
-						self.props.createApprovalDepartment(request, function (result) {
-							if (result.success) window.location.href = "/approval/departments";
-						});
+		let { departmentName } = self.state;
+		departmentName = departmentName.trim();	
+		if (departmentName !== null && departmentName.length > 0) {
+			const workflowArr = [];
+			$('.item-tags span a').each(function(i, obj) {
+				if ($(obj).attr('key') !== 'status_0') {
+					const rowID = $(obj).data('id');
+					if (rowID && rowID.length > 0) {
+						workflowArr.push(rowID);
 					}
 				}
-			} 
-		});
+			});
+			if (workflowArr.length > 0) {
+				const workflows = workflowArr.join(',');
+				const request = {
+					Name: departmentName,
+					WorkflowID: workflows,
+					WorkflowCount: workflowArr.length,
+				};
+				if (this.props.selectedDepartment && this.props.selectedDepartment.Id) {
+					self.props.updateApprovalDepartment(this.props.selectedDepartment.Id,request, function (result) {
+						if (result.success) window.location.href = "/approval/departments";
+						else console.log('Something went wrong.');
+					});
+				} else {
+					self.props.createApprovalDepartment(request, function (result) {
+						if (result.success) window.location.href = "/approval/departments";
+						else console.log('Something went wrong.');
+					});
+				}
+			}
+		} 
 	}
 
 	render() {
-		const { isAuthorizedToAdd, isAuthorizedToEdit } = this.props;
-        const saveBtnClass = `sassy-btn sassy-btn-bg ${isAuthorizedToAdd ? '' : 'disabled'}`;
 		return (
 			<React.Fragment>
 				<div className="header mod" id="header-section">
@@ -353,10 +337,8 @@ class ApprovalDepartmentAddEditComponent extends React.Component {
 		                                                        </li>
 		                                                        <li>
 		                                                        	<a className="x-check parent-check" href={null}>
-		                        										<PermissionTooltip isAuthorized={isAuthorizedToEdit} placement="right">
-			                                                        		<input disabled={!isAuthorizedToEdit} type="checkbox" name="status_0" id="status_0" onChange={(e) => this.handleCheckAll(e)}/>
-			                                                        		<label htmlFor="status_0"> Select All</label>
-			                                                        	</PermissionTooltip>
+		                                                        		<input type="checkbox" name="status_0" id="status_0" onChange={(e) => this.handleCheckAll(e)}/>
+		                                                        		<label htmlFor="status_0"> Select All</label>
 		                                                        	</a>
 		                                                        </li>
 		                                                        {this.renderWorkflowOptions()}
@@ -372,9 +354,7 @@ class ApprovalDepartmentAddEditComponent extends React.Component {
 		                        </div>
 		                        <div className="btn-area mt-25">
 		                            <a href="#" className="sassy-btn sassy-btn-border" onClick={() => this.handleCancel()}>Cancel</a>
-                                    <PermissionTooltip isAuthorized={isAuthorizedToAdd}>
-		                            	<button href="#" className={saveBtnClass} onClick={() => this.createUpdateDepartment()}>Save</button>
-		                            </PermissionTooltip>
+		                            <button href="#" className="sassy-btn sassy-btn-bg" onClick={() => this.createUpdateDepartment()}>Save</button>
 		                        </div>
 		                    </div>
 						</div>
@@ -390,17 +370,13 @@ function mapStateToProps(state, ownProps) {
 		user: state.userReducer.user,
 		workflows: state.approvalReducer.workflows,
 		selectedDepartment: state.approvalReducer.selectedDepartment,
-		isAuthorizedToAdd: state.userReducer.pagePermissions.isAuthorizedToAdd,
-        isAuthorizedToEdit: state.userReducer.pagePermissions.isAuthorizedToEdit,
-        isAuthorizedToDelete: state.userReducer.pagePermissions.isAuthorizedToDelete
 	};
 }
 
 function mapDispatchToProps(dispatch) {
 	return {
 		createApprovalDepartment: (options, callback) => dispatch(createApprovalDepartment(options, callback)),
-		updateApprovalDepartment: (rowID, options, callback) => dispatch(updateApprovalDepartment(rowID, options, callback)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
+		updateApprovalDepartment: (rowID, options, callback) => dispatch(updateApprovalDepartment(rowID, options, callback))
 	};
 }
 

@@ -1,5 +1,6 @@
 'use strict';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -10,7 +11,6 @@ function searchPurchase(filters) {
         let suppliers = getState().purchaseReducer.selectedSuppliers;
         let status = getState().purchaseReducer.selectedOrderStatuses;
         let date = getState().purchaseReducer.selectedDates;
-        let cartItemStatus = getState().purchaseReducer.selectedCartItemStatus
         if (!filters.supplier) {
             filters.supplier = suppliers;
         }
@@ -31,19 +31,15 @@ function searchPurchase(filters) {
             //should go to page1 for changing of pageSize
             filters.pageNumber = 1;
         }
-        if (!filters.cartItemFulfilmentStatuses) {
-            filters.cartItemFulfilmentStatuses = cartItemStatus;
-        }
         $.ajax({
-            url: '/purchase/history/search',
+            url: prefix+'/purchase/history/search',
             type: 'GET',
             data: {
                 keyword: filters.keyword,
                 startDate: filters.startDate,
                 endDate: filters.endDate,
                 supplier: filters.supplier,
-                status: filters.status,
-                cartItemFulfilmentStatuses: filters.cartItemFulfilmentStatuses,
+                status:filters.status,
                 pageNumber: 1,
                 pageSize: filters.pageSize
 
@@ -81,7 +77,7 @@ function goToPage(pageNumber, filters) {
         }
 
         $.ajax({
-            url: '/purchase/history/search',
+            url: prefix+'/purchase/history/search',
             type: 'GET',
             data: {
                 keyword: keyword,
@@ -110,7 +106,7 @@ function submitFeedbackForCartItem(options, callback) {
         const { InvoiceNo, cartId, rating, feedback } = options;
         const info = Object.assign({}, getState().purchaseReducer.detail);
         $.ajax({
-            url: `/purchase/detail/${InvoiceNo}/feedback/${cartId}`,
+            url: prefix+`/purchase/detail/${InvoiceNo}/feedback/${cartId}`,
             type: 'POST',
             data: {
                 ItemRating: rating,
@@ -182,15 +178,6 @@ function updateKeyword(keyword) {
     };
 }
 
-function updateSelectedCartItemStatus(status) {
-    return function (dispatch, getState) {
-        return dispatch({
-            type: actionTypes.UPDATE_SELECTED_CART_ITEM_ORDER_STATUS,
-            selectedCartItemStatus: status
-        });
-    };
-}
-
 module.exports = {
     searchPurchase: searchPurchase,
     goToPage: goToPage,
@@ -199,5 +186,4 @@ module.exports = {
     updateSelectedOrderStatus: updateSelectedOrderStatus,
     updateSelectedDates: updateSelectedDates,
     updateKeyword: updateKeyword,
-    updateSelectedCartItemStatus: updateSelectedCartItemStatus
 }

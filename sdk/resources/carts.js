@@ -17,22 +17,15 @@ Carts.prototype.addCart = function(options, callback) {
     const discount = options.discount;
     const itemId = options.itemId;
     const force = options.force;
-    const forComparison = options.forComparison;
-    const bookingSlot = options.bookingSlot || null;
-    const serviceBookingUnitGuid = options.serviceBookingUnitGuid || null;
-    const addOns = options.addOns || null;    
 
     self._acquireAdminAccessToken(function() {
         self._makeRequest({
             method: 'POST',
-            path: '/api/v2/users/' + userId + '/carts?force=' + force + '&forComparison=' + forComparison,
+            path: '/api/v2/users/' + userId + '/carts?force=' + force,
             data: {
                 ID: null,
                 Quantity: quantity,
                 DiscountAmount: discount,
-                BookingSlot: bookingSlot,
-                ServiceBookingUnitGuid: serviceBookingUnitGuid,
-                AddOns: addOns,
                 ItemDetail: {
                     ID: itemId
                 }
@@ -53,20 +46,15 @@ Carts.prototype.editCart = function(options, callback) {
     const shippingMethodId = options.shippingMethodId || null;
     const pickupAddressId = options.pickupAddressId || null;
     const forComparison = options.forComparison || false;
-    const bookingSlot = options.bookingSlot || null;
-    const subTotal = options.subTotal || null;
-    const addOns = options.addOns || null;
-    const notes = options.notes || null;
-    const updateCartAsPending = options.updateCartAsPending || false;
 
     self._acquireAdminAccessToken(function() {
         self._makeRequest({
             method: 'PUT',
-            path: '/api/v2/users/' + userID + '/carts/' + cartID + "?forComparison=" + forComparison + '&updateCartAsPending=' + updateCartAsPending,
+            path: '/api/v2/users/' + userID + '/carts/' + cartID + "?forComparison=" + forComparison,
             data: {
+                Quantity: quantity,
                 DiscountAmount: discount,
                 CartItemType: cartItemType,
-                BookingSlot: bookingSlot,
                 ShippingMethod: {
                     ID: shippingMethodId
                 },
@@ -75,11 +63,7 @@ Carts.prototype.editCart = function(options, callback) {
                 },
                 ItemDetail: {
                     ID: itemID
-                },
-                Addons: addOns,
-                SubTotal: subTotal,
-                Quantity: quantity,
-                Notes: notes
+                }
             }
         }, callback);
     });

@@ -3,14 +3,15 @@ var React = require('react');
 var ReactRedux = require('react-redux');
 var BaseComponent = require('../shared/base');
 var EnumCoreModule = require('../../public/js/enum-core');
+var CommonModule = require('../../public/js/common.js');
 
 class ResetPasswordComponent extends BaseComponent {
     componentDidMount() {
         if (this.props.success == 'true') {
             if (this.props.isPrivatemarketPlace == 'true' || this.props.isPrivatemarketPlace == true)
-                setTimeout(() => window.location.href = '/accounts/sign-in', 5000);
+                setTimeout(() => window.location.href = CommonModule.getAppPrefix()+'/accounts/sign-in', 5000);
             else
-                setTimeout(() => window.location.href = '/accounts/non-private/sign-in', 5000);
+                setTimeout(() => window.location.href = CommonModule.getAppPrefix()+'/accounts/non-private/sign-in', 5000);
         }
     }
 
@@ -64,7 +65,7 @@ class ResetPasswordComponent extends BaseComponent {
                             <span>Reset Password</span>
                         </div>
                         <div className="lb-body full-width">
-                            <form id="frmReset" action="/accounts/reset-password" method="post" autoComplete="off">
+                            <form id="frmReset" action={CommonModule.getAppPrefix()+"/accounts/reset-password"} method="post" autoComplete="off">
                                 <div className="lbb-input">
                                     <p align="left">Your New Password</p>
                                     <input className="input-text required" type="password" placeholder="Your New Password" name="new_password" onKeyDown={(e) => this.avoidWhiteSpaceOnKeyDown(e)} />

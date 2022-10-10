@@ -6,7 +6,7 @@ if (typeof window !== 'undefined') {
 
 var toastr = require('toastr');
 var EnumCoreModule = require('../public/js/enum-core');
-var commonModule = require('../public/js/common');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 
 function initOrderDeliveryMap() {
     return function (dispatch, getState) {
@@ -78,7 +78,7 @@ function proceedToPayment(callback) {
             });
         }
         $.ajax({
-            url: 'proceedToPayment',
+            url: prefix+'proceedToPayment',
             type: 'POST',
             data: {
                 invoiceNo: JSON.stringify(invoiceDetails.InvoiceNo),
@@ -139,7 +139,7 @@ function selectDelivery(deliveryOption) {
 function generateComparisonFile(orderId) {
     return function (dispatch, getState) {
         $.ajax({
-            url: '/comparison/getComparisonSnapshot',
+            url: prefix+'/comparison/getComparisonSnapshot',
             type: 'POST',
             data: {
                 orderId: orderId,
@@ -182,7 +182,7 @@ function updateToPaid(data, comparisonId, failedCallback) {
         validateComparisonDetail(comparisonId, itemId, function (isValid) {
             if (isValid) {
                 $.ajax({
-                    url: 'updateToPaid',
+                    url: prefix+'updateToPaid',
                     type: 'POST',
                     data: {
                         invoiceDetails: data,
@@ -239,7 +239,7 @@ function validateComparisonDetail(comparisonId, itemId, callback) {
     let isValid = false;
 
     $.ajax({
-        url: '/comparison/validateComparisonDetails',
+        url: prefix+'/comparison/validateComparisonDetails',
         type: 'POST',
         data: {
             comparisonId: comparisonId,
@@ -287,7 +287,7 @@ function generateStripeSessionId(callback) {
 
         if (selectedPaymentMethod && selectedPaymentMethod.code.startsWith('stripe')) {
             $.ajax({
-                url: '/checkout/generate-stripe-session-id',
+                url: prefix+'/checkout/generate-stripe-session-id',
                 type: 'POST',
                 data: {
                     invoiceNo: invoiceNo,
@@ -312,7 +312,7 @@ function generateStripeSessionId(callback) {
     };
 }
 
-function postPayment(stripe, omise, departmentId, workflowId, isProcessPayment, notes, callback) {
+function postPayment(stripe, omise, departmentId, workflowId, isProcessPayment, callback) {
     return function (dispatch, getState) {
         const isRequisition = process.env.CHECKOUT_FLOW_TYPE == 'b2b';
         const paymentMethods = getState().checkoutReducer.paymentMethods;
@@ -432,7 +432,7 @@ function postPayment(stripe, omise, departmentId, workflowId, isProcessPayment, 
                             merchantID: order.MerchantDetail.ID,
                             consumerID: order.ConsumerDetail.ID,
                             itemIDs: itemIDs,
-                            paymentStatus: '',
+                            paymentStatus: 'Processing',
                             orderStatus: orderStatus,
                             isBankPayment: isBankPayment
                         };
@@ -456,12 +456,10 @@ function postPayment(stripe, omise, departmentId, workflowId, isProcessPayment, 
                     };
                     orders.push(request);
                 }
-                //arc9828
-               // $(".btn-loader").addClass('btn-loading');
             }
-            $(".btn-loader").addClass('btn-loading');
+
             $.ajax({
-                url: '/checkout/updateCheckoutSelectedDeliveryAddressOnePage',
+                url: prefix+'/checkout/updateCheckoutSelectedDeliveryAddressOnePage',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(orders),
@@ -481,14 +479,13 @@ function postPayment(stripe, omise, departmentId, workflowId, isProcessPayment, 
                     user.Onboarded = null;
 
                     $.ajax({
-                        url: '/users/update',
+                        url: prefix+'/users/update',
                         type: 'PUT',
                         contentType: 'application/json',
                         data: JSON.stringify({ ...user, guestUserID, updateSubAccount: true }),
                         success: function (result) {
-                          
                             $.ajax({
-                                url: 'proceedToPayment',
+                                url: prefix+'proceedToPayment',
                                 type: 'POST',
                                 data: {
                                     invoiceNo: !isRequisition ? invoiceDetails.InvoiceNo : null,
@@ -497,20 +494,18 @@ function postPayment(stripe, omise, departmentId, workflowId, isProcessPayment, 
                                     shippingOptions: JSON.stringify(shippingOptions),
                                     pickupOptions: JSON.stringify(pickupOptions),
                                     merchantIDs: JSON.stringify(merchantIds),
-                                    pendingOffer: pendingOffer ? JSON.stringify(pendingOffer) : null,
-                                    notes: notes,
+                                    pendingOffer: pendingOffer ? JSON.stringify(pendingOffer) : null
                                 },
                                 success: function (result) {
                                     if (!result || !result.success) {
                                         toastr.error('Please try again later.', 'Oops! Something went wrong.');
-                                        $(".btn-loader").removeClass('btn-loading');
                                         return;
                                     }
 
                                     if (!isRequisition) {
                                         if (isProcessPayment) {
                                             $.ajax({
-                                                url: '/checkout/payment',
+                                                url: prefix+'/checkout/payment',
                                                 type: 'POST',
                                                 data: {
                                                     invoiceNo: invoiceDetails.InvoiceNo,
@@ -519,7 +514,6 @@ function postPayment(stripe, omise, departmentId, workflowId, isProcessPayment, 
                                                     omise: omise
                                                 },
                                                 success: function (result) {
-                                                    $(".btn-loader").removeClass('btn-loading');
                                                     if (result.success == true) {
                                                         const isCustomPayment = !EnumCoreModule.GetNonCustomGatewayCodes().includes(selectedPaymentMethod.code);
 
@@ -533,14 +527,9 @@ function postPayment(stripe, omise, departmentId, workflowId, isProcessPayment, 
                                                     } else if (result.error) {
                                                         console.log(result.error);
                                                         toastr.error('Please try again later.', 'Oops! Something went wrong.');
-                                                    } else {
-                                                        if (result.code == 'DISABLED_ITEM_OR_SELLER') {
-                                                            toastr.error('Order is invalid.', 'Buyer, Merchant or item may be disabled, please check and try again.');
-                                                        }
                                                     }
                                                 },
                                                 error: function (jqXHR, textStatus, errorThrown) {
-                                                    $(".btn-loader").removeClass('btn-loading');
                                                     console.log(textStatus, errorThrown);
                                                 }
                                             });
@@ -548,38 +537,39 @@ function postPayment(stripe, omise, departmentId, workflowId, isProcessPayment, 
                                             if (typeof callback !== 'undefined') callback();
                                         }
                                     } else {
-                                        if (!selectedDepartment && !selectedWorkflow) {
-                                            acceptQuotation(pendingOffer, () => {
-                                                createRequisition(orderDetails.ID, selectedDepartment, selectedWorkflow, (requisition) => {
-                                                    if (requisition && requisition.ID) {
-                                                        return window.location = '/checkout/requisition-created?id=' + requisition.ID + '&orderNo=' + requisition.RequisitionOrderNo + '&cosmeticNo=' + encodeURIComponent(requisition.CosmeticNo);
-                                                    }
-                                                });
-                                            });
-                                        } else {
-                                            createRequisition(orderDetails.ID, selectedDepartment, selectedWorkflow, (requisition) => {
-                                                if (requisition && requisition.ID) {
-                                                    return window.location = '/checkout/requisition-created?id=' + requisition.ID + '&orderNo=' + requisition.RequisitionOrderNo + '&cosmeticNo=' + encodeURIComponent(requisition.CosmeticNo);
-                                                }
-                                            });
-                                        }
+                                        $.ajax({
+                                            url: prefix+'/checkout/create-requisition',
+                                            type: 'POST',
+                                            data: {
+                                                orderId: orderDetails.ID,
+                                                department: selectedDepartment ? JSON.stringify(selectedDepartment) : null,
+                                                workflow: selectedWorkflow ? JSON.stringify(selectedWorkflow) : null
+                                            },
+                                            success: function (result) {
+                                                if (!selectedDepartment && !selectedWorkflow) {
+                                                    acceptQuotation(pendingOffer, () => {
+                                                        return window.location = '/checkout/requisition-created?id=' + result.ID + '&orderNo=' + result.RequisitionOrderNo;
+                                                    });
+                                                } else return window.location = '/checkout/requisition-created?id=' + result.ID + '&orderNo=' + result.RequisitionOrderNo;
+                                            },
+                                            error: function (jqXHR, textStatus, errorThrown) {
+                                                console.log(textStatus, errorThrown);
+                                            }
+                                        });
                                     }
                                 },
                                 error: function (jqXHR, textStatus, errorThrown) {
-                                    $(".btn-loader").removeClass('btn-loading');
                                     console.log(textStatus, errorThrown);
                                 }
                             });
 
                         },
                         error: function (jqXHR, textStatus, errorThrown) {
-                            $(".btn-loader").removeClass('btn-loading');
                             console.log(textStatus, errorThrown);
                         }
                     })
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
-                    $(".btn-loader").removeClass('btn-loading');
                     console.log(textStatus, errorThrown);
                 }
             });
@@ -591,30 +581,10 @@ function postPayment(stripe, omise, departmentId, workflowId, isProcessPayment, 
     };
 }
 
-function createRequisition(orderID, selectedDepartment, selectedWorkflow, callback) {
-    $.ajax({
-        url: '/checkout/create-requisition',
-        type: 'POST',
-        data: {
-            orderId: orderID,
-            department: selectedDepartment ? JSON.stringify(selectedDepartment) : null,
-            workflow: selectedWorkflow ? JSON.stringify(selectedWorkflow) : null
-        },
-        success: function (result) {
-            callback(result)
-        },
-        error: function (jqXHR, textStatus, errorThrown) {
-            console.log(textStatus, errorThrown);
-            callback(null);
-        }
-    });
-}
-
 function updateSelectedAddress(ID, isBillingAddress) {
     return function (dispatch, getState) {
         let addresses = Object.assign([], getState().settingsReducer.addresses);
         let billingAddresses = Object.assign([], getState().settingsReducer.billingAddresses);
-        let shippingAddressesOriginal = Object.assign([], getState().settingsReducer.shippingOptions);
 
         if (!isBillingAddress) {
             addresses.map(function (address) {
@@ -624,53 +594,10 @@ function updateSelectedAddress(ID, isBillingAddress) {
                     address.Selected = false;
                 }
             });
-            var selectedBuyerAddress = addresses.filter(ba => ba.Selected === true);
-            //ARC9585
-            let isB2c = process.env.CHECKOUT_FLOW_TYPE === 'b2c';
-            if (isB2c === true) {
-                if (shippingAddressesOriginal && shippingAddressesOriginal[0]) {
-                    shippingAddressesOriginal[0].shippingOptions.map(function (so) {
-                        if (so.ShippingData && so.ShippingData.CustomFields) {
-                            var deliveryOpt = so.ShippingData.CustomFields ? so.ShippingData.CustomFields.find(x => x.Name === 'DeliveryOptions') : null;
-                            if (deliveryOpt) {
-                                const values = JSON.parse(deliveryOpt.Values[0]);
-                                if (values && values.SelectedCountries) {
-                                    so.ShouldShow = false;
-                                    values.SelectedCountries.forEach(function (country) {
-                                        if (country.Code === selectedBuyerAddress[0].CountryCode) {
-                                            so.ShouldShow = true;
-                                        }
-                                    });
-                                }
-                            }
-                        }
-                    });
-                }
-            } else {
-                shippingAddressesOriginal.map(function (so) {
-                    if (so.ShippingData && so.ShippingData.CustomFields) {
-                        var deliveryOpt = so.ShippingData.CustomFields ? so.ShippingData.CustomFields.find(x => x.Name === 'DeliveryOptions') : null;
-                        if (deliveryOpt) {
-                            const values = JSON.parse(deliveryOpt.Values[0]);
-                            if (values && values.SelectedCountries) {
-                                so.ShouldShow = false;
-                                values.SelectedCountries.forEach(function (country) {
-                                    if (country.Code === selectedBuyerAddress[0].CountryCode) {
-                                        so.ShouldShow = true;
-                                    }
-                                });
-                            }
-                        }
-                    }
-                });
-            }
-
-
 
             return dispatch({
                 type: actionTypes.UPDATE_SELECTED_ADDRESS,
-                addresses: addresses,
-                shippingOptions: shippingAddressesOriginal,
+                addresses: addresses
             });
 
         } else {
@@ -712,7 +639,7 @@ function updateBuyerAddress(address) {
         }
 
         $.ajax({
-            url: '/checkout/updateCheckoutSelectedDeliveryAddress',
+            url: prefix+'/checkout/updateCheckoutSelectedDeliveryAddress',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(orders),
@@ -832,7 +759,7 @@ function calculateCost(selectedDelOption, orderID) {
     };
 }
 
-function createAddress(callback) {
+function createAddress() {
     return function (dispatch, getState) {
         let newAddress = {};
         let modeladd = getState().settingsReducer.addressModelAdd
@@ -854,13 +781,13 @@ function createAddress(callback) {
         newAddress.guestUserID = guestUserID;
 
         $.ajax({
-            url: '/users/address/create',
+            url: prefix+'/users/address/create',
             type: 'POST',
             data: newAddress,
             success: function (address) {
-                if (typeof callback == 'function') callback();
                 $("#addDeliveryAddress").modal("hide");
                 address['Selected'] = false;
+
                 dispatch({
                     type: actionTypes.CREATE_BILLING_ADDRESS,
                     address: address
@@ -883,7 +810,7 @@ function deleteAddress() {
         const addressId = getState().settingsReducer.addressIDToDelete;
 
         $.ajax({
-            url: '/users/address/delete',
+            url: prefix+'/users/address/delete',
             type: 'POST',
             data: {
                 addressId: addressId
@@ -949,7 +876,7 @@ function updateIsSameBilingAndDelivery(value) {
 function acceptQuotation(pendingOffer, callback) {
     if (pendingOffer) {
         $.ajax({
-            url: '/quotation/decline-accept-quotation',
+            url: prefix+'/quotation/decline-accept-quotation',
             type: 'POST',
             data: {
                 quotationId: pendingOffer.ID,
@@ -968,39 +895,6 @@ function acceptQuotation(pendingOffer, callback) {
     } else {
         callback();
     }
-}
-
-function setCartToPending(options, callback) {
-    const isServiceLevel = process.env.PRICING_TYPE == 'service_level';
-    if (!isServiceLevel) {
-        if (typeof callback == 'function') callback();
-        return dispatch({
-            type: ''
-        });
-    }
-    return function (dispatch) {
-        $.ajax({
-            url: '/cart/editCart',
-            type: 'PUT',
-            data: {
-                itemID: options.itemID,
-                userID: options.userID,
-                cartID: options.cartID,
-                quantity: options.quantity,
-                discountAmount: options.discountAmount,
-                updateCartAsPending: true
-            },
-            success: function (results) {
-                if (typeof callback == 'function') callback();
-                return dispatch({
-                    type: ''
-                });
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log(textStatus, errorThrown);
-            }
-        });
-    };
 }
 
 module.exports = {
@@ -1025,5 +919,4 @@ module.exports = {
     deleteAddress: deleteAddress,
     updateIsSameBilingAndDelivery: updateIsSameBilingAndDelivery,
     clearAddAddressModal: clearAddAddressModal,
-    setCartToPending: setCartToPending,
 }

@@ -3,7 +3,7 @@ var React = require('react');
 var ReactRedux = require('react-redux');
 var DeliveryOption = require('../add-edit/delivery-option');
 
-var HeaderLayoutComponent = require('../../layouts/header').HeaderLayoutComponent;
+var HeaderLayoutComponent = require('../../layouts/header/index').HeaderLayoutComponent;
 var SidebarLayout = require('../../layouts/sidebar').SidebarLayoutComponent;
 var SellerHeaderLayoutComponent = require('../../merchant/layouts/header').HeaderLayoutComponent;
 var FooterLayout = require('../../../views/layouts/footer').FooterLayoutComponent;
@@ -11,9 +11,7 @@ var BaseClassComponent = require('../../shared/base.jsx');
 var shippingActions = require('../../../redux/shippingActions');
 
 var EnumCoreModule = require('../../../../src/public/js/enum-core.js');
-
-const PermissionTooltip = require('../../common/permission-tooltip');
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
+var CommonModule = require('../../../public/js/common.js');
 
 class DeliveryAddEditComponent extends BaseClassComponent {
 
@@ -35,32 +33,30 @@ class DeliveryAddEditComponent extends BaseClassComponent {
     doSave() {
         var self = this;
 
-        this.props.validatePermissionToPerformAction('add-merchant-delivery-option-api', () => {
-            var theShippingObject = self.childDeliveryOption.buildDeliveryOption();
+        var theShippingObject = self.childDeliveryOption.buildDeliveryOption();
 
-            if (theShippingObject == false) {
-                self.showMessage(EnumCoreModule.GetToastStr().Error.PLEASE_FILL_OUT_THE_REQUIRED_FIELD_TO_PROCEED);
-                return
-            }
-            else {
+        if (theShippingObject == false) {
+            self.showMessage(EnumCoreModule.GetToastStr().Error.PLEASE_FILL_OUT_THE_REQUIRED_FIELD_TO_PROCEED);
+            return
+        }
+        else {
 
-                if (!theShippingObject.HasDeliveryRate) {
-                    self.showMessage(EnumCoreModule.GetToastStr().Error.REQUIRED_DELIVERY_RATE_DETAILS);
-                    return;
-                }
+            if (!theShippingObject.HasDeliveryRate) {
+                self.showMessage(EnumCoreModule.GetToastStr().Error.REQUIRED_DELIVERY_RATE_DETAILS);
+                return;
             }
+        }
 
-            if (typeof theShippingObject.ID == 'undefined') {
-                self.props.createShippingOptions(self.props.user.ID, theShippingObject, function () {
-                    window.location.href = '/delivery/settings';
-                });
-            }
-            else {
-                self.props.updateShippingOptions(self.props.user.ID, theShippingObject, function () {
-                    window.location.href = '/delivery/settings';
-                });
-            }
-        });
+        if (typeof theShippingObject.ID == 'undefined') {
+            self.props.createShippingOptions(self.props.user.ID, theShippingObject, function () {
+                window.location.href = '/delivery/settings';
+            });
+        }
+        else {
+            self.props.updateShippingOptions(self.props.user.ID, theShippingObject, function () {
+                window.location.href = '/delivery/settings';
+            });
+        }
     }
 
     closeModal() {
@@ -101,21 +97,11 @@ class DeliveryAddEditComponent extends BaseClassComponent {
                                     </div>
                                     <div className="dsae-content">
                                         <span className="dsct-text">Shipping Option Settings</span>
-                                        <DeliveryOption
-                                            marketplaceInformation={this.props.marketplaceInformation}
-                                            user={this.props.user}
-                                            pagePermissions={this.props.pagePermissions}
-                                            validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                            customFieldDefinition={this.props.customFieldDefinition}
-                                            manageShippingOptions={this.state.manageShippingOptions}
-                                            customField={this.state.customFields}
-                                            ref={ref => (self.childDeliveryOption = ref)} />
+                                        <DeliveryOption marketplaceInformation={this.props.marketplaceInformation} user={this.props.user} customFieldDefinition={this.props.customFieldDefinition} manageShippingOptions={this.state.manageShippingOptions} customField={this.state.customFields} ref={ref => (self.childDeliveryOption = ref)} />
                                     </div>
                                     <div className="dsae-content-btn pull-right">
                                         <div className="btn-cancel"><a href="/delivery/settings">Cancel</a></div>
-                                        <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                                            <div className="btn-save" id="btnSaveDeliveryOption" onClick={(e) => self.doSave()}>Save</div>
-                                        </PermissionTooltip>
+                                        <div className="btn-save" id="btnSaveDeliveryOption" onClick={(e) => self.doSave()}>Save</div>
                                     </div>
                                 </div>
                             </div>
@@ -142,7 +128,6 @@ class DeliveryAddEditComponent extends BaseClassComponent {
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
-        pagePermissions: state.userReducer.pagePermissions,
         shippingOptionsMerchant: state.deliverySettingsReducer.shippingOptionsMerchant,
         shippingOptionsAdmin: state.deliverySettingsReducer.shippingOptionsAdmin,
         pickupLocations: state.deliverySettingsReducer.pickupLocations,
@@ -154,7 +139,6 @@ function mapStateToProps(state, ownProps) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
         deleteAddress: (userId, addressId) => dispatch(addressActions.deleteAddress(userId, addressId)),
         createAddress: (userId, body) => dispatch(addressActions.createAddress(userId, body)),
         deleteShippingMethod: (merchantID, shippingmethodID) => dispatch(shippingActions.deleteShippingOptions(merchantID, shippingmethodID)),

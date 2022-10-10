@@ -20,11 +20,6 @@ var ToastStrStaticModule = (function () {
                         header: 'Oops!',
                         body: 'Your token has been used or invalid. Please contact the site\'s administrator.'
                     },
-                    INVALID_LOGIN_SUB_ACCOUNT_DISABLED: {
-                        type: 'error',
-                        header: 'Oops!',
-                        body: 'Sub account login is disabled by admin.'
-                    },
                     REQUIRED_EMAIL_OR_USERNAME: {
                         type: 'error',
                         header: 'Oops! Something went wrong.',
@@ -71,11 +66,6 @@ var ToastStrStaticModule = (function () {
                         type: 'error',
                         header: 'Oops! Something went wrong.',
                         body: 'Item visibility has been disabled by marketplace administrator.'
-                    },
-                    ITEM_VISIBILITY_DISABLED_BY_ADMIN_OR_MERCHANT: {
-                        type: 'error',
-                        header: 'Oops! Something went wrong.',
-                        body: 'Item visibility has been disabled (by marketplace Administrator or Merchant).'
                     },
                     FAILED_ITEM_VISIBILITY_UPDATE: {
                         type: 'error',
@@ -161,16 +151,6 @@ var ToastStrStaticModule = (function () {
                         type: 'error',
                         header: 'Oops! Something went wrong.',
                         body: 'Unable to create order by cart items. Please try again or contact the administrator.'
-                    },
-                    INVALID_SERVICE_BOOKING: {
-                        type: 'error',
-                        header: 'Oops! Something went wrong.',
-                        body: 'Failed to book the selected session, please try again.'
-                    },
-                    INSUFFICIENT_STOCK: {
-                        type: 'error',
-                        header: 'Oops! Something went wrong.',
-                        body: 'The time period that you have selected has been completely booked out, please try choosing another.'
                     }
                 },
                 Success: {

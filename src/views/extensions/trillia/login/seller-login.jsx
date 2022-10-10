@@ -206,7 +206,7 @@ class SellerLoginComponent extends BaseComponent {
             }
 
         }
-    } 
+    }
 
     render() {
         const self = this;
@@ -221,7 +221,7 @@ class SellerLoginComponent extends BaseComponent {
                     <div className="login-box">
                         <div className="lb-head full-width head-seller">
                             <a href={hrefLink}>
-                                <img src="/assets/images/back.svg"></img>
+                                <img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"}></img>
                             </a>
                             <span>Login as a Seller</span></div>
                         <div className="lb-body full-width"><span className="b-gray">Sign In</span>

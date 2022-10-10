@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 const React = require('react');
 const reactDom = require('react-dom/server');
 const passport = require('passport');
@@ -16,36 +18,23 @@ const SubAccountListComponent = require('../views/sub-account/list/index').SubAc
 const SubAccountRegistrationComponent = require('../views/sub-account/registration/index').SubAccountRegistrationComponent;
 const EnumCoreModule = require('../public/js/enum-core');
 
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../scripts/shared/user-permissions');
-
-var handlers = [authenticated, authorizedUser, onboardedMerchant];
+var handlers = [authenticated, onboardedMerchant];
 
 function setApiToken(res, token, expiry) {
     var maxAge = expiry * 1000;
     res.cookie('webapitoken', token, { maxAge: maxAge, httpOnly: false });
 }
 
-const setListPagePermissionCode = (accessType) => {
-    return (req, res, next) => {
-        const pageType = res.locals.isMerchantRoute ? 'merchant' : 'consumer';
+subAccountRouter.get('/list', ...handlers, authorizedUser, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
-        res.locals.permissionCode = `${accessType}-${pageType}-sub-accounts-api`;
-
-        next();
-    };
-}
-
-subAccountRouter.get('/list', ...handlers, setListPagePermissionCode('view'), isAuthorizedToAccessViewPage({ renderSidebar: true }), function (req, res) {
     const user = req.user;
-    const isMerchantAccess = res.locals.isMerchantRoute;
-    const pageType = isMerchantAccess? 'Merchant' : 'Consumer';
 
     const promiseSubAccounts = new Promise((resolve, reject) => {
         const options = {
             userId: user.ID,
             pageSize: 20,
-            pageNumber: 1,
-            includes: 'AccountOwner'
+            pageNumber: 1
         };
 
         client.Users.getSubAccounts(options, function (err, result) {
@@ -55,27 +44,24 @@ subAccountRouter.get('/list', ...handlers, setListPagePermissionCode('view'), is
 
     Promise.all([promiseSubAccounts]).then((responses) => {
         const subAccounts = responses[0];
-        getUserPermissionsOnPage(user, 'Sub-Accounts', pageType, (pagePermissions) => {
-            const reduxState = store.createSubAccountStore({
-                userReducer: { 
-                    user: user,
-                    pagePermissions: pagePermissions
-                },
-                subAccountReducer: {
-                    subAccounts: subAccounts,
-                    isMerchantAccess: isMerchantAccess
-                }
-            }).getState();
 
-            const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-            const app = reactDom.renderToString(<SubAccountListComponent user={user} subAccounts={subAccounts} pagePermissions={pagePermissions} isMerchantAccess={isMerchantAccess} />);
+        const reduxState = store.createSubAccountStore({
+            userReducer: { user: user },
+            subAccountReducer: {
+                subAccounts: subAccounts
+            }
+        }).getState();
 
-            res.send(template('page-seller sub-account-list page-sidebar', seoTitle, app, 'sub-account-list', reduxState));
-        });
+        const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const app = reactDom.renderToString(<SubAccountListComponent user={user} subAccounts={subAccounts} />);
+
+        res.send(template('page-seller sub-account-list page-sidebar', seoTitle, app, 'sub-account-list', reduxState));
     });
 });
 
 subAccountRouter.get('/registration/:token', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const token = req.params['token'];
 
     let isSuccessRegister = null;
@@ -131,7 +117,7 @@ subAccountRouter.get('/registration/:token', function (req, res) {
     });
 });
 
-subAccountRouter.post('/send-invitations', ...handlers, setListPagePermissionCode('add'), isAuthorizedToPerformAction(), function (req, res) {
+subAccountRouter.post('/send-invitations', ...handlers, function (req, res) {
     const user = req.user;
     const registrationType = req.body['registrationType'];
 
@@ -177,7 +163,7 @@ subAccountRouter.post('/register', function (req, res, next) {
     })(req, res, next);
 });
 
-subAccountRouter.delete('/delete', ...handlers, setListPagePermissionCode('delete'), isAuthorizedToPerformAction(), function (req, res) {
+subAccountRouter.delete('/delete', ...handlers, function (req, res) {
     const user = req.user;
 
     const promiseDelete = new Promise((resolve, reject) => {
@@ -196,7 +182,9 @@ subAccountRouter.delete('/delete', ...handlers, setListPagePermissionCode('delet
     });
 });
 
-subAccountRouter.get('/search', ...handlers, setListPagePermissionCode('view'), isAuthorizedToPerformAction(), function (req, res) {
+subAccountRouter.get('/search', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const pageSize = req.query['pageSize'];
     const pageNumber = req.query['pageNumber'];
@@ -207,8 +195,7 @@ subAccountRouter.get('/search', ...handlers, setListPagePermissionCode('view'), 
             userId: user.ID,
             pageSize: pageSize,
             pageNumber: pageNumber,
-            keyword: keyword,
-            includes: 'AccountOwner'
+            keyword: keyword
         };
 
         client.Users.getSubAccounts(options, function (err, result) {
@@ -223,7 +210,7 @@ subAccountRouter.get('/search', ...handlers, setListPagePermissionCode('view'), 
     });
 });
 
-subAccountRouter.put('/add-role', ...handlers, setListPagePermissionCode('view'), isAuthorizedToPerformAction(), function (req, res) {
+subAccountRouter.put('/add-role', ...handlers, function (req, res) {
     const user = req.user;
 
     const promiseUserRole = new Promise((resolve, reject) => {
@@ -244,7 +231,7 @@ subAccountRouter.put('/add-role', ...handlers, setListPagePermissionCode('view')
     });
 });
 
-subAccountRouter.delete('/delete-role', ...handlers, setListPagePermissionCode('view'), isAuthorizedToPerformAction(), function (req, res) {
+subAccountRouter.delete('/delete-role', ...handlers, function (req, res) {
     const promiseUserRole = new Promise((resolve, reject) => {
         const options = {
             userId: req.body['userId'],

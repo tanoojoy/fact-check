@@ -2,6 +2,7 @@
 var React = require('react');
 var ReactRedux = require('react-redux');
 var BaseComponent = require('../../../../../shared/base');
+var CommonModule = require('../../../../../../public/js/common.js');
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -210,7 +211,6 @@ class PricingStockComponent extends BaseComponent {
 
     renderItemVariants() {
         const self = this;
-
         return (
             <React.Fragment>
                 {
@@ -223,7 +223,7 @@ class PricingStockComponent extends BaseComponent {
                                     <div>
                                         <a className="btn-varient-img model-btn image-placeholder" href="#" id={"btn-browse-" + itemVariant.id} data-toggle="modal" data-target="#modalImage" data-width={600} data-height={600}
                                             onClick={(e) => self.browseFile(itemVariant.id)}>
-                                            <img src={itemVariant.media ? itemVariant.media.MediaUrl : "/assets/images/image_add.svg"} alt="add" />
+                                            <img src={itemVariant.media ? itemVariant.media.MediaUrl : CommonModule.getAppPrefix() + "/assets/images/image_add.svg"} alt="add" />
                                         </a>
                                     </div>
                                     <div className="variant-img-bottom" style={{ display: 'block' }}>

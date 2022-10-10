@@ -166,4 +166,45 @@ Chat.prototype.updateChannelMessage = function (options, callback) {
     });
 };
 
+Chat.prototype.createConversationChannel = function (postData, callback) {
+    const self = this;
+    self._acquireAdminAccessToken(function () {
+        self._makeRequest({
+            method: 'POST',
+            path: '/api/v2/users/chat',
+            data: {
+                ChannelName: postData.channelName,
+                BuyerId: postData.buyerId,
+                SellerCompanyId: postData.sellerCompanyId
+            }
+        }, callback);
+    });
+};
+
+Chat.prototype.generateConversationToken = function (device, identity, callback) {
+    const self = this;
+    console.log('client generateConversationToken');
+    self._acquireAdminAccessToken(function () {
+        self._makeRequest({
+            method: 'GET',
+            path: `/api/v2/users/chat/generate-token/${device}/${identity}`
+        }, callback);
+    });
+};
+
+Chat.prototype.getMessageHistory = function (channelSid, callback) {
+    const self = this;
+    if (!channelSid) {
+        callback()
+    }
+    else {
+        self._acquireAdminAccessToken(function () {
+            self._makeRequest({
+                method: 'GET',
+                path: `/api/v2/users/chat/get-message-history/${channelSid}`
+            }, callback);
+        });
+    }    
+};
+
 module.exports = Chat;

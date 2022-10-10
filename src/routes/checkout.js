@@ -1,4 +1,6 @@
 ﻿'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 let express = require('express');
 let checkoutRouter = express.Router();
 let React = require('react');
@@ -22,16 +24,6 @@ let EnumCoreModule = require('../public/js/enum-core');
 let TwilioChat = require('twilio-chat');
 
 const { getApprovalSettings } = require('./approval');
-
-const { 
-    getUserPermissionsOnPage,
-    isAuthorizedToAccessViewPage,
-} = require('../scripts/shared/user-permissions');
-
-const viewCheckoutData = {
-    code: 'view-consumer-checkout-api',
-    seoTitle: 'Checkout Page'
-}
 
 function declineOffers(userId, declineComparisonDetails, callback) {
     const message = '<p><span class=\"offer-declined\">Offer has been declined!</span></p>';
@@ -294,7 +286,6 @@ function buildGenericPaymentRequest(invoiceDetails, paymentGateway, marketplaceN
                             fee: payment.Fee,
                             reference: invoiceDetails.InvoiceNo + '/' + order.ID,
                             invoiceNo: invoiceDetails.InvoiceNo,
-                            CosmeticNo: payment.CosmeticNo,
                             items: [],
                             gatewayAccount: null,
                             email: payment.Payee.Email
@@ -644,7 +635,6 @@ function getAdminShippingOptions() {
         });
     });
 }
-
 function getMerchantShippingOptions(ID) {
     return new Promise((resolve, reject) => {
         client.ShippingMethods.getShippingMethods(ID, function (err, shipping) {
@@ -692,6 +682,8 @@ function getOfferByCartItemID(userId, cartItemId) {
 }
 
 checkoutRouter.get('/review', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     let currentUser = req.user;
     let invoiceNo = req.query['invoiceNo'];
     const appString = 'checkout-review';
@@ -1132,7 +1124,7 @@ checkoutRouter.get('/review', authenticated, function (req, res) {
                         return null;
                     }
 
-                    // get unavailable delivery methods for each merchant 
+                    // get unavailable delivery methods for each merchant
                     const merchantUnavailableDeliveryOpts = new Map();
                     merchantList.map(merchant => {
                         const { CustomFields } = merchant;
@@ -1323,6 +1315,7 @@ checkoutRouter.get('/review', authenticated, function (req, res) {
 });
 
 checkoutRouter.get('/delivery', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
     let user = req.user;
     let invoiceNo = req.query['invoiceNo'];
@@ -1487,6 +1480,8 @@ checkoutRouter.post('/updateCheckoutSelectedDeliveryAddress', function (req, res
 });
 
 checkoutRouter.get('/transaction-complete', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const invoiceNo = req.query['invoiceNo'];
     const user = req.user;
     const appString = 'checkout-transaction-complete';
@@ -1529,7 +1524,9 @@ checkoutRouter.get('/transaction-complete', authenticated, function (req, res) {
     });
 });
 
-checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessViewPage(viewCheckoutData), function (req, res) {
+checkoutRouter.get('/one-page-checkout', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     let currentUser = req.user;
     if (process.env.CHECKOUT_FLOW_TYPE == 'b2c') {
         let invoiceNo = req.query['invoiceNo'];
@@ -1635,7 +1632,7 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                     }
                 });
 
-                // get unavailable delivery methods for each merchant 
+                // get unavailable delivery methods for each merchant
                 const merchantUnavailableDeliveryOpts = new Map();
                 merchantDetailList.map(merchant => {
                     const { CustomFields } = merchant;
@@ -1700,7 +1697,7 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                                                 });
                                                 splittedCountries = countryCodes.map(el => el.trim().toLowerCase());
                                             } else {
-                                                if (customFieldValue.Countries && customFieldValue.Countries.indexOf(';') >= 0) {
+                                                if (customFieldValue.Countries.indexOf(';') >= 0) {
                                                     splittedCountries = customFieldValue.Countries.split(';');
                                                 } else {
                                                     splittedCountries = customFieldValue.Countries.split(',');
@@ -1710,19 +1707,17 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                                         }
 
                                         let splittedUserCountry = [];
-                                        if (currentUserCountry && currentUserCountry.indexOf(',') >= 0) {
+                                        if (currentUserCountry.indexOf(',') >= 0) {
                                             splittedUserCountry = currentUserCountry.split(',');
                                             splittedUserCountry = splittedUserCountry.map(el => el.trim().toLowerCase());
                                         }
 
                                         if (currentUserCountry !== "" && customFieldValue.SelectedCountries) {
-                                            if (addresses && addresses.Records && addresses.Records.length > 0) {
-                                                currentUserCountry = addresses.Records[addresses.Records.length - 1].CountryCode;
-                                            }
+                                            currentUserCountry = addresses.Records[addresses.Records.length - 1].CountryCode;
                                         }
 
                                         let isAddShipping = false;
-                                        if (customFieldValue.IsAllCountries || (currentUserCountry && splittedCountries.indexOf(currentUserCountry.toLowerCase()) >= 0)) {
+                                        if (customFieldValue.IsAllCountries || splittedCountries.indexOf(currentUserCountry.toLowerCase()) >= 0) {
                                             isAddShipping = true;
                                         }
                                         else {
@@ -1733,8 +1728,6 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                                                 }
                                             }
                                         }
-                                        //ARC9585 first should not filter by Country here. since should be when selected in the one page checkout.
-                                        isAddShipping = true;
                                         const alreadyExists = matchedShipping.find(s => s.shippingMethod.ID === shippingMethod.ID);
                                         if (isAddShipping && !alreadyExists) {
                                             matchedShipping.push({
@@ -1777,57 +1770,13 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                                 if (total) {
                                     rates.map(rate => {
                                         const { MinimumRange, Onwards, MaximumRange } = rate;
-                                        //ARC9585                                        
-                                        if (parseFloat(MinimumRange) <= total && (Onwards === 'false' && parseFloat(MaximumRange) >= total)) {
+                                        if (parseFloat(MinimumRange) <= total && (Onwards == 'true' || parseFloat(MaximumRange) >= total)) {
                                             let shippingOptionModel = {
                                                 ShippingData: orderShipping.shippingMethod,
                                                 ShippingCost: rate.Cost,
                                                 IsPickup: false,
                                                 CurrencyCode: order.CurrencyCode
                                             };
-                                            var deliveryOpt = orderShipping.shippingMethod.CustomFields ? orderShipping.shippingMethod.CustomFields.find(x => x.Name === 'DeliveryOptions') : null;
-                                       
-                                            if (deliveryOpt) {
-                                                let values = JSON.parse(deliveryOpt.Values[0]);
-                                                if (values && values.SelectedCountries) {
-                                                    shippingOptionModel.ShouldShow = false;
-                                                    values.SelectedCountries.forEach(function (country) {
-                                                        
-                                                        if (addresses && addresses.Records && addresses.Records.length > 0) {
-                                                            if (country.Code === addresses.Records[0].CountryCode) {
-                                                                shippingOptionModel.ShouldShow = true;
-                                                            }
-                                                        }
-                                                    });
-                                                }
-                                            }
-
-                                            shippingOptionModels.push(shippingOptionModel);
-                                        } else if (parseFloat(MinimumRange) <= total && Onwards === 'true') {
-                                            let shippingOptionModel = {
-                                                ShippingData: orderShipping.shippingMethod,
-                                                ShippingCost: rate.Cost,
-                                                IsPickup: false,
-                                                CurrencyCode: order.CurrencyCode
-                                            };
-
-                                            var deliveryOpt = orderShipping.shippingMethod.CustomFields ? orderShipping.shippingMethod.CustomFields.find(x => x.Name === 'DeliveryOptions') : null;
-                                            
-                                            if (deliveryOpt) {
-                                                let values = JSON.parse(deliveryOpt.Values[0]);
-                                                if (values && values.SelectedCountries) {
-                                                    shippingOptionModel.ShouldShow = false;
-                                                    values.SelectedCountries.forEach(function (country) {
-                                                        
-                                                        if (addresses && addresses.Records && addresses.Records.length > 0) {
-                                                            if (country.Code === addresses.Records[0].CountryCode) {
-                                                                shippingOptionModel.ShouldShow = true;
-                                                            }
-                                                        }
-                                                    });
-                                                }
-                                            }
-
                                             shippingOptionModels.push(shippingOptionModel);
                                         }
                                     })
@@ -1957,67 +1906,56 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                     let orderSelectedDelivery = [];
                     let invalidCheckout = false;
 
-                    getUserPermissionsOnPage(currentUser, "Checkout", "consumer", (permissions) => {
-                        const s = Store.createOnePageCheckoutStore({
-                            userReducer: {
-                                user: currentUser,
-                                isGuest: isGuest, 
-                                permissions: permissions
-                            },
-                            settingsReducer: {
-                                addressIDToDelete: "",
-                                addresses: addresses.Records,
-                                billingAddresses: addresses.Records,
-                                addressModelAdd: addressModelAdd,
-                                addressModel: addressModel,
-                                invoiceDetails: invoiceDetails,
-                                shippingOptions: shippingOptions,
-                                comparisonId: comparisonId,
-                                pickupOptions: pickupOptions,
-                                orderSelectedDelivery: orderSelectedDelivery
-                            },
-                            checkoutReducer: {
-                                buyerAddress: buyerAddress,
-                                invoiceDetails: invoiceDetails,
-                                paymentMethods: paymentMethods,
-                                updateUser: false,
-                                allowCheckout: false,
-                                invalidCheckout: invalidCheckout,
-                                pendingOffer: pendingOffer,
-                                processing: false,
-                            },
-                            marketplaceReducer: {
-                                locationVariantGroupId: req.LocationVariantGroupId
-                            }
-                        });
-
-
-                        const reduxState = s.getState();
-                        const onePageCheckOut = reactDom.renderToString(<OnePageCheckoutComponent
-                            user={currentUser}
-                            buyerAddress={buyerAddress}
-                            invoiceDetails={invoiceDetails}
-                            paymentMethods={paymentMethods}
-                            addressModel={addressModel}
-                            shippingOptions={shippingOptions}
-                            pickupOptions={pickupOptions}
-                            addresses={addresses.Records}
-                            billingAddresses={addresses.Records}
-                            comparisonId={comparisonId}
-                            isGuest={isGuest}
-                            orderSelectedDelivery={orderSelectedDelivery}
-                            invalidCheckout={invalidCheckout}
-                            pendingOffer={pendingOffer}
-                            processing={false}
-                            locationVariantGroupId={req.LocationVariantGroupId}
-                            permissions={permissions} />);
-                        let seoTitle = 'Checkout Page';
-                        if (req.SeoTitle) {
-                            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-                        }
-                        res.send(template('page-delivery page-create-requisition', seoTitle, onePageCheckOut, appString, reduxState));
+                    const s = Store.createOnePageCheckoutStore({
+                        userReducer: {
+                            user: currentUser,
+                            isGuest: isGuest
+                        },
+                        settingsReducer: {
+                            addressIDToDelete: "",
+                            addresses: addresses.Records,
+                            billingAddresses: addresses.Records,
+                            addressModelAdd: addressModelAdd,
+                            addressModel: addressModel,
+                            invoiceDetails: invoiceDetails,
+                            shippingOptions: shippingOptions,
+                            comparisonId: comparisonId,
+                            pickupOptions: pickupOptions,
+                            orderSelectedDelivery: orderSelectedDelivery
+                        },
+                        checkoutReducer: {
+                            buyerAddress: buyerAddress,
+                            invoiceDetails: invoiceDetails,
+                            paymentMethods: paymentMethods,
+                            updateUser: false,
+                            allowCheckout: false,
+                            invalidCheckout: invalidCheckout,
+                            pendingOffer: pendingOffer
+                        },
                     });
-                    
+
+
+                    const reduxState = s.getState();
+                    const onePageCheckOut = reactDom.renderToString(<OnePageCheckoutComponent
+                        user={currentUser}
+                        buyerAddress={buyerAddress}
+                        invoiceDetails={invoiceDetails}
+                        paymentMethods={paymentMethods}
+                        addressModel={addressModel}
+                        shippingOptions={shippingOptions}
+                        pickupOptions={pickupOptions}
+                        addresses={addresses.Records}
+                        billingAddresses={addresses.Records}
+                        comparisonId={comparisonId}
+                        isGuest={isGuest}
+                        orderSelectedDelivery={orderSelectedDelivery}
+                        invalidCheckout={invalidCheckout}
+                        pendingOffer={pendingOffer} />);
+                    let seoTitle = 'Checkout Page';
+                    if (req.SeoTitle) {
+                        seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+                    }
+                    res.send(template('page-delivery page-create-requisition', seoTitle, onePageCheckOut, appString, reduxState));
                 });
             });
         });
@@ -2039,7 +1977,7 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
         Promise.all([promiseOrderDetails, promiseAddresses]).then(responses => {
             const order = responses[0];
             const addresses = responses[1];
-            
+
             if (order.RequisitionDetail) {
                 return res.redirect('/?error=requisition-already-exists');
             }
@@ -2048,7 +1986,7 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
             if (addresses && addresses.TotalRecords > 0) {
                 currentUserCountry = addresses.Records[addresses.TotalRecords - 1].Country;
             }
-            const merchantDetail = order.MerchantDetail;            
+            const merchantDetail = order.MerchantDetail;
             let cartIds = [];
             let itemIds = [];
             let orderItemDetailArr = [];
@@ -2064,21 +2002,14 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                 });
             }
             const promiseOffer = getOfferByCartItemID(currentUser.ID, cartIds[0]);
-            const promiseItems = Promise.all(itemIds.map(ID => getItemDetails(ID))).catch(() => {
-                
-            });
-            const promiseParentItems = Promise.all(parentItemIds.map(ID => getItemDetails(ID))).catch(() => {
-                
-            });
+            const promiseItems = Promise.all(itemIds.map(ID => getItemDetails(ID)));
+            const promiseParentItems = Promise.all(parentItemIds.map(ID => getItemDetails(ID)));
             const promiseShippingOptionsMerchant = getMerchantShippingOptions(merchantDetail.ID);
             const promiseShippingOptionsAdmin = getAdminShippingOptions();
             const promiseMerchantDetail = getUserDetails(merchantDetail.ID);
 
             Promise.all([promiseOffer, promiseItems, promiseParentItems, promiseShippingOptionsMerchant, promiseShippingOptionsAdmin, promiseMerchantDetail]).then(responses => {
                 const [offer, itemDetailsArr, parentItemsArr, merchantShippingOptions, adminShippingOptions, merchant] = responses;
-                if (!itemDetailsArr) {
-                    return res.redirect('/?error=quotation-not-pending');
-                }
                 const allShippingOptions = [adminShippingOptions, merchantShippingOptions];
                 const itemShippingMethodsMap = new Map();
                 const itemPickupAddressesMap = new Map();
@@ -2095,21 +2026,15 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                 // add data to a map of item's delivery and weight
                 itemIds.map(id => {
                     let itemDetail = orderItemDetailArr.find(itemDetail => itemDetail.ID === id);
-                    let parentItem = parentItemsArr ? parentItemsArr.find(parent => parent.ID === itemDetail.ParentID) : null;
+                    let parentItem = parentItemsArr.find(parent => parent.ID === itemDetail.ParentID);
                     let item = itemDetailsArr.find(item => id === item.ID);
                     // delivery options
                     if (parentItem) {
                         itemShippingMethodsMap.set(id, parentItem.ShippingMethods || []);
                         itemPickupAddressesMap.set(id, parentItem.PickupAddresses || []);
                     } else {
-                        const itemDetailShipping = itemDetail && itemDetail.ShippingMethods ? itemDetail.ShippingMethods : [];
-                        const itemShipping = item && item.ShippingMethods ? item.ShippingMethods : [];
-                        const shippingMethod = itemDetailShipping.length > 0 ? itemDetailShipping : itemShipping;
-                        itemShippingMethodsMap.set(id, shippingMethod);
-                        const itemDetailPickup = itemDetail && itemDetail.PickupAddresses ? itemDetail.PickupAddresses : [];
-                        const itemPickup = item && item.PickupAddresses ? item.PickupAddresses : [];
-                        const pickupMethods = itemDetailPickup.length > 0 ? itemDetailPickup : itemPickup;
-                        itemPickupAddressesMap.set(id, pickupMethods);
+                        itemShippingMethodsMap.set(id, itemDetail.ShippingMethods || item.ShippingMethods);
+                        itemPickupAddressesMap.set(id, itemDetail.PickupAddresses || item.PickupAddresses);
                     }
                     // item weight
                     let weightProperty = null;
@@ -2140,7 +2065,7 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
 
                 const { CustomFields } = merchant;
                 const unavailableDel = [];
-                // get unavailable delivery methods for each merchant 
+                // get unavailable delivery methods for each merchant
                 if (CustomFields && CustomFields.length > 0) {
                     let deliveryMethodAvailability = CustomFields.find(c => c.Name == 'DeliveryMethodAvailability');
                     if (deliveryMethodAvailability && deliveryMethodAvailability.Values && deliveryMethodAvailability.Values.length > 0) {
@@ -2157,7 +2082,7 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                 }
                 const shippingOptions = [];
                 const pickupOptions = [];
-                // filter shipping options assigned to each item                 
+                // filter shipping options assigned to each item
                 itemIds.map(itemId => {
                     const shippingList = itemShippingMethodsMap.get(itemId);
                     if (shippingList && shippingList.length > 0) {
@@ -2183,28 +2108,22 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                                             } else {
                                                 splittedCountries = customFieldValue.Countries.split(',');
                                             }
-                                            if (splittedCountries && splittedCountries.length > 0) {
-                                                splittedCountries = splittedCountries.map(el => el.trim().toLowerCase());
-                                            }                                            
+                                            splittedCountries = splittedCountries.map(el => el.trim().toLowerCase());
                                         }
                                     }
 
                                     let splittedUserCountry = [];
-                                    if (currentUserCountry && currentUserCountry.indexOf(',') >= 0) {
+                                    if (currentUserCountry.indexOf(',') >= 0) {
                                         splittedUserCountry = currentUserCountry.split(',');
-                                        if (splittedUserCountry && splittedUserCountry.length > 0) {
-                                            splittedUserCountry = splittedUserCountry.map(el => el.trim().toLowerCase());
-                                        }                                        
+                                        splittedUserCountry = splittedUserCountry.map(el => el.trim().toLowerCase());
                                     }
 
-                                    if (currentUserCountry && currentUserCountry !== "" && customFieldValue.SelectedCountries) {
-                                        if (addresses && addresses.Records && addresses.Records.length > 0) {
-                                            currentUserCountry = addresses.Records[addresses.Records.length - 1].CountryCode;
-                                        }
+                                    if (currentUserCountry !== "" && customFieldValue.SelectedCountries) {
+                                        currentUserCountry = addresses.Records[addresses.Records.length - 1].CountryCode;
                                     }
 
                                     let isAddShipping = false;
-                                    if (customFieldValue.IsAllCountries || (currentUserCountry && splittedCountries.indexOf(currentUserCountry.toLowerCase()) >= 0)) {
+                                    if (customFieldValue.IsAllCountries || splittedCountries.indexOf(currentUserCountry.toLowerCase()) >= 0) {
                                         isAddShipping = true;
                                     }
                                     else {
@@ -2215,10 +2134,6 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                                             }
                                         }
                                     }
-
-                                    //ARC9585 first should not filter by Country here. since should be when selected in the one page checkout.
-                                    isAddShipping = true;
-
                                     if (isAddShipping) {
                                         const calculationType = customFieldValue.CalculationType;
                                         const rates = customFieldValue.Rates;
@@ -2229,7 +2144,7 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                                         let totalWeight = 0;
                                         itemIds.map(id => totalWeight += itemWeightMap.get(id) || 0);
                                         const total = calculationType === 'weight'
-                                            ? (totalWeight > 0 ? totalWeight : 1) * totalQuantity
+                                            ? totalWeight * totalQuantity
                                             : order.Total;
                                         // check if shipping opt is valid based on order total and calculation type
                                         if (total) {
@@ -2241,31 +2156,6 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                                                         IsPickup: false,
                                                         CurrencyCode: order.CurrencyCode
                                                     };
-
-                                                    var deliveryOpt = shippingMethod.CustomFields ? shippingMethod.CustomFields.find(x => x.Name === 'DeliveryOptions') : null;
-                                                    if (deliveryOpt) {
-                                                        let values = JSON.parse(deliveryOpt.Values[0]);
-                                                        if (values && values.SelectedCountries) {
-                                                            shippingOptionModel.ShouldShow = false;
-                                                            values.SelectedCountries.forEach(function (country) {
-                                                                let isValidCalcType = true;
-                                                                if (parseFloat(rate.MinimumRange) < 1 && rate.Onwards == 'true') {
-                                                                    isValidCalcType = true;
-                                                                }
-                                                                else {
-                                                                    if (totalWeight < 1 && calculationType === 'weight') {
-                                                                        isValidCalcType = false;
-                                                                    }
-                                                                }                                                                
-                                                                if (addresses && addresses.Records && addresses.Records.length > 0 && isValidCalcType) {
-                                                                    if (country.Code === addresses.Records[0].CountryCode) {
-                                                                        shippingOptionModel.ShouldShow = true;
-                                                                    }
-                                                                }
-                                                            });
-                                                        }
-                                                    }
-
                                                     shippingOptions.push(shippingOptionModel);
                                                 }
                                             });
@@ -2276,9 +2166,9 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                         }
                     }
 
-                    const pickupAddresses = itemPickupAddressesMap.get(itemId);
-                    if (pickupAddresses && pickupAddresses.length > 0) {
-                        pickupAddresses.forEach(pickup => {
+                    const pickups = itemPickupAddressesMap.get(itemId);
+                    if (pickups && pickups.length > 0) {
+                        pickups.map(pickup => {
                             const alreadyExists = pickupOptions.find(o => o.Id === pickup.ID);
                             if (!alreadyExists) {
                                 pickupOptions.push({
@@ -2288,7 +2178,7 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                                     CurrencyCode: order.CurrencyCode
                                 });
                             }
-                        });                        
+                        });
                     }
                 });
 
@@ -2352,93 +2242,85 @@ checkoutRouter.get('/one-page-checkout', authenticated, isAuthorizedToAccessView
                 let orderSelectedDelivery = [];
                 let invalidCheckout = false;
                 let isGuest = false;
-                getUserPermissionsOnPage(currentUser, 'Checkout', 'Consumer', (pagePermissions) => {
-                    const storeContent = {
-                        userReducer: {
-                            user: currentUser,
-                            isGuest,
-                            pagePermissions
-                        },
-                        settingsReducer: {
-                            addressIDToDelete: "",
-                            addresses: addresses.Records,
-                            billingAddresses: addresses.Records,
-                            addressModelAdd: addressModelAdd,
-                            addressModel: addressModel,
-                            orderDetails: order,
-                            shippingOptions: shippingOptions,
-                            comparisonId: comparisonId,
-                            pickupOptions: pickupOptions,
-                            orderSelectedDelivery: orderSelectedDelivery
-                        },
-                        merchantReducer: { user: merchant },
-                        checkoutReducer: {
-                            buyerAddress: buyerAddress,
-                            orderDetails: order,
-                            updateUser: false,
-                            allowCheckout: false,
-                            invalidCheckout: false,
-                            showCreateRequisition: false,
-                            pendingOffer: pendingOffer
-                        },
-                        marketplaceReducer: {
-                            locationVariantGroupId: req.LocationVariantGroupId
-                        }
-                    };
-                    const props = {
+                const storeContent = {
+                    userReducer: {
                         user: currentUser,
-                        buyerAddress,
-                        orderDetails: order,
-                        addressModel,
-                        merchantDetail: merchant,
-                        shippingOptions,
-                        pickupOptions,
+                        isGuest
+                    },
+                    settingsReducer: {
+                        addressIDToDelete: "",
                         addresses: addresses.Records,
                         billingAddresses: addresses.Records,
-                        comparisonId,
-                        isGuest,
-                        orderSelectedDelivery,
-                        invalidCheckout,
+                        addressModelAdd: addressModelAdd,
+                        addressModel: addressModel,
+                        orderDetails: order,
+                        shippingOptions: shippingOptions,
+                        comparisonId: comparisonId,
+                        pickupOptions: pickupOptions,
+                        orderSelectedDelivery: orderSelectedDelivery
+                    },
+                    merchantReducer: { user: merchant },
+                    checkoutReducer: {
+                        buyerAddress: buyerAddress,
+                        orderDetails: order,
+                        updateUser: false,
+                        allowCheckout: false,
+                        invalidCheckout: false,
                         showCreateRequisition: false,
-                        pendingOffer: pendingOffer,
-                        locationVariantGroupId: req.LocationVariantGroupId,
-                        pagePermissions
-                    }
-                    let seoTitle = 'Checkout Page';
-                    if (req.SeoTitle) {
-                        seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-                    }
-                    const appString = 'one-page-checkout';
-                    const context = {};
-                    getApprovalSettings(currentUser.ID, function (settings) {
-                        if (settings.Enabled) {
-                            getApprovalWorkflowsAndDepartments(currentUser.ID, function (results) {
-                                const { workflows, departments } = results;
-                                storeContent.checkoutReducer.workflows = workflows;
-                                storeContent.checkoutReducer.departments = departments;
-                                storeContent.checkoutReducer.showCreateRequisition = true;
-                                props.showCreateRequisition = true;
-                                const s = Store.createOnePageCheckoutStore(storeContent);
-                                const reduxState = s.getState();
-                                const onePageCheckOut = reactDom.renderToString(<OnePageCheckoutComponent
-                                    {...props}
-                                    departments={departments}
-                                    workflows={workflows}
-                                />);
-
-                                let seoTitle = 'Checkout Page';
-                                if (req.SeoTitle) {
-                                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-                                }
-                                res.send(template('page-delivery page-create-requisition', seoTitle, onePageCheckOut, appString, reduxState));
-                            });
-                        } else {
+                        pendingOffer: pendingOffer
+                    },
+                };
+                const props = {
+                    user: currentUser,
+                    buyerAddress,
+                    orderDetails: order,
+                    addressModel,
+                    merchantDetail: merchant,
+                    shippingOptions,
+                    pickupOptions,
+                    addresses: addresses.Records,
+                    billingAddresses: addresses.Records,
+                    comparisonId,
+                    isGuest,
+                    orderSelectedDelivery,
+                    invalidCheckout,
+                    showCreateRequisition: false,
+                    pendingOffer: pendingOffer
+                }
+                let seoTitle = 'Checkout Page';
+                if (req.SeoTitle) {
+                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+                }
+                const appString = 'one-page-checkout';
+                const context = {};
+                getApprovalSettings(currentUser.ID, function (settings) {
+                    if (settings.Enabled) {
+                        getApprovalWorkflowsAndDepartments(currentUser.ID, function (results) {
+                            const { workflows, departments } = results;
+                            storeContent.checkoutReducer.workflows = workflows;
+                            storeContent.checkoutReducer.departments = departments;
+                            storeContent.checkoutReducer.showCreateRequisition = true;
+                            props.showCreateRequisition = true;
                             const s = Store.createOnePageCheckoutStore(storeContent);
                             const reduxState = s.getState();
-                            const onePageCheckOut = reactDom.renderToString(<OnePageCheckoutComponent  {...props} />);
+                            const onePageCheckOut = reactDom.renderToString(<OnePageCheckoutComponent
+                                {...props}
+                                departments={departments}
+                                workflows={workflows}
+                            />);
+
+                            let seoTitle = 'Checkout Page';
+                            if (req.SeoTitle) {
+                                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+                            }
                             res.send(template('page-delivery page-create-requisition', seoTitle, onePageCheckOut, appString, reduxState));
-                        }
-                    });
+                        });
+                    } else {
+                        const s = Store.createOnePageCheckoutStore(storeContent);
+                        const reduxState = s.getState();
+                        const onePageCheckOut = reactDom.renderToString(<OnePageCheckoutComponent  {...props} />);
+                        res.send(template('page-delivery page-create-requisition', seoTitle, onePageCheckOut, appString, reduxState));
+                    }
                 });
             });
         });
@@ -2771,52 +2653,26 @@ checkoutRouter.post('/proceedToPayment', authenticated, function (req, res) {
                 return res.send({ success: false, code: 'DISABLED_ITEM_OR_SELLER' });
             }
 
-            let toValidateSelectedDelivery = true;
-            const shippingOptions = JSON.parse(req.body.shippingOptions);
-            const pickupOptions = JSON.parse(req.body.pickupOptions);
-            // check if any order has no selected delivery or no cart items 
+            // check if any order has no selected delivery or no cart items
             Orders.map(order => {
-                let merchantShippingOptions;
-                let merchantPickupOptions;
-                if (process.env.PRICING_TYPE == 'service_level') {
-                    const merchantID = order.MerchantDetail.ID;
-                    if (shippingOptions && shippingOptions.length > 0) {
-                        merchantShippingOptions = shippingOptions.find(x => x.Merchant.ID === merchantID);
-                    }
-                    if (pickupOptions && pickupOptions.length > 0) {
-                        merchantPickupOptions = pickupOptions.find(x => x.Merchant.ID === merchantID);
-                    }
-                    const hasAvailablePickupOptions = merchantPickupOptions && merchantPickupOptions.pickupOptions && merchantPickupOptions.pickupOptions.length > 0;
-                    let hasAvailableShippingOptions = (merchantShippingOptions && merchantShippingOptions.shippingOptions && merchantShippingOptions.shippingOptions.length > 0) || false;
-                    if (hasAvailableShippingOptions) {
-                        hasAvailableShippingOptions = merchantShippingOptions.shippingOptions.filter(x => x.ShouldShow == true).length > 0;
-                    }
-                    if (!hasAvailableShippingOptions && !hasAvailablePickupOptions) {
-                        toValidateSelectedDelivery = false;
-                    }
-                }
-                if (toValidateSelectedDelivery) {
-                    if (orderSelectedDelivery) {
-                        let selectedDelivery = orderSelectedDelivery.get(order.ID);
-                        if (selectedDelivery && (selectedDelivery.ShippingCost || selectedDelivery.IsPickup)) {
-                            const { CartItemDetails } = order;
-                            if (!CartItemDetails || CartItemDetails.length === 0) hasError = true;
-                        } else hasError = true;
+                if (orderSelectedDelivery) {
+                    let selectedDelivery = orderSelectedDelivery.get(order.ID);
+                    if (selectedDelivery && (selectedDelivery.ShippingCost || selectedDelivery.IsPickup)) {
+                        const { CartItemDetails } = order;
+                        if (!CartItemDetails || CartItemDetails.length === 0) hasError = true;
                     } else hasError = true;
-                }
+                } else hasError = true;
             });
 
-    
             if (!hasError) {
                 const promiseUpdateCart = (cartItemId, deliverySelected) =>
                     new Promise((resolve, reject) => {
                         const options = {
                             userID: user.ID,
                             cartID: cartItemId,
-                            cartItemType: deliverySelected !== undefined? (deliverySelected && deliverySelected.IsPickup ? 'pickup' : 'delivery') : null,
-                            shippingMethodId: deliverySelected !== undefined ? (deliverySelected && deliverySelected.IsPickup ? null : deliverySelected.ShippingData.ID) : null,
-                            pickupAddressId: deliverySelected && deliverySelected.IsPickup ? deliverySelected.Id : null,
-                            notes: req.body.notes,
+                            cartItemType: deliverySelected.IsPickup ? 'pickup' : 'delivery',
+                            shippingMethodId: deliverySelected.IsPickup ? null : deliverySelected.ShippingData.ID,
+                            pickupAddressId: deliverySelected.IsPickup ? deliverySelected.Id : null
                         };
                         client.Carts.editCart(options, function (err, result) {
                             resolve(result);
@@ -2899,6 +2755,8 @@ checkoutRouter.post('/proceedToPayment', authenticated, function (req, res) {
 });
 
 checkoutRouter.get('/payment', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const invoiceNo = req.query['invoiceNo'];
 
@@ -3250,10 +3108,10 @@ checkoutRouter.post('/payment', authenticated, function (req, res) {
                     amount = parseInt(payee.total * 100);
                     fee = parseInt(payee.fee * 100);
                 }
-                //ARC10131
+
                 totalAmount += (amount + fee);
                 currencyCode = payee.currency;
-                invoiceNo = payee.CosmeticNo != null && payee.CosmeticNo != "" ? payee.CosmeticNo : payee.invoiceNo;
+                invoiceNo = payee.invoiceNo;
 
                 transferRequests.push({
                     amount: amount,
@@ -3454,6 +3312,8 @@ checkoutRouter.post('/payment', authenticated, function (req, res) {
 });
 
 checkoutRouter.get('/order-details', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const gateway = req.query['gateway'];
     const invoiceNo = req.query['invoiceNo'];
     const payKey = req.query['payKey'];
@@ -3553,6 +3413,8 @@ checkoutRouter.get('/order-details', function (req, res) {
 });
 
 checkoutRouter.get('/transaction-status', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const gateway = req.query['gateway'];
     const invoiceNo = req.query['invoiceNo'];
     const payKey = req.query['payKey'];
@@ -3579,13 +3441,17 @@ checkoutRouter.post('/transaction-status', function (req, res) {
     const payKey = req.body['payKey'];
     const hashKey = req.body['hashKey'];
     const status = req.body['status'];
+    console.log(`${invoiceNo} - ${status}`);
 
     updateCustomPaymentTransactionStatus(gateway, invoiceNo, payKey, hashKey, status, (result) => {
+        console.log(`${invoiceNo} - ${result}`);
         res.send(result);
     });
 });
 
 checkoutRouter.get('/current-status', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const invoiceNo = req.query['invoiceNo'];
 
     const promiseInvoiceDetails = new Promise((resolve, reject) => {
@@ -3660,7 +3526,7 @@ checkoutRouter.post('/generate-stripe-session-id', authenticated, function (req,
                             cancel_url: settings.cancelUrl,
                             payment_method_types: ['card'],
                             line_items: [{
-                                name: 'Invoice: ' + (payee.CosmeticNo != null && payee.CosmeticNo != "" ? payee.CosmeticNo : payee.invoiceNo),
+                                name: 'Invoice: ' + payee.invoiceNo,
                                 description: descriptions.join(', '),
                                 currency: payee.currency,
                                 amount: (amount + applicationFeeAmount),
@@ -3694,6 +3560,8 @@ checkoutRouter.post('/generate-stripe-session-id', authenticated, function (req,
 });
 
 checkoutRouter.get('/payment-gateway/success', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const gateway = req.query['gateway'];
     const invoiceNo = req.query['invoiceNo'];
     const sessionId = req.query['session_id'];
@@ -3902,10 +3770,11 @@ checkoutRouter.post('/create-requisition', authenticated, function (req, res) {
 });
 
 checkoutRouter.get('/requisition-created', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const requisitionId = req.query['id'];
     const requisitionOrderNo = req.query['orderNo'];
-    const cosmeticNo = req.query['cosmeticNo'];
 
     if (process.env.CHECKOUT_FLOW_TYPE != 'b2b')
         return res.redirect('/');
@@ -3914,8 +3783,7 @@ checkoutRouter.get('/requisition-created', authenticated, function (req, res) {
 
     const requisitionDetail = {
         ID: requisitionId,
-        RequisitionOrderNo: requisitionOrderNo,
-        CosmeticNo: cosmeticNo
+        RequisitionOrderNo: requisitionOrderNo
     };
 
     const reduxState = Store.createRequisitionStore({

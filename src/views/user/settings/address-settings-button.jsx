@@ -1,9 +1,7 @@
 'use strict';
 const React = require('react');
-var BaseClassComponent = require('../../shared/base.jsx');
-const PermissionTooltip = require('../../common/permission-tooltip');
 
-class AddressSettingsButton extends BaseClassComponent {
+class AddressSettingsButton extends React.Component {
 
     redirectTo() {
         if (this.isMerchant() === false) {
@@ -22,18 +20,10 @@ class AddressSettingsButton extends BaseClassComponent {
     }
 
     render() {
-        var self = this;
         return (
             <div className="settings-button">
                 <div className="btn-previous pull-left" onClick={(e) => { $('.nav-pills a:first').tab('show'); }}>Previous</div>
-                <div className="pull-right">
-                    <PermissionTooltip isAuthorized={self.props.addressPermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                        <div className="btn-save pull-right" onClick={(e) => this.redirectTo()}>
-                            {this.isMerchant() ? 'Next' : 'Save'}
-                        </div>
-                    </PermissionTooltip>
-
-                </div>
+                <div className="btn-save pull-right" onClick={(e) => this.redirectTo()}>{this.isMerchant() ? 'Next' : 'Save'}</div>
             </div>
         )
     }

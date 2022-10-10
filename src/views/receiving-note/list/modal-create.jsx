@@ -5,6 +5,11 @@ const BaseComponent = require('../../shared/base');
 
 class ModalCreateComponent extends BaseComponent {
     componentDidMount() {
+        $(".createReceipt").on("click", function () {
+            $('.po-exist').hide();
+            $("#modalHavePO").modal("show");
+        });
+
         //$("#filterApplyIcon").on("click", function () {
         //    $("#modalHavePO").modal("show");
         //});
@@ -63,8 +68,8 @@ class ModalCreateComponent extends BaseComponent {
             var $input = $control.find('.form-control:eq(0)');
             var default_val = $input.attr('data-default');
             var checked = $control.find('.x-check:not(.parent-check) input[type=checkbox]:checked').length;
-            $(".advanced-select .x-check input[type=checkbox]:checked").prop("checked", false);
-            $(this).prop("checked", true);
+            $(".advanced-select .x-check input[type=checkbox]:checked").attr("checked", false);
+            $(this).attr("checked", true);
             if (checked) {
                 $input.val($control.find('.x-check input[type=checkbox]:checked + label').text());
                 $control.addClass('choosen');
@@ -107,19 +112,12 @@ class ModalCreateComponent extends BaseComponent {
 
     createReceipt() {
         const orderNo = $('#metric_affected').val().trim();
-        //ARC10131
+
         if (orderNo) {
             const order = this.props.orders.find(o => o.PurchaseOrderNo == orderNo);
 
             if (order) {
                 return window.location = '/receiving-note/create?id=' + order.ID;
-            } else {
-                let po = this.props.orders.find(o => o.CosmeticNo == orderNo);
-
-                if (po)
-                    return window.location = '/receiving-note/create?id=' + po.ID;
-                else
-                    $('.po-exist').show();
             }
         }
 
@@ -144,7 +142,7 @@ class ModalCreateComponent extends BaseComponent {
                                             {
                                                 this.props.orders.map((order, index) => {
                                                     return (
-                                                        <li key={index}><a className="x-check" href="#"><input type="checkbox" name={order.PurchaseOrderNo} id={'po_' + index} /><label htmlFor={'po_' + index}> {order.CosmeticNo != null && order.CosmeticNo != "" ? order.CosmeticNo : order.PurchaseOrderNo}</label></a></li>   
+                                                        <li key={index}><a className="x-check" href="#"><input type="checkbox" name={order.PurchaseOrderNo} id={'po_' + index} /><label htmlFor={'po_' + index}> {order.PurchaseOrderNo}</label></a></li>   
                                                     )
                                                 })
                                             }

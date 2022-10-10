@@ -2,30 +2,56 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 const BaseComponent = require('../../shared/base');
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
-const SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 const DetailComponent = require('../quotation-detail/detail');
 const PriceComponent = require('../quotation-detail/price');
 const ModalComponent = require('../quotation-detail/modal');
 const QuotationActions = require('../../../redux/quotationActions');
-const CartActions = require('../../../redux/cartActions');
+const chatActions = require('../../../redux/chatActions');
+const itemDetailsActions = require('../../../redux/itemDetailsActions');
 const EnumCoreModule = require('../../../public/js/enum-core');
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
+const CommonModule = require('../../../public/js/common');
+
+import { HeaderLayoutComponent as HeaderLayout } from '../../layouts/header/index';
+import UpgradeToPremiumTopBanner from '../../common/upgrade-to-premium-top-banner';
+import { FooterLayoutComponent } from '../../layouts/footer';
+import BreadcrumbsComponent from '../../common/breadcrumbs';
+import SearchPanel from '../../common/search-panel/index';
+import { chatConstants } from '../../../consts/chat-constants';
+import { typeOfSearchBlock } from '../../../consts/search-categories';
+import { FREEMIUM_LIMITATION_POSITION } from '../../chat/limitation';
+import { userRoles } from '../../../consts/horizon-user-roles';
+import { rfqStatuses } from '../../../consts/rfq-quote-statuses';
+
+import { sendInviteColleaguesEmail, getUpgradeToPremiumPaymentLink } from '../../../redux/userActions';
+
+import { 
+    gotoSearchResultsPage,
+    setSearchCategory,
+    setSearchString,
+} from '../../../redux/searchActions';
+
+import moment from 'moment';
+
+if (typeof window !== 'undefined') {
+    var $ = window.$;
+}
 
 class QuotationDetailComponent extends BaseComponent {
     constructor(props) {
         super(props);
 
         this.state = {
-            isProcessing: false,
-            modalProcess: 'CANCEL QUOTATION'
+            clarivateUserId: '',
+            issueDate: '',
+            rfqId: 0,
+            shelfLife: '',
+            validDate: '',
+            comment: '',
+            price: 0,
+            hasAccomplishedRequiredFields: false
         };
 
-        this.openRemoveModal = this.openRemoveModal.bind(this);
-        this.cancelQuotation = this.cancelQuotation.bind(this);
-        this.declineQuotation = this.declineQuotation.bind(this);
-        this.generateInvoiceByCartItem = this.generateInvoiceByCartItem.bind(this);
-        this.generateOrderByCartItem = this.generateOrderByCartItem.bind(this);
+        this.trails = [{ name: 'Home', redirectUrl: '/' }, { name: 'Chat', redirectUrl: '/chat/inbox/requests-quotes' }, { name: 'Quote', redirectUrl: '' }]; //{name: Company.name, redirectUrl: `company/${Company.id}`}, {name: itemDetail.Name, redirectUrl: `/product-profile/profile/${Company.id}/${itemDetail.ID}`}];
     }
 
     cancelQuotation() {
@@ -42,14 +68,13 @@ class QuotationDetailComponent extends BaseComponent {
 
         this.props.cancelQuotation((errorMessage) => {
             if (!errorMessage) {
-                $(".btn-loader-cancel").removeClass("btn-loading");
-                return window.location = '/chat?channelId=' + quotation.ChannelID;
+                return window.location = `${CommonModule.getAppPrefix()}/chat?channelId=${quotation.ChannelID}`;
             }
 
             self.setState({
                 isProcessing: false
             });
-            $(".btn-loader-cancel").removeClass("btn-loading");
+
             $('#modalRemove').modal('hide');
             self.showMessage(EnumCoreModule.GetToastStr().Error.CANCEL_QUOTATION_FAILED);
         });
@@ -57,7 +82,7 @@ class QuotationDetailComponent extends BaseComponent {
 
     getCurrencyCode() {
         const { quotation } = this.props;
-        return quotation.CartItemDetail ? quotation.CartItemDetail.CurrencyCode : null;
+        return quotation.CartItemDetail ? quotation.CartItemDetail.CurrencyCode: null;
     }
 
     getItemImageUrl() {
@@ -110,20 +135,13 @@ class QuotationDetailComponent extends BaseComponent {
 
         this.props.declineQuotation((errorMessage) => {
             if (!errorMessage) {
-             //   if (process.env.CHECKOUT_FLOW_TYPE === 'b2b') {
-                    $(".btn-loader-cancel").removeClass("btn-loading");
-             //   }
-                return window.location = '/chat?channelId=' + quotation.ChannelID;
+                return window.location = `${CommonModule.getAppPrefix()}/chat?channelId=${quotation.ChannelID}`;
             }
 
             self.setState({
                 isProcessing: false,
                 modalProcess: 'CANCEL QUOTATION'
             });
-
-          //  if (process.env.CHECKOUT_FLOW_TYPE === 'b2b') {
-                $(".btn-loader-cancel").removeClass("btn-loading");
-         //   }
 
             $('#modalRemove').modal('hide');
             self.showMessage(EnumCoreModule.GetToastStr().Error.DECLINE_QUOTATION_FAILED);
@@ -139,21 +157,17 @@ class QuotationDetailComponent extends BaseComponent {
         this.setState({
             isProcessing: true
         });
-        if (!this.props.isAuthorizedToEdit) return;
-        this.props.validatePermissionToPerformAction("edit-consumer-quotation-details-api", () => {
 
-            self.props.generateInvoiceByCartItem([quotation.CartItemDetail.ID], (invoiceNo) => {
+        this.props.generateInvoiceByCartItem([quotation.CartItemDetail.ID], (invoiceNo) => {
+            if (invoiceNo) {
+                return window.location = "/checkout/one-page-checkout?invoiceNo=" + invoiceNo;
+            }
 
-                if (invoiceNo) {
-                    return window.location = "/checkout/one-page-checkout?invoiceNo=" + invoiceNo;
-                }
-
-                self.setState({
-                    isProcessing: false
-                });
-                $(".btn-loader").removeClass('btn-loading');
-                self.showMessage(EnumCoreModule.GetToastStr().Error.CREATE_INVOICE_FAILED);
+            self.setState({
+                isProcessing: false
             });
+
+            self.showMessage(EnumCoreModule.GetToastStr().Error.CREATE_INVOICE_FAILED);
         });
     }
 
@@ -166,193 +180,209 @@ class QuotationDetailComponent extends BaseComponent {
         this.setState({
             isProcessing: true
         });
-        if (!this.props.isAuthorizedToEdit) return;
-        this.props.validatePermissionToPerformAction("edit-consumer-quotation-details-api", () => {
-            self.props.getItemDetails(quotation.CartItemDetail.ItemDetail.ID, (result) => {
-                if (result) {
-                    self.props.generateOrderByCartItem([quotation.CartItemDetail.ID], (orderId) => {
-                        if (orderId) {
-                            return window.location = "/checkout/one-page-checkout?orderId=" + orderId;
-                        }
 
-                        self.setState({
-                            isProcessing: false
-                        });
-                        $(".btn-loader").removeClass('btn-loading');
-                        self.showMessage(EnumCoreModule.GetToastStr().Error.CREATE_ORDER_FAILED);
-                        self.setState({
-                            isProcessing: false
-                        });
-                    });
-                }
-                else {
-                    self.showMessage(EnumCoreModule.GetToastStr().Error.CREATE_ORDER_FAILED);
-                    self.setState({
-                        isProcessing: false
-                    });
-                }
+        this.props.generateOrderByCartItem([quotation.CartItemDetail.ID], (orderId) => {
+            if (orderId) {
+                return window.location = "/checkout/one-page-checkout?orderId=" + orderId;
+            }
+
+            self.setState({
+                isProcessing: false
+            });
+
+            self.showMessage(EnumCoreModule.GetToastStr().Error.CREATE_ORDER_FAILED);
+        });
+    }
+
+    openRemoveModal(modalProcess) {
+        this.setState({
+            modalProcess: modalProcess
+        }, () => {
+            $('#modalRemove').modal('show');
+        });
+    }
+
+    onChange = (e) => {
+        const newValue = e.target.value;
+        if (e.target.name === 'price') {
+            const { validDate } = this.state;
+            this.setState({ hasAccomplishedRequiredFields: (newValue && parseFloat(newValue) > 0) && (validDate && validDate.length > 0) });
+        }
+        this.setState({[e.target.name]: newValue});
+    }
+
+    onSubmitQuotation = (e) => {
+        const {clarivateUserId, rfqId, shelfLife, validDate, comment , price, hasAccomplishedRequiredFields} = this.state;
+        const { rfqDetails, user } = this.props;
+
+        if (!hasAccomplishedRequiredFields) {
+            return;
+        }
+        
+        let newQuote = {
+            rfqId: rfqDetails.id,
+            price: price,
+            shelfLife: shelfLife,
+            validDate: validDate,
+            issueDate: rfqDetails.createdAt,
+            comment: comment,
+            clarivateUserId: user.userInfo.userid
+        };
+
+        this.props.createQuotation(newQuote, (chatUrl) => {
+            const chatIdSplit = rfqDetails.chatId.split('|');
+            const channelName = chatIdSplit[0];
+            const sid = chatIdSplit[1];
+            const userId = rfqDetails.sellerId;
+            this.props.generateConversationToken('browser', userId, (convData) => {
+                this.props.sendSystemMessage(channelName, sid, convData, chatConstants.systemName, chatConstants.QuoteReceivedMsg, () => {
+                    window.location.href = chatUrl;
+                });
+            });            
+        });;
+    }
+
+    onRespondRfq = (e) => {
+        const { rfqDetails, user } = this.props;
+        const updateRfq = {
+            status: rfqStatuses.submitted,
+            chatId: rfqDetails.chatId,
+            sellerId: user.userInfo.userid
+        };
+        
+        this.props.updateRFQ(rfqDetails.id, updateRfq, (chatUrl) => {
+            const chatIdSplit = rfqDetails.chatId.split('|');
+            const channelName = chatIdSplit[0];
+            const sid = chatIdSplit[1];
+            const userId = rfqDetails.sellerId;
+            this.props.generateConversationToken('browser', userId, (convData) => {
+                this.props.sendSystemMessage(channelName, sid, convData, chatConstants.systemName, chatConstants.LicensingInquiryReceivedMsg, () => {
+                    window.location.href = chatUrl;
+                });
             });
         });
     }
 
-    isSpaceTimeApiTemplate() {
-        const { quotation } = this.props;
-        var self = this;
-        return typeof quotation.CartItemDetail.BookingSlot != 'undefined' && quotation.CartItemDetail.BookingSlot != null;
-    }
-
-
-    getAddons() {
-        const { quotation } = this.props;
-        var self = this;
-        var addOns = 0;
-
-        if (self.isSpaceTimeApiTemplate()) {
-            var cartItemDetail = quotation.CartItemDetail;
-
-            var self = this;
-            if (cartItemDetail.AddOns) {
-                var addons = cartItemDetail.AddOns;
-
-                addons.forEach(function (e) {
-                    addOns += e.PriceChange;
-                })
-            }
-        }
-
-        return addOns;
-    }
-
-    openRemoveModal(modalProcess) {
-        if (!this.props.isAuthorizedToEdit) return;
-        const self = this;
-        const type = modalProcess == "DECLINE QUOTATION" ? "consumer" : "merchant"
-        this.props.validatePermissionToPerformAction(`edit-${type}-quotation-details-api`, () => {
-            self.setState({
-                modalProcess: modalProcess
-            }, () => {
-                $('#modalRemove').modal('show');
+    onCancelRfq = (e) => {
+        const { rfqDetails, user } = this.props;
+        const updateRfq = {
+            status: 'declined',
+            chatId: rfqDetails.chatId,
+            sellerId: user.userInfo.userid
+        };
+        
+        this.props.updateRFQ(rfqDetails.id, updateRfq, (chatUrl) => {
+            const chatIdSplit = rfqDetails.chatId.split('|');
+            const channelName = chatIdSplit[0];
+            const sid = chatIdSplit[1];
+            const userId = rfqDetails.sellerId;
+            this.props.generateConversationToken('browser', userId, (convData) => {
+                this.props.sendSystemMessage(channelName, sid, convData, chatConstants.systemName, chatConstants.RFQDeclinedMsg, () => {
+                    window.location.href = chatUrl;
+                });
             });
         });
     }
 
     componentDidMount() {
+        const self = this;
+        $(document).ready(function () {
+            $('#datepicker').datetimepicker({
+                format: 'DD/MM/YYYY'
+            });
+
+            $('#datepicker').on('dp.change', function(e) { 
+                const { name, value } = e.currentTarget;
+                if (name) {
+                    const d = value ? moment(value, 'DD/MM/YYYY').toISOString() : '';
+                    self.setState({[name]: d});
+                    if (name === 'validDate') {
+                        const { price } = self.state;
+                        self.setState({ hasAccomplishedRequiredFields: (price && parseFloat(price) > 0) && (d && d.length > 0) });
+                    }
+                }                
+            });
+        });
     }
 
     render() {
-        const { quotation } = this.props;
-        const extraPath = this.props.isMerchantAccess ? '/merchants' : '';
+        const { rfqDetails, quotationDetail } = this.props;
+        const { shelfLife, validDate, comment, price, hasAccomplishedRequiredFields } = this.state;
+        const { company } = rfqDetails;        
 
         return (
             <React.Fragment>
-                <div className="header mod" id="header-section">
-                    <HeaderLayoutComponent categories={null} user={this.props.user} />
+                <UpgradeToPremiumTopBanner 
+                    user={this.props.user}
+                    getUpgradeToPremiumPaymentLink={this.props.getUpgradeToPremiumPaymentLink}
+                /> 
+                <div className='header mod' id='header-section'>
+                    <HeaderLayout user={this.props.user} setSearchCategory={this.props.setSearchCategory} sendInviteColleaguesEmail={this.props.sendInviteColleaguesEmail} />
                 </div>
-                <aside className="sidebar" id="sidebar-section">
-                    <SidebarLayout user={this.props.user} />
-                </aside>
-                <div className="main-content">
-                    <div className="main less_content" style={{ paddingTop: '46px' }}>
-                        <div className="orderlist-container">
-                            <div className="container-fluid">
-                                <div className="sc-upper">
-                                    <div className="sc-u title-sc-u sc-u-mid full-width">
-                                        <div className="nav-breadcrumb">
-                                            <i className="fa fa-angle-left" /> <a href={`${extraPath}/quotation/list`}>Back</a>
-                                        </div>
-                                        <span className="sc-text-big">Quote Number : {quotation.CosmeticNo != null && quotation.CosmeticNo != "" ? quotation.CosmeticNo : quotation.QuoteNo}</span>
-                                    </div>
-                                    <div className="sc-tops">
-                                    </div>
-                                </div>
-                                <div className="quote-detail-table buyer-quotation-detail">
-                                    <table className="table quote-data table-items">
-                                        <tbody>
-                                            <tr>
-                                                <td data-th="Action">
-                                                    Issue date
-                                                    <span>{this.formatDate(quotation.CreatedDateTime)}</span>
-                                                </td>
-                                                <td data-th="Action">
-                                                    Valid date
-                                                    <span>{this.formatDate(quotation.ValidStartDate)} - {this.formatDate(quotation.ValidEndDate)}</span>
-                                                </td>
-                                                <td data-th="Action">
-                                                    Supplier
-                                                    <span>{quotation.FromUserName}</span>
-                                                </td>
-                                                <td data-th="Action">
-                                                    Buyer
-                                                    <span>{quotation.ToUserName}</span>
-                                                </td>
-                                                <td data-th="Action">
-                                                    Payment Terms
-                                                    <span>{quotation.PaymentTerm ? quotation.PaymentTerm.Name : null}</span>
-                                                </td>
-                                                <td data-th="Action">
-                                                    Quotation Status
-                                                    <span>{this.getQuotationStatus()}</span>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="subaccount-data-table">
-                                    <div className="row">
-                                        <DetailComponent
-                                            isSpaceTimeApiTemplate={this.isSpaceTimeApiTemplate()}
-                                            addOnsAmount={this.getAddons()}
-                                            details={quotation.OfferDetails}
-                                            cartItemDetail={quotation.CartItemDetail}
-                                            currencyCode={this.getCurrencyCode()}
-                                            itemImageUrl={this.getItemImageUrl()} />
-                                        <PriceComponent
-                                            addOnsAmount = {this.getAddons()}
-                                            cartItemDetail={quotation.CartItemDetail}
-                                            details={quotation.OfferDetails}
-                                            currencyCode={this.getCurrencyCode()}
-                                            isMerchant={this.isLoggedUserMerchant()}
-                                            status={this.getQuotationStatus()}
-                                            generateInvoiceByCartItem={this.generateInvoiceByCartItem}
-                                            generateOrderByCartItem={this.generateOrderByCartItem}
-                                            openRemoveModal={this.openRemoveModal}
-                                            buyerdocs={this.props.buyerdocs}
-                                            isAuthorizedToEdit={this.props.isAuthorizedToEdit}
-                                            validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                        />
-                                        <div className="clearfix" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div className="main" style={{paddingTop: '95px'}}>       
+                    <BreadcrumbsComponent 
+                        trails={this.trails}
+                    />
+                    <SearchPanel
+                        hideLimitationToRoles={[userRoles.subBuyer]}
+                        user={this.props.user}
+                        position={FREEMIUM_LIMITATION_POSITION.quote}
+                        type={typeOfSearchBlock.HEADER}
+                        searchCategory={this.props.searchCategory}
+                        searchResults={this.props.searchResults}
+                        searchString={this.props.searchString}
+                        setSearchCategory={this.props.setSearchCategory}
+                        gotoSearchResultsPage={this.props.gotoSearchResultsPage}
+                        setSearchString={this.props.setSearchString}
+                    />
+                    <DetailComponent
+                        user={this.props.user}
+                        shelfLife={shelfLife}
+                        validDate={validDate}
+                        comment={comment}
+                        price={price}
+                        rfqDetails={rfqDetails}
+                        company={company}
+                        onChange={this.onChange}
+                        quotationDetail={quotationDetail}
+                        onSubmitQuotation={this.onSubmitQuotation}
+                        onCancelRfq={this.onCancelRfq}
+                        onRespondRfq={this.onRespondRfq}
+                        hasAccomplishedRequiredFields={hasAccomplishedRequiredFields}
+                        getUpgradeToPremiumPaymentLink={this.props.getUpgradeToPremiumPaymentLink}
+                    />
                 </div>
-                <ModalComponent modalProcess={this.state.modalProcess}
-                    cancelQuotation={this.cancelQuotation}
-                    declineQuotation={this.declineQuotation} />
+
+                <div className="footer grey">
+                    <FooterLayoutComponent user={this.props.user} />
+                </div>
             </React.Fragment>
-        );
+        )
     }
 }
 
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
-        quotation: state.quotationReducer.quotationDetail,
-        buyerdocs: state.quotationReducer.buyerdocs,
-        isAuthorizedToEdit: state.userReducer.pagePermissions.isAuthorizedToEdit,
-        isMerchantAccess: state.userReducer.isMerchantAccess
+        rfqDetails: state.quotationReducer.rfqDetails,
+        quotationDetail: state.quotationReducer.quotationDetail,
+        searchResults: state.searchReducer.searchResults,
+        searchString: state.searchReducer.searchString,
+        searchCategory: state.searchReducer.searchCategory,
     };
 }
 
 function mapDispatchToProps(dispatch) {
     return {
-        cancelQuotation: (callback) => dispatch(QuotationActions.cancelQuotation(callback)),
-        declineQuotation: (callback) => dispatch(QuotationActions.declineQuotation(callback)),
-        generateInvoiceByCartItem: (cartItemIds, callback) => dispatch(QuotationActions.generateInvoiceByCartItem(cartItemIds, callback)),
-        generateOrderByCartItem: (cartItemIds, callback) => dispatch(QuotationActions.generateOrderByCartItem(cartItemIds, callback)),
-        getItemDetails: (itemId, callback) => dispatch(CartActions.getItemDetails(itemId, callback)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
+        createQuotation: (quote, callback) => dispatch(QuotationActions.createQuotation(quote, callback)),
+        updateRFQ: (rfqId, rfq, callback) => dispatch(itemDetailsActions.updateRFQ(rfqId, rfq, callback)),
+        generateConversationToken: (device, userid, callback) => dispatch(chatActions.generateConversationToken(device, userid, callback)),
+        sendSystemMessage: (channelId, userId, conversationData, senderName, message, callback) => dispatch(chatActions.sendSystemMessage(channelId, userId, conversationData, senderName, message, callback)),
+        sendInviteColleaguesEmail: (data, callback) => dispatch(sendInviteColleaguesEmail(data, callback)),
+        setSearchString: (searchString, searchBy, productType, stringCountToTriggerSearch = 3) => dispatch(setSearchString(searchString, searchBy, productType, stringCountToTriggerSearch)),
+        setSearchCategory: (category) => dispatch(setSearchCategory(category)),
+        gotoSearchResultsPage: (searchString, searchBy, ids) => dispatch(gotoSearchResultsPage(searchString, searchBy, ids)),
+        getUpgradeToPremiumPaymentLink: (callback) => dispatch(getUpgradeToPremiumPaymentLink(callback)),
     };
 }
 

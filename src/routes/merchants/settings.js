@@ -1,4 +1,6 @@
 ﻿'use strict';
+import { redirectUnauthorizedUser } from '../../utils';
+
 var React = require('react');
 var reactDom = require('react-dom/server');
 var template = require('../../views/layouts/template');
@@ -15,13 +17,6 @@ var authorizedMerchant = require('../../scripts/shared/authorized-merchant');
 var client = require('../../../sdk/client');
 
 var handlers = [authenticated, authorizedMerchant];
-
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../../scripts/shared/user-permissions');
-
-const viewSettingsPage = {
-    code: 'view-merchant-profile-api',
-    renderSidebar: false
-};
 
 function getHostname(req) {
     var fullUrl = req.protocol + '://' + req.get('host');
@@ -47,15 +42,16 @@ function buildExternalLoginUrl(hostname, provider, clientId = '', token = '', re
     return url;
 }
 
-merchantRouter.get('/', ...handlers, isAuthorizedToAccessViewPage(viewSettingsPage), function (req, res) {
+merchantRouter.get('/', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const error = req.query.error;
     const host = getHostname(req);
 
     var promiseUserDetails = new Promise((resolve, reject) => {
         let options = {
             userId: req.user.ID,
-            includes: 'UserLogins,Addresses',
-            includeUserCustomFields: true
+            includes: 'UserLogins,Addresses'
         };
         client.Users.getUserDetails(options, function (err, userDetails) {
             resolve(userDetails)
@@ -101,70 +97,36 @@ merchantRouter.get('/', ...handlers, isAuthorizedToAccessViewPage(viewSettingsPa
         let addresses = !user.Addresses || user.Addresses == null || typeof user.Addresses == 'undefined' ? [] : user.Addresses;
         let userLogins = user.UserLogins;
 
-        let paypalLoginUrl = buildExternalLoginUrl(host, 'PayPal', '', '', '', req.user.ID);
-        let stripeLoginUrl = buildExternalLoginUrl(host, 'Stripe', '', '', '', req.user.ID);
+        let paypalLoginUrl = buildExternalLoginUrl(host, 'PayPal', '', '', '', req.user.ID)
+        let stripeLoginUrl = buildExternalLoginUrl(host, 'Stripe', '', '', '', req.user.ID)
 
-        // spacetime: filter addresses uploaded in settings page only
-        addresses = addresses.filter(a => a.Delivery);
-
-        getUserPermissionsOnPage(req.user, 'Profile', 'Merchant', (profilePagePermissions) => {
-            getUserPermissionsOnPage(req.user, 'Addresses', 'Merchant', (addressPagePermissions) => {
-                getUserPermissionsOnPage(req.user, 'Payment Methods', 'Merchant', (paymentMethodPagePermissions) => {
-                    getUserPermissionsOnPage(req.user, 'Payment Terms', 'Merchant', (paymentTermPagePermissions) => {
-                        const pagePermissions = {
-                            profilePagePermissions,
-                            addressPagePermissions,
-                            paymentMethodPagePermissions,
-                            paymentTermPagePermissions
-                        };
-
-                        const s = Store.createSettingsStore({
-                            settingsReducer: {
-                                addressPermissions: addressPagePermissions,
-                                addresses: addresses,
-                                userLogins: userLogins,
-                                customFieldDefinition: customDefintion.Records,
-                                paymentGateways: paymentGateways.Records,
-                                paymentAcceptanceMethod: paymentAcceptanceMethod.Records,
-                                paypalLoginUrl: paypalLoginUrl,
-                                stripeLoginUrl: stripeLoginUrl,
-                                paymentTerms: paymentTerms
-                            },
-                            userReducer: {
-                                user: user,
-                                pagePermissions: pagePermissions
-                            },
-                            currentUserReducer: {
-                                user: req.user
-                            }
-                        });
-
-                        const reduxState = s.getState();
-
-                        let seoTitle = 'Merchant Settings Page 1';
-                        if (req.SeoTitle) {
-                            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-                        }
-
-                        const settingsIndex = reactDom.renderToString(<MerchantSettingsIndexComponent pagePermissions={pagePermissions}
-                            paypalLoginUrl={paypalLoginUrl}
-                            stripeLoginUrl={stripeLoginUrl}
-                            customFieldDefinition={customDefintion.Records}
-                            user={user}
-                            addresses={addresses}
-                            userLogins={userLogins}
-                            paymentGateways={paymentGateways.Records}
-                            paymentAcceptanceMethod={paymentAcceptanceMethod.Records}
-                            currentUser={req.user} />);
-                        res.send(template('page-settings', seoTitle, settingsIndex, appString, reduxState));
-                    });
-                });
-            });
+        const s = Store.createSettingsStore({
+            settingsReducer: {
+                addresses: addresses, userLogins: userLogins,
+                customFieldDefinition: customDefintion.Records,
+                paymentGateways: paymentGateways.Records,
+                paymentAcceptanceMethod: paymentAcceptanceMethod.Records,
+                paypalLoginUrl: paypalLoginUrl,
+                stripeLoginUrl: stripeLoginUrl,
+                paymentTerms: paymentTerms
+            },
+            userReducer: { user: user },
+            currentUserReducer: { user: req.user }
         });
+
+        const reduxState = s.getState();
+
+        let seoTitle = 'Merchant Settings Page 1';
+        if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+
+        const settingsIndex = reactDom.renderToString(<MerchantSettingsIndexComponent paypalLoginUrl={paypalLoginUrl} stripeLoginUrl={stripeLoginUrl} customFieldDefinition={customDefintion.Records} user={user} addresses={addresses} userLogins={userLogins} paymentGateways={paymentGateways.Records} paymentAcceptanceMethod={paymentAcceptanceMethod.Records} currentUser={req.user} />);
+        res.send(template('page-settings', seoTitle, settingsIndex, appString, reduxState));
     });
 });
 
-merchantRouter.post('/createPaymentAcceptanceMethodAsync', ...handlers, isAuthorizedToPerformAction('view-merchant-payment-methods-api'), function (req, res) {
+merchantRouter.post('/createPaymentAcceptanceMethodAsync', ...handlers, function (req, res) {
     const body = req.body;
 
     var promisePaymentAcceptance = new Promise((resolve, reject) => {
@@ -179,7 +141,7 @@ merchantRouter.post('/createPaymentAcceptanceMethodAsync', ...handlers, isAuthor
     });
 });
 
-merchantRouter.post('/getPaymentAcceptanceMethods', ...handlers, isAuthorizedToPerformAction('view-merchant-payment-methods-api'), function (req, res) {
+merchantRouter.post('/getPaymentAcceptanceMethods', ...handlers, function (req, res) {
     const merchantId = req.body.merchantId;
 
     var promisePaymentAcceptance = new Promise((resolve, reject) => {
@@ -196,7 +158,7 @@ merchantRouter.post('/getPaymentAcceptanceMethods', ...handlers, isAuthorizedToP
     });
 });
 
-merchantRouter.post('/saveOmiseAccount', ...handlers, isAuthorizedToPerformAction('view-merchant-payment-methods-api'), function (req, res) {
+merchantRouter.post('/saveOmiseAccount', ...handlers, function (req, res) {
     const user = req.user;
     const type = req.body['type'];
     const taxId = req.body['taxId'];
@@ -269,7 +231,7 @@ merchantRouter.post('/saveOmiseAccount', ...handlers, isAuthorizedToPerformActio
     });
 });
 
-merchantRouter.post('/savePaymentTerms', ...handlers, isAuthorizedToPerformAction('view-merchant-payment-terms-api'), function (req, res) {
+merchantRouter.post('/savePaymentTerms', ...handlers, function (req, res) {
     const merchantId = req.user.ID;
     const paymentTerms = JSON.parse(req.body['paymentTerms']);
 
@@ -356,4 +318,4 @@ merchantRouter.post('/savePaymentTerms', ...handlers, isAuthorizedToPerformActio
     });
 });
 
-module.exports = merchantRouter; 
+module.exports = merchantRouter;

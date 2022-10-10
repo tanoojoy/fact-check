@@ -1,27 +1,79 @@
-﻿'use strict';
-var React = require('react');
+﻿import React from 'react';
+import { connect } from 'react-redux';
+import UpgradeToPremiumTopBanner from '../common/upgrade-to-premium-top-banner';
+import { HeaderLayoutComponent as HeaderLayout } from '../../views/layouts/header/index';
+import HomepageWithPanel from './home-page-panels';
+import { FooterLayoutComponent as FooterLayout } from '../layouts/footer';
+import { 
+    gotoSearchResultsPage,
+    setSearchCategory,
+    setSearchString 
+} from '../../redux/searchActions';
+import { getUpgradeToPremiumPaymentLink, sendInviteColleaguesEmail } from '../../redux/userActions';
 
-var FooterLayout = require('../layouts/footer').FooterLayoutComponent;
-
-var HeaderLayout = require('../../views/layouts/header').HeaderLayoutComponent;
-var HomepageWithPanel = require('../../views/home/home-page-panels').HomepageWithPanelCompenent;
-
-class Homepage extends React.Component {
+class HomepageComponent extends React.Component {
     render() {
         return (
-            <React.Fragment>
-                <div className="header mod" id="header-section">
-                    <HeaderLayout categories={this.props.categories} user={this.props.user}  />
+            <>
+                <UpgradeToPremiumTopBanner 
+                    user={this.props.user}
+                    getUpgradeToPremiumPaymentLink={this.props.getUpgradeToPremiumPaymentLink}
+                />
+                <div className='header mod' id='header-section'>
+                    <HeaderLayout 
+                        user={this.props.user}
+                        sendInviteColleaguesEmail={this.props.sendInviteColleaguesEmail}
+                        customContainerClass='container-fluid'
+                    />
                 </div>
-                <div className="main" id="homepage-list">
-                    <HomepageWithPanel panels={this.props.panels} collapsableCategories={this.props.collapsableCategories} categories={this.props.categories} layoutItemCount={this.props.layoutItemCount} user={this.props.user} items={this.props.items} numberOfCategories={this.props.numberOfCategories}  />
+                <div className='main' id='homepage-list'>
+                     <HomepageWithPanel
+                        categories={this.props.categories}
+                        user={this.props.user}
+                        panels={this.props.panels}
+                        searchCategory={this.props.searchCategory}
+                        searchResults={this.props.searchResults}
+                        searchString={this.props.searchString}
+                        setSearchCategory={this.props.setSearchCategory}
+                        gotoSearchResultsPage={this.props.gotoSearchResultsPage}
+                        setSearchString={this.props.setSearchString}
+                    />
                 </div>
-                <div className="footer" id="footer-section">
-                    <FooterLayout panels={this.props.panels} />
+                <div className='footer fixed' id='footer-section'>
+                    <FooterLayout  user={this.props.user} />
                 </div>
-            </React.Fragment>
+            </>
         );
     }
 }
 
-module.exports = Homepage;
+function mapStateToProps(state, ownProps) {
+    return {
+        user: state.userReducer.user,
+        categories: state.categoryReducer.categories,
+        panels: state.panelsReducer.panels,
+        searchCategory: state.searchReducer.searchCategory,
+        searchResults: state.searchReducer.searchResults,
+        searchString: state.searchReducer.searchString
+    };
+}
+
+function mapDispatchToProps(dispatch) {
+    return {
+        setSearchCategory: (category) => dispatch(setSearchCategory(category)),
+        gotoSearchResultsPage: (searchString, searchBy, ids) => dispatch(gotoSearchResultsPage(searchString, searchBy, ids)),
+        setSearchString: (searchString, searchBy, productType) => dispatch(setSearchString(searchString, searchBy, productType)),
+        getUpgradeToPremiumPaymentLink: (callback) => dispatch(getUpgradeToPremiumPaymentLink(callback)),
+        sendInviteColleaguesEmail: (data, callback) => dispatch(sendInviteColleaguesEmail(data, callback)),
+    }
+}
+
+const Homepage = connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(HomepageComponent);
+
+module.exports = {
+    Homepage,
+    HomepageComponent
+};

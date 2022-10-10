@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 var express = require('express');
 var orderDiaryRouter = express.Router();
 var multer = require('multer');
@@ -40,6 +42,8 @@ function createOrderDiaryCustomFields(eventNames, callback) {
 }
 
 orderDiaryRouter.get('/getEventCustomField', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
 
     const promiseOrderCustomFields = new Promise((resolve, reject) => {

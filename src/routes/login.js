@@ -1,51 +1,44 @@
 'use strict';
-var express = require('express');
-var querystring = require('querystring');
-var router = express.Router();
-var React = require('react');
-var useragent = require('express-useragent');
+import { cgiAuthenticate, cgiLogout } from './horizon-api/auth-service/auth-controller';
+
+const express = require('express');
+const querystring = require('querystring');
+const router = express.Router();
+const React = require('react');
+const useragent = require('express-useragent');
 router.use(useragent.express());
-var ipstack = require('ipstack');
+const ipstack = require('ipstack');
 
-var reactDom = require('react-dom/server');
-var Store = require('../redux/store');
-var template = require('../views/layouts/template');
+const reactDom = require('react-dom/server');
+const _ = require('lodash');
+const Store = require('../redux/store');
+const template = require('../views/layouts/template');
 
-var LandingPage = require('../views/login/landing').LandingComponent;
-var LoginPage = require('../views/login/login');
-var passport = require('passport');
-var BuyerSignUpPage = require('../views/extensions/' + process.env.TEMPLATE + '/login/buyer-sign-up').BuyerSignUpComponent;
-var SellerSignUpPage = require('../views/extensions/' + process.env.TEMPLATE + '/login/seller-sign-up').SellerSignUpComponent;
+const LandingPage = require('../views/login/landing').LandingComponent;
+const LoginPage = require('../views/login/login');
+const passport = require('passport');
+const BuyerSignUpPage = require('../views/extensions/' + process.env.TEMPLATE + '/login/buyer-sign-up').BuyerSignUpComponent;
+const SellerSignUpPage = require('../views/extensions/' + process.env.TEMPLATE + '/login/seller-sign-up').SellerSignUpComponent;
 
-var ForgotPasswordPage = require('../views/login/forgot-password').ForgotPasswordComponent;
-var ResetPasswordPage = require('../views/extensions/' + process.env.TEMPLATE + '/login/reset-password').ResetPasswordComponent;
-var ChangePasswordPage = require('../views/extensions/' + process.env.TEMPLATE + '/login/change-password').ChangePasswordComponent;
-var RegisterInterestPage = require('../views/extensions/bespoke/login/register-interest').RegisterInterestComponent;
+const ForgotPasswordPage = require('../views/login/forgot-password').ForgotPasswordComponent;
+const ResetPasswordPage = require('../views/extensions/' + process.env.TEMPLATE + '/login/reset-password').ResetPasswordComponent;
+const ChangePasswordPage = require('../views/extensions/' + process.env.TEMPLATE + '/login/change-password').ChangePasswordComponent;
+const RegisterInterestPage = require('../views/extensions/bespoke/login/register-interest').RegisterInterestComponent;
 
-var client = require('../../sdk/client');
-var EnumCoreModule = require('../public/js/enum-core');
-var authenticated = require('../scripts/shared/authenticated');
-var authorizedUser = require('../scripts/shared/authorized-user');
-
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage } = require('../scripts/shared/user-permissions');
-
-function setApiToken(res, token, expiry) {
-    var maxAge = expiry * 1000;
-    res.cookie('webapitoken', token, { maxAge: maxAge, httpOnly: false });
-}
-
-function getHostname(req) {
-    var fullUrl = req.protocol + '://' + req.get('host');
-    return fullUrl;
-}
+const client = require('../../sdk/client');
+const authenticated = require('../scripts/shared/authenticated');
+const authorizedUser = require('../scripts/shared/authorized-user');
+const utils = require('../utils');
+const CommonModule = require('../public/js/common');
+const prefix = CommonModule.getAppPrefix();
 
 function buildExternalLoginUrl(hostname, provider, clientId = '', token = '', chatChannelId = '', isSeller = '') {
     let url = process.env.PROTOCOL + '://' + process.env.OAUTH_URL + '/oauth2/authorize?response_type=code';
-    url += '&client_id=' + (clientId ? clientId : process.env.CLIENT_ID);
+    url += '&client_id=' + (clientId || process.env.CLIENT_ID);
     url += '&provider=' + provider;
-    let urlRedirect = '/accounts/api-token';
+    let urlRedirect = CommonModule.getAppPrefix() + '/accounts/api-token';
     if (chatChannelId.length > 1) {
-        urlRedirect = '/accounts/api-token?chatChannelId=' + chatChannelId;
+        urlRedirect = CommonModule.getAppPrefix() + '/accounts/api-token?chatChannelId=' + chatChannelId;
     }
     if (isSeller && isSeller.toLowerCase() == 'true') {
         urlRedirect += (urlRedirect.indexOf('?') > -1 ? '&' : '?') + 'isSeller=true';
@@ -63,7 +56,7 @@ function buildExternalLoginUrl(hostname, provider, clientId = '', token = '', ch
 function getMarketplaceInfo(withBusinessProfile = false, withOpenIdProviders = false) {
     return new Promise((resolve, reject) => {
         let options = null;
-        let includes = [];
+        const includes = [];
 
         if (withBusinessProfile) {
             includes.push('BusinessProfile');
@@ -75,12 +68,12 @@ function getMarketplaceInfo(withBusinessProfile = false, withOpenIdProviders = f
         if (includes.length > 0) {
             options = {
                 includes: includes.join()
-            }
+            };
         }
 
-        client.Marketplaces.getMarketplaceInfo(options, function (err, result) {
+        client.Marketplaces.getMarketplaceInfo(options, function(err, result) {
             if (result && result.OpenIdProviders) {
-                result.OpenIdProviders.forEach(function (provider) {
+                result.OpenIdProviders.forEach(function(provider) {
                     provider.ClientSecret = null;
                 });
             }
@@ -98,8 +91,7 @@ function logLoginActivity(req, res, loginActivityId, alternateId, callback) {
 
         if (cookie) {
             return cookie;
-        }
-        else {
+        } else {
             const value = {
                 loginActivityId: loginActivityId || 0,
                 alternateId: alternateId || Math.random().toString(36).substr(2, 10)
@@ -161,7 +153,7 @@ function logLoginActivity(req, res, loginActivityId, alternateId, callback) {
                 alternateId: cookie.alternateId
             };
 
-            client.ActivityLog.logLoginActivity(options, function (err, result) {
+            client.ActivityLog.logLoginActivity(options, function(err, result) {
                 resolve(result);
             });
         });
@@ -173,13 +165,11 @@ function logLoginActivity(req, res, loginActivityId, alternateId, callback) {
 }
 
 function signOut(req, res, callback) {
-    logLoginActivity(req, res, 0, null, function (cookieName) {
-        req.logout();
-
+    logLoginActivity(req, res, 0, null, function(cookieName) {
         if (req.cookies) {
-            [...Object.keys(req.cookies)].forEach(function (c) {
-                if (c.toLowerCase() !== "acceptcookiepolicy") {
-                    res.clearCookie(c)
+            [...Object.keys(req.cookies)].forEach(function(c) {
+                if (c.toLowerCase() !== 'acceptcookiepolicy') {
+                    res.clearCookie(c);
                 }
             });
         }
@@ -188,90 +178,54 @@ function signOut(req, res, callback) {
     });
 }
 
-router.get('/api-token', passport.authenticate('auth_code', { failureRedirect: '/accounts/sign-in', failureFlash: true }), function (req, res) {
-    let redirectUrl = '/';
-    let isSeller = req.query['isSeller'];
+router.post('/cgi-sign-in', async(req, res, next) => {
+    const { cgiToken, userId } = req.body;
 
-    if (req.token) {
-        setApiToken(res, req.token.access_token, req.token.expires_in);
-    }
-    
-    if (req.query.chatChannelId) {
-        return res.redirect('/chat?channelId=' + req.query.chatChannelId);
+    if (!cgiToken || !userId) {
+        res.status(400).send(`Incorrect values: cgiToken: ${cgiToken}, userId: ${userId}`);
+        return null;
     }
 
-    let promiseMerchantUserRole = null;
+    try {
+        const resBe = await cgiAuthenticate(req);
+        const isLocalEnv = req.hostname?.search('localhost') !== -1;
 
-    if (isSeller && isSeller.toLowerCase() == 'true') {
-        if (!req.user.Roles.includes('Merchant') && !req.user.Roles.includes('Submerchant')) {
-            promiseMerchantUserRole = new Promise((resolve, reject) => {
-                client.Accounts.updateUserRole({ userId: req.user.ID, role: 'Merchant' }, function (err, result) {
-                    resolve(result);
-                });
-            });
+        console.log('sign-in BE status', resBe.status);
+
+        const cookieOptions = { path: isLocalEnv ? '/' : '/arcadier_supplychain' };
+        res.cookie('cgitoken', cgiToken, cookieOptions);
+        res.cookie('clarivateUserId', userId, cookieOptions);
+        res.cookie('webapitoken', resBe.data && resBe.data.arcadierToken ? resBe.data.arcadierToken : '', cookieOptions);
+
+        //NOTE: Put back the original code when development is done
+        if (resBe.data && resBe.data.ssoCode) {
+            res.json({ redirectUrl: CommonModule.getAppPrefix() + '/account/signintodomain?code=' + resBe.data.ssoCode + '&returnUrl=' + CommonModule.getAppPrefix() + '/' });
+        } else {
+            res.json({ redirectUrl: CommonModule.getAppPrefix() + '/' });
         }
+    } catch (e) {
+        console.log('Error in cgi-sign-in route', e);
+        res.status(500).send(e);
     }
-
-    Promise.all([promiseMerchantUserRole]).then((responses) => {
-        const merchantUserRole = responses[0];
-        
-        let promiseMerchant = null;
-
-        if (merchantUserRole && merchantUserRole.Result) {
-            promiseMerchant = new Promise((resolve, reject) => {
-                client.Users.getUserDetails({ userId: req.user.ID }, function (err, details) {
-                    resolve(details);
-                });
-            });
-
-            if (merchantUserRole.AccessToken) {
-                setApiToken(res, merchantUserRole.AccessToken.access_token, merchantUserRole.AccessToken.expires_in);
-            }
-        }
-
-        Promise.all([promiseMerchant]).then((responses) => {
-            const merchant = responses[0];
-
-            if (merchant) {
-                req.logIn(merchant, function (err) {
-                    if (err) {
-                        return res.redirect('/');
-                    }
-                    res.redirect('/merchants/settings');
-                });
-            } else {
-                if (req.user.Roles.includes('Merchant')) {
-                    if (!req.user.Onboarded) {
-                        redirectUrl = '/merchants/settings';
-                    }
-                    else {
-                        redirectUrl = '/merchants/dashboard';
-                    }
-                }
-
-                res.redirect(redirectUrl);
-            }
-        });
-    });
 });
 
-router.get('/interested-user', function (req, res) {
+router.get('/interested-user', function(req, res) {
     getMarketplaceInfo().then((marketplace) => {
         const s = Store.createEmptyStore({ marketplaceLogoUrl: marketplace.LogoUrl });
         const reduxState = s.getState();
         const appString = 'login';
         const app = reactDom.renderToString(<RegisterInterestPage marketplaceLogoUrl={marketplace.LogoUrl} />);
-        let seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
+        const seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
         res.send(template('page-interest', seoTitle, app, appString, reduxState));
     });
 });
 
-router.post('/interested-user', function (req, res) {
+router.post('/interested-user', function(req, res) {
     const { name, email, type } = req.body;
     const options = { Name: name, Email: email, IsSeller: req.body.type === 'seller', Status: 'Interested' };
 
     const promiseRegisterInterestedUser = new Promise((resolve, reject) => {
-        client.Accounts.registerInterestedUser(options, function (err, result) {
+        client.Accounts.registerInterestedUser(options, function(err, result) {
             resolve(result);
         });
     });
@@ -282,23 +236,35 @@ router.post('/interested-user', function (req, res) {
     });
 });
 
-router.post('/sign-out', authenticated, function (req, res) {
-    signOut(req, res, function () {
-        if (req.isPrivateEnabled) {
-            if (!req.isPrivateSellerSignUp) {
-                return res.redirect('/accounts/sign-in');
-            }
-        }
+router.post('/sign-out', async(req, res) => {
+    // signOut via CGI
 
-        res.redirect('/');
-    });
+    try {
+        const resBe = await cgiLogout(req);
+        console.log('sign-out BE status', resBe.status);
+
+        utils.clearSessionCookies(res);
+        res.redirect(process.env.CLARIVATE_LOGIN_IFRAME_URL + '/login?app=scn&refferer=%2Farcadier_supplychain');
+    } catch (e) {
+        console.log('Error', e);
+        res.status(500).send(e.response);
+    }
 });
 
-router.get('/non-private/sign-in', function (req, res) {
+router.get('/auth-url', async(req, res) => {
+    try {
+        res.send(process.env.CLARIVATE_LOGIN_IFRAME_URL);
+    } catch (e) {
+        console.log('Error in auth-url route', e);
+        res.sendStatus(500);
+    }
+});
+
+router.get('/non-private/sign-in', function(req, res) {
     const error = req.query.error;
     const errorMessage = req.query.errorMessage;
-    const host = getHostname(req);
-    const isSeller = req.query['isSeller'];
+    const host = utils.getHostname(req);
+    const isSeller = req.query.isSeller;
 
     getMarketplaceInfo(false, true).then((marketplace) => {
         let loginConfigurationSettings = null;
@@ -328,22 +294,22 @@ router.get('/non-private/sign-in', function (req, res) {
         let chatChannelId = '';
 
         if (req.query.chatChannelId) {
-            chatChannelId = req.query["chatChannelId"];
+            chatChannelId = req.query.chatChannelId;
         }
 
         if (marketplace.Settings &&
-            marketplace.Settings["themes"] &&
-            marketplace.Settings["themes"]["theme-1"] &&
-            marketplace.Settings["themes"]["theme-1"]["favicon"]) {
-            favIconData = marketplace.Settings["themes"]["theme-1"]["favicon"];
+            marketplace.Settings.themes &&
+            marketplace.Settings.themes['theme-1'] &&
+            marketplace.Settings.themes['theme-1'].favicon) {
+            favIconData = marketplace.Settings.themes['theme-1'].favicon;
         }
-        let guestUserID = "";
+        let guestUserID = '';
         if (req.query.guestUserID) {
             guestUserID = req.query.guestUserID;
         }
 
         const appString = 'login';
-        let token = req.query['token'] || '';
+        const token = req.query.token || '';
         const customFacebookLoginUrl = customFacebook ? buildExternalLoginUrl(host, customFacebook.Name, '', token, chatChannelId, isSeller) : '';
         const customGoogleLoginUrl = customGoogle ? buildExternalLoginUrl(host, customGoogle.Name, '', token, chatChannelId, isSeller) : '';
         const customFacebookDisplayName = customFacebook ? customFacebook.DisplayName : '';
@@ -352,7 +318,7 @@ router.get('/non-private/sign-in', function (req, res) {
 
         const s = Store.createEmptyStore({
             type: 'non-private-guest',
-            host: getHostname(req),
+            host: utils.getHostname(req),
             error: error,
             loginConfigurationSettings: loginConfigurationSettings,
             cookieData: marketplace.CustomFields,
@@ -394,80 +360,74 @@ router.get('/non-private/sign-in', function (req, res) {
     });
 });
 
-router.post('/non-private/sign-in', function (req, res, next) {
-    const isSeller = req.body['isSeller'];
-
-    passport.authenticate('login', function (err, user, info) {
-        if (!err && info) {            
-            if (info.message.toLowerCase().indexOf('sub account login is disabled by admin.') > 1) {
-                return res.redirect(`/accounts/non-private/sign-in?isSeller=${isSeller}&error=5`);
-            }
-        } else if (err) {
-            return res.redirect(`/accounts/non-private/sign-in?isSeller=${isSeller}&error=invalid-login`);
+router.post('/non-private/sign-in', function(req, res, next) {
+    const isSeller = req.body.isSeller;
+    passport.authenticate('login', function(err, user) {
+        if (err) {
+            return res.redirect(`${CommonModule.getAppPrefix()}/accounts/non-private/sign-in?isSeller=${isSeller}&error=invalid-login`);
         } else {
             if (!user) {
-                return res.redirect(`/accounts/non-private/sign-in?isSeller=${isSeller}&error=invalid-login`);
+                return res.redirect(`${CommonModule.getAppPrefix()}/accounts/non-private/sign-in?isSeller=${isSeller}&error=invalid-login`);
             }
 
             if (req.token) {
-                setApiToken(res, req.token.access_token, req.token.expires_in);
+                utils.setApiToken(res, req.token.access_token, req.token.expires_in);
             }
 
-            req.logIn(user, function (err) {
+            req.logIn(user, function(err) {
                 if (err) {
-                    return res.redirect(`/accounts/non-private/sign-in?isSeller=${isSeller}&error=invalid-login`);
+                    return res.redirect(`${CommonModule.getAppPrefix()}/accounts/non-private/sign-in?isSeller=${isSeller}&error=invalid-login`);
                 }
 
                 if (req.cookies.guestUserID && (req.body.isMerge == true || req.body.isMerge == 'true')) {
-                    let options = {
+                    const options = {
                         guestUserId: req.cookies.guestUserID,
                         userId: req.user.ID
                     };
 
                     var promiseMergeUser = new Promise((resolve, reject) => {
-
-                        client.Users.mergeGuestToUser(options, function (err, result) {
+                        client.Users.mergeGuestToUser(options, function(err, result) {
                             resolve(result);
                         });
                     });
 
                     Promise.all([promiseMergeUser]).then((responses) => {
-                        let data = responses[0];
+                        const data = responses[0];
                     });
                 }
 
-                logLoginActivity(req, res, 0, null, function () {
+                logLoginActivity(req, res, 0, null, function() {
                     if (req.body.returnUrl) {
-                        return res.redirect("/" + req.body.returnUrl);
+                        return res.redirect(CommonModule.getAppPrefix() + '/' + req.body.returnUrl);
                     }
 
                     if (req.query.chatChannelId) {
-                        return res.redirect('/chat?channelId=' + req.query.chatChannelId);
+                        return res.redirect(CommonModule.getAppPrefix() + '/chat?channelId=' + req.query.chatChannelId);
                     }
 
                     if (req.user.Roles.includes('Merchant')) {
-                        return res.redirect('/merchants/dashboard');
+                        return res.redirect(CommonModule.getAppPrefix() + '/merchants/dashboard');
                     }
 
-                    res.redirect('/');
+                    res.redirect(CommonModule.getAppPrefix() + '/');
                 });
             });
         }
     })(req, res, next);
 });
 
-router.get('/non-private/register', function (req, res) {
-    var error = req.query['error'];
-    var isSeller = req.query['isSeller'];
-    var host = getHostname(req);
+router.get('/non-private/register', function(req, res) {
+    var error = req.query.error;
+    var isSeller = req.query.isSeller;
+    var host = utils.getHostname(req);
     var token = null;
     var googleLoginUrl = buildExternalLoginUrl(host, 'Google', '', token);
     var facebookLoginUrl = buildExternalLoginUrl(host, 'Facebook', '', token);
     var NonPrivateSignUpPage = require('../views/login/non-private-sign-up').NonPrivateSignUpComponent;
 
     Promise.all([getMarketplaceInfo()]).then((responses) => {
-        let marketplaceInfo = responses[0];
-        let marketplaceRegistration = responses[1];
+        const marketplaceInfo = responses[0];
+        const marketplaceRegistration = responses[1];
 
         const s = Store.createEmptyStore({
             error: error,
@@ -480,43 +440,44 @@ router.get('/non-private/register', function (req, res) {
         const reduxState = s.getState();
         const appString = 'login';
 
-        const app = reactDom.renderToString(<NonPrivateSignUpPage error={error}
+        const app = reactDom.renderToString(<NonPrivateSignUpPage
+            error={error}
             marketplaceInfo={marketplaceInfo}
             googleLoginUrl={buildExternalLoginUrl(host, 'Google')}
             facebookLoginUrl={buildExternalLoginUrl(host, 'Facebook')}
             isSeller={isSeller}
         />);
-        let seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
+        const seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
         res.send(template('page-login', seoTitle, app, appString, reduxState));
     });
 });
 
-router.post('/non-private/sign-up', function (req, res, next) {
+router.post('/non-private/sign-up', function(req, res, next) {
     req.body.token = null;
     req.body.isSeller = req.body.isSeller.toLowerCase() == 'true';
 
-    passport.authenticate('signup', function (err, user, token) {
+    passport.authenticate('signup', function(err, user, token) {
         if (err) {
-            return res.redirect(`/accounts/non-private/register?isSeller=${req.body.isSeller}&error=invalid-signup`);
+            return res.redirect(`${CommonModule.getAppPrefix()}/accounts/non-private/register?isSeller=${req.body.isSeller}&error=invalid-signup`);
         } else {
             if (token) {
-                setApiToken(res, token.access_token, token.expires_in);
+                utils.setApiToken(res, token.access_token, token.expires_in);
             }
             if (user) {
-                req.logIn(user, function (err) {
+                req.logIn(user, function(err) {
                     if (err) {
-                        return res.redirect(`/accounts/non-private/register?isSeller=${req.body.isSeller}&error=invalid-login`);
+                        return res.redirect(`${CommonModule.getAppPrefix()}/accounts/non-private/register?isSeller=${req.body.isSeller}&error=invalid-login`);
                     }
-                    if (req.body.isSeller == true) return res.redirect('/merchants/settings');
+                    if (req.body.isSeller == true) return res.redirect(CommonModule.getAppPrefix() + '/merchants/settings');
 
-                    res.redirect('/');
+                    res.redirect(CommonModule.getAppPrefix() + '/');
                 });
             }
         }
     })(req, res, next);
 });
 
-router.get('/non-private/forgot-password', function (req, res) {
+router.get('/non-private/forgot-password', function(req, res) {
     const success = req.query.success;
     const isSeller = req.query.isSeller;
 
@@ -525,20 +486,17 @@ router.get('/non-private/forgot-password', function (req, res) {
         const reduxState = s.getState();
         const appString = 'login';
         const app = reactDom.renderToString(<ForgotPasswordPage marketplaceLogoUrl={marketplace.LogoUrl} success={success} type='non-private' isSeller={isSeller} />);
-        let seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
+        const seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
         res.send(template('page-login', seoTitle, app, appString, reduxState));
     });
-})
+});
 
-router.get('/sign-in', function (req, res) {
+router.get('/sign-in', function(req, res) {
     getMarketplaceInfo().then((marketplace) => {
         const settingsTemp = marketplace.Settings['private-settings']['private-settings-area'];
-        const isMerchantRestrictedOnly = settingsTemp && settingsTemp.enabled == 'true' && settingsTemp['mode'] === '0';
+        const isMerchantRestrictedOnly = settingsTemp && settingsTemp.enabled == 'true' && settingsTemp.mode === '0';
         const aboutUs = settingsTemp['about-us'];
-        //ARC10778 fix for non Debug. debug mode will have wrong image.
-        //const backgroundImage = process.env.PROTOCOL + '://' + process.env.BASE_URL + '/userdata/' + process.env.BASE_URL + '/images/' + settingsTemp["background-image-url"];
-        const backgroundImage = process.env.PROTOCOL + '://' + process.env.BASE_URL + '/images/' + settingsTemp["background-image-url"];
-
+        const backgroundImage = process.env.PROTOCOL + '://' + process.env.BASE_URL + '/userdata/' + process.env.BASE_URL + '/images/' + settingsTemp['background-image-url'];
         const seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
         const cookieData = marketplace.CustomFields;
         let favIconData = '';
@@ -551,9 +509,9 @@ router.get('/sign-in', function (req, res) {
             marketplace.Settings['private-settings']['private-settings-area'].enabled === 'true') {
             isPrivateEnabled = true;
         }
-        //const isNonPrivateGuest = isPrivateEnabled && process.env.TEMPLATE === 'bespoke';
+        // const isNonPrivateGuest = isPrivateEnabled && process.env.TEMPLATE === 'bespoke';
         if (!isPrivateEnabled) {
-            let url = '/accounts/non-private/sign-in';
+            let url = CommonModule.getAppPrefix() + '/accounts/non-private/sign-in';
 
             if (error) {
                 url += `?error=${error}`;
@@ -569,14 +527,14 @@ router.get('/sign-in', function (req, res) {
         }
 
         if (marketplace.Settings &&
-            marketplace.Settings["themes"] &&
-            marketplace.Settings["themes"]["theme-1"] &&
-            marketplace.Settings["themes"]["theme-1"]["favicon"]) {
-            favIconData = marketplace.Settings["themes"]["theme-1"]["favicon"];
+            marketplace.Settings.themes &&
+            marketplace.Settings.themes['theme-1'] &&
+            marketplace.Settings.themes['theme-1'].favicon) {
+            favIconData = marketplace.Settings.themes['theme-1'].favicon;
         }
 
         if (req.query.chatChannelId) {
-            chatChannelId = req.query["chatChannelId"];
+            chatChannelId = req.query.chatChannelId;
         }
 
         const s = Store.createEmptyStore({
@@ -600,15 +558,16 @@ router.get('/sign-in', function (req, res) {
                 favIconData={favIconData}
                 chatChannelId={chatChannelId}
                 isMerchantRestrictedOnly={isMerchantRestrictedOnly}
-                error={error} />
+                error={error}
+            />
         );
         res.send(template('page-landing', seoTitle, landingApp, appString, reduxState));
     });
 });
 
-router.get('/buyer/sign-in', function (req, res) {
+router.get('/buyer/sign-in', function(req, res) {
     const error = req.query.error;
-    const host = getHostname(req);
+    const host = utils.getHostname(req);
 
     getMarketplaceInfo(false, true).then((marketplace) => {
         let loginConfigurationSettings = null;
@@ -638,40 +597,33 @@ router.get('/buyer/sign-in', function (req, res) {
         let chatChannelId = '';
 
         if (req.query.chatChannelId) {
-            chatChannelId = req.query["chatChannelId"];
+            chatChannelId = req.query.chatChannelId;
         }
-
 
         if (marketplace.Settings &&
-            marketplace.Settings["themes"] &&
-            marketplace.Settings["themes"]["theme-1"] &&
-            marketplace.Settings["themes"]["theme-1"]["favicon"]) {
-            favIconData = marketplace.Settings["themes"]["theme-1"]["favicon"];
+            marketplace.Settings.themes &&
+            marketplace.Settings.themes['theme-1'] &&
+            marketplace.Settings.themes['theme-1'].favicon) {
+            favIconData = marketplace.Settings.themes['theme-1'].favicon;
         }
-
-        const customFacebookLoginUrl = customFacebook ? buildExternalLoginUrl(host, customFacebook.Name, '', token, chatChannelId) : '';
-        const customGoogleLoginUrl = customGoogle ? buildExternalLoginUrl(host, customGoogle.Name, '', token, chatChannelId) : '';
-        const customFacebookDisplayName = customFacebook ? customFacebook.DisplayName : '';
-        const customGoogleDisplayName = customGoogle ? customGoogle.DisplayName : '';
 
         const s = Store.createEmptyStore({
             type: 'buyer',
-            host: getHostname(req),
+            host: utils.getHostname(req),
             error: error,
             loginConfigurationSettings: loginConfigurationSettings,
             cookieData: marketplace.CustomFields,
             favIconData: favIconData,
-            chatChannelId: chatChannelId,
-            customFacebookDisplayName: customFacebookDisplayName,
-            customGoogleDisplayName: customGoogleDisplayName
+            chatChannelId: chatChannelId
         });
 
         const reduxState = s.getState();
         const appString = 'login';
-        let token = req.query['token'];
-
-
-
+        const token = req.query.token;
+        const customFacebookLoginUrl = customFacebook ? buildExternalLoginUrl(host, customFacebook.Name, customFacebook.ClientId, token, chatChannelId) : '';
+        const customGoogleLoginUrl = customGoogle ? buildExternalLoginUrl(host, customGoogle.Name, customGoogle.ClientId, token, chatChannelId) : '';
+        const customFacebookDisplayName = customFacebook ? customFacebook.DisplayName : '';
+        const customGoogleDisplayName = customGoogle ? customGoogle.DisplayName : '';
 
         const buyerLogin = reactDom.renderToString(
             <LoginPage
@@ -697,49 +649,35 @@ router.get('/buyer/sign-in', function (req, res) {
     });
 });
 
-router.post('/buyer/sign-in', function (req, res, next) {
-    passport.authenticate('login', function (err, user, info) {
-        if (!err && info) {
-            if (info.message.toLowerCase().indexOf('sub account login is disabled by admin.') > 1) {
-                return res.redirect(`/accounts/buyer/sign-in?error=5`);
-            }
-        } else if (err) {
-            return res.redirect(`/accounts/buyer/sign-in?error=invalid-login`);
-        } else {
-            if (!user) {
-                return res.redirect(`/accounts/buyer/sign-in?error=invalid-login`);
+router.post('/buyer/sign-in', passport.authenticate('login', { failureRedirect: CommonModule.getAppPrefix() + '/accounts/buyer/sign-in?error=invalid-login' }), function(req, res) {
+    if (req.token) {
+        utils.setApiToken(res, req.token.access_token, req.token.expires_in);
+    }
+
+    if (req.user) {
+        logLoginActivity(req, res, 0, null, function() {
+            if (req.query.chatChannelId) {
+                res.redirect(CommonModule.getAppPrefix() + '/chat?channelId=' + req.query.chatChannelId);
             }
 
-            if (req.token) {
-                setApiToken(res, req.token.access_token, req.token.expires_in);
-            }
-
-            req.logIn(user, function (err) {
-                logLoginActivity(req, res, 0, null, function () {
-                    if (req.query.chatChannelId) {
-                        return res.redirect('/chat?channelId=' + req.query.chatChannelId);
-                    }
-
-                    res.redirect('/');
-                });
-            });
-        }
-    })(req, res, next);
+            res.redirect(CommonModule.getAppPrefix() + '/');
+        });
+    }
 });
 
-router.get('/buyer/register', function (req, res) {
-    let error = req.query['error'];
-    let token = req.query['token'];
-    var host = getHostname(req);
+router.get('/buyer/register', function(req, res) {
+    const error = req.query.error;
+    const token = req.query.token;
+    var host = utils.getHostname(req);
     var googleLoginUrl = buildExternalLoginUrl(host, 'Google', '', token);
     var facebookLoginUrl = buildExternalLoginUrl(host, 'Facebook', '', token);
 
     if (!token) {
-        return res.redirect('/accounts/sign-in?error=1');
+        return res.redirect(CommonModule.getAppPrefix() + '/accounts/sign-in?error=1');
     }
 
     var promiseMarketPlaceRegistration = new Promise((resolve, reject) => {
-        client.Marketplaces.getMarketplaceRegistration({ token: token }, function (err, userInfo) {
+        client.Marketplaces.getMarketplaceRegistration({ token: token }, function(err, userInfo) {
             if (err) {
                 const serverError = err.message.split('Error Code:');
                 if (serverError && serverError.length > 0) {
@@ -747,20 +685,18 @@ router.get('/buyer/register', function (req, res) {
                         errorMessage: serverError[0].trim(),
                         errorCode: serverError[1].trim()
                     });
-                }
-                else {
+                } else {
                     resolve(null);
                 }
-            }
-            else {
+            } else {
                 resolve(userInfo);
             }
         });
     });
 
     Promise.all([getMarketplaceInfo(), promiseMarketPlaceRegistration]).then((responses) => {
-        let marketplaceInfo = responses[0];
-        let marketplaceRegistration = responses[1];
+        const marketplaceInfo = responses[0];
+        const marketplaceRegistration = responses[1];
 
         let loginConfigurationSettings = null;
         let customFacebook = null;
@@ -785,15 +721,15 @@ router.get('/buyer/register', function (req, res) {
         }
 
         if (!marketplaceRegistration) {
-            return res.redirect('/accounts/sign-in?error=1');
+            return res.redirect(CommonModule.getAppPrefix() + '/accounts/sign-in?error=1');
         }
 
         if (marketplaceRegistration.errorCode == '400') {
-            return res.redirect(`/accounts/sign-in?error=1&errorMessage=${marketplaceRegistration.errorMessage}`);
+            return res.redirect(`${CommonModule.getAppPrefix()}/accounts/sign-in?error=1&errorMessage=${marketplaceRegistration.errorMessage}`);
         }
 
         if (marketplaceRegistration.IsSeller) {
-            return res.redirect('/accounts/sign-in?error=1');
+            return res.redirect(CommonModule.getAppPrefix() + '/accounts/sign-in?error=1');
         }
 
         const s = Store.createEmptyStore({
@@ -812,7 +748,8 @@ router.get('/buyer/register', function (req, res) {
         const customGoogleLoginUrl = customGoogle ? buildExternalLoginUrl(host, customGoogle.Name, customGoogle.ClientId, token, chatChannelId) : '';
         const customFacebookDisplayName = customFacebook ? customFacebook.DisplayName : '';
         const customGoogleDisplayName = customGoogle ? customGoogle.DisplayName : '';
-        const app = reactDom.renderToString(<BuyerSignUpPage error={error}
+        const app = reactDom.renderToString(<BuyerSignUpPage
+            error={error}
             marketplaceInfo={marketplaceInfo}
             customFacebookLoginUrl={customFacebookLoginUrl}
             customGoogleLoginUrl={customGoogleLoginUrl}
@@ -823,51 +760,51 @@ router.get('/buyer/register', function (req, res) {
             facebookLoginUrl={buildExternalLoginUrl(host, 'Facebook')}
             marketplaceRegistration={marketplaceRegistration}
         />);
-        let seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
+        const seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
         res.send(template('page-login', seoTitle, app, appString, reduxState));
     });
 });
 
-router.post('/buyer/sign-up', function (req, res, next) {
-    passport.authenticate('signup', function (err, user, token) {
+router.post('/buyer/sign-up', function(req, res, next) {
+    passport.authenticate('signup', function(err, user, token) {
         if (err) {
-            res.redirect('/accounts/buyer/register?token=' + req.body['token'] + '&error=invalid-signup');
+            res.redirect(CommonModule.getAppPrefix() + '/accounts/buyer/register?token=' + req.body.token + '&error=invalid-signup');
         } else {
             if (token) {
-                setApiToken(res, token.access_token, token.expires_in);
+                utils.setApiToken(res, token.access_token, token.expires_in);
             }
             if (user) {
-                req.logIn(user, function (err) {
+                req.logIn(user, function(err) {
                     if (err) {
-                        return res.redirect('/accounts/buyer/register?token=' + req.body['token'] + '&error=invalid-login');
+                        return res.redirect(CommonModule.getAppPrefix() + '/accounts/buyer/register?token=' + req.body.token + '&error=invalid-login');
                     }
 
-                    res.redirect('/');
+                    res.redirect(CommonModule.getAppPrefix() + '/');
                 });
             }
         }
     })(req, res, next);
 });
 
-router.get('/seller/register', function (req, res) {
-    let error = req.query['error'];
-    let token = req.query['token'];
-    var host = getHostname(req);
+router.get('/seller/register', function(req, res) {
+    const error = req.query.error;
+    const token = req.query.token;
+    var host = utils.getHostname(req);
     var googleLoginUrl = buildExternalLoginUrl(host, 'Google', '', token) + '&isSeller=true';
     var facebookLoginUrl = buildExternalLoginUrl(host, 'Facebook', '', token) + '&isSeller=true';
     if (!token) {
-        return res.redirect('/accounts/sign-in?error=1');
+        return res.redirect(CommonModule.getAppPrefix() + '/accounts/sign-in?error=1');
     }
 
     var promiseMarketPlaceRegistration = new Promise((resolve, reject) => {
-        client.Marketplaces.getMarketplaceRegistration({ token: token }, function (err, userInfo) {
+        client.Marketplaces.getMarketplaceRegistration({ token: token }, function(err, userInfo) {
             resolve(userInfo);
         });
     });
 
     Promise.all([getMarketplaceInfo(), promiseMarketPlaceRegistration]).then((responses) => {
-        let marketplaceInfo = responses[0];
-        let marketplaceRegistration = responses[1];
+        const marketplaceInfo = responses[0];
+        const marketplaceRegistration = responses[1];
 
         let loginConfigurationSettings = null;
         let customFacebook = null;
@@ -891,11 +828,11 @@ router.get('/seller/register', function (req, res) {
             }
         }
         if (!marketplaceRegistration) {
-            return res.redirect('/accounts/sign-in?error=1');
+            return res.redirect(CommonModule.getAppPrefix() + '/accounts/sign-in?error=1');
         }
 
         if (!marketplaceRegistration.IsSeller) {
-            return res.redirect('/accounts/sign-in?error=1');
+            return res.redirect(CommonModule.getAppPrefix() + '/accounts/sign-in?error=1');
         }
 
         const customFacebookLoginUrl = customFacebook ? buildExternalLoginUrl(host, customFacebook.Name, customFacebook.ClientId, token, chatChannelId) : '';
@@ -913,7 +850,8 @@ router.get('/seller/register', function (req, res) {
         const reduxState = s.getState();
         const appString = 'login';
 
-        const app = reactDom.renderToString(<SellerSignUpPage error={error}
+        const app = reactDom.renderToString(<SellerSignUpPage
+            error={error}
             googleLoginUrl={googleLoginUrl}
             facebookLoginUrl={facebookLoginUrl}
             customFacebookLoginUrl={customFacebookLoginUrl}
@@ -923,35 +861,35 @@ router.get('/seller/register', function (req, res) {
             customGoogleDisplayName={customGoogleDisplayName}
             marketplaceRegistration={marketplaceRegistration}
         />);
-        let seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
+        const seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
         res.send(template('page-login', seoTitle, app, appString, reduxState));
     });
 });
 
-router.post('/seller/sign-up', function (req, res, next) {
-    passport.authenticate('signup', function (err, user, token) {
+router.post('/seller/sign-up', function(req, res, next) {
+    passport.authenticate('signup', function(err, user, token) {
         if (err) {
-            res.redirect('/accounts/seller/register?token=' + req.body['token'] + '&error=invalid-signup');
+            res.redirect(CommonModule.getAppPrefix() + '/accounts/seller/register?token=' + req.body.token + '&error=invalid-signup');
         } else {
             if (token) {
-                setApiToken(res, token.access_token, token.expires_in);
+                utils.setApiToken(res, token.access_token, token.expires_in);
             }
             if (user) {
-                req.logIn(user, function (err) {
+                req.logIn(user, function(err) {
                     if (err) {
-                        return res.redirect('/accounts/seller/register?token=' + req.body['token'] + '&error=invalid-login');
+                        return res.redirect(CommonModule.getAppPrefix() + '/accounts/seller/register?token=' + req.body.token + '&error=invalid-login');
                     }
 
-                    res.redirect('/merchants/settings');
+                    res.redirect(CommonModule.getAppPrefix() + '/merchants/settings');
                 });
             }
         }
     })(req, res, next);
 });
 
-router.get('/seller/sign-in', function (req, res) {
-    const error = req.query['error'];
-    const host = getHostname(req);
+router.get('/seller/sign-in', function(req, res) {
+    const error = req.query.error;
+    const host = utils.getHostname(req);
     getMarketplaceInfo(false, true).then((marketplace) => {
         let loginConfigurationSettings = null;
         let customFacebook = null;
@@ -979,36 +917,34 @@ router.get('/seller/sign-in', function (req, res) {
         let chatChannelId = '';
 
         if (req.query.chatChannelId) {
-            chatChannelId = req.query["chatChannelId"];
+            chatChannelId = req.query.chatChannelId;
         }
 
         if (marketplace.Settings &&
-            marketplace.Settings["themes"] &&
-            marketplace.Settings["themes"]["theme-1"] &&
-            marketplace.Settings["themes"]["theme-1"]["favicon"]) {
-            favIconData = marketplace.Settings["themes"]["theme-1"]["favicon"];
+            marketplace.Settings.themes &&
+            marketplace.Settings.themes['theme-1'] &&
+            marketplace.Settings.themes['theme-1'].favicon) {
+            favIconData = marketplace.Settings.themes['theme-1'].favicon;
         }
-
-        let token = req.query['token'];
-        const customFacebookLoginUrl = customFacebook ? buildExternalLoginUrl(host, customFacebook.Name, '', token, chatChannelId) : '';
-        const customGoogleLoginUrl = customGoogle ? buildExternalLoginUrl(host, customGoogle.Name, '', token, chatChannelId) : '';
-        const customFacebookDisplayName = customFacebook ? customFacebook.DisplayName : '';
-        const customGoogleDisplayName = customGoogle ? customGoogle.DisplayName : '';
 
         const s = Store.createEmptyStore({
             type: 'seller',
-            host: getHostname(req),
+            host: utils.getHostname(req),
             error: error,
             loginConfigurationSettings: loginConfigurationSettings,
             cookieData: marketplace.CustomFields,
             favIconData: favIconData,
-            chatChannelId: chatChannelId,
-            customFacebookDisplayName: customFacebookDisplayName,
-            customGoogleDisplayName: customGoogleDisplayName
+            chatChannelId: chatChannelId
         });
 
         const reduxState = s.getState();
         const appString = 'login';
+
+        const token = req.query.token;
+        const customFacebookLoginUrl = customFacebook ? buildExternalLoginUrl(host, customFacebook.Name, customFacebook.ClientId, token, chatChannelId) : '';
+        const customGoogleLoginUrl = customGoogle ? buildExternalLoginUrl(host, customGoogle.Name, customGoogle.ClientId, token, chatChannelId) : '';
+        const customFacebookDisplayName = customFacebook ? customFacebook.DisplayName : '';
+        const customGoogleDisplayName = customGoogle ? customGoogle.DisplayName : '';
 
         const sellerLogin = reactDom.renderToString(
             <LoginPage
@@ -1029,42 +965,24 @@ router.get('/seller/sign-in', function (req, res) {
             />
         );
 
-        let seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
+        const seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
         res.send(template('page-landing', seoTitle, sellerLogin, appString, reduxState));
     });
 });
 
-router.post('/seller/sign-in', function (req, res, next) {
-    passport.authenticate('login', function (err, user, info) {
-        if (!err && info) {
-            if (info.message.toLowerCase().indexOf('sub account login is disabled by admin.') > 1) {
-                return res.redirect(`/accounts/seller/sign-in?error=5`);
-            }
-        } else if (err) {
-            return res.redirect(`/accounts/seller/sign-in?error=invalid-login`);
-        } else {
-            if (!user) {
-                return res.redirect(`/accounts/seller/sign-in?error=invalid-login`);
+router.post('/seller/sign-in', passport.authenticate('login', { failureRedirect: CommonModule.getAppPrefix() + '/accounts/seller/sign-in?error=invalid-login' }), function(req, res) {
+    if (req.user) {
+        logLoginActivity(req, res, 0, null, function() {
+            if (req.query.chatChannelId) {
+                res.redirect(CommonModule.getAppPrefix() + '/chat?channelId=' + req.query.chatChannelId);
             }
 
-            if (req.token) {
-                setApiToken(res, req.token.access_token, req.token.expires_in);
-            }
-
-            req.logIn(user, function (err) {
-                logLoginActivity(req, res, 0, null, function () {
-                    if (req.query.chatChannelId) {
-                        return res.redirect('/chat?channelId=' + req.query.chatChannelId);
-                    }
-
-                    res.redirect('/merchants/dashboard');
-                });
-            });
-        }
-    })(req, res, next);
+            res.redirect(CommonModule.getAppPrefix() + '/merchants/dashboard');
+        });
+    }
 });
 
-router.get('/buyer/forgot-password', function (req, res) {
+router.get('/buyer/forgot-password', function(req, res) {
     const success = req.query.success;
 
     getMarketplaceInfo().then((marketplace) => {
@@ -1072,12 +990,12 @@ router.get('/buyer/forgot-password', function (req, res) {
         const reduxState = s.getState();
         const appString = 'login';
         const app = reactDom.renderToString(<ForgotPasswordPage marketplaceLogoUrl={marketplace.LogoUrl} success={success} type='buyer' />);
-        let seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
+        const seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
         res.send(template('page-login', seoTitle, app, appString, reduxState));
     });
 });
 
-router.get('/seller/forgot-password', function (req, res) {
+router.get('/seller/forgot-password', function(req, res) {
     const success = req.query.success;
 
     getMarketplaceInfo().then((marketplace) => {
@@ -1085,18 +1003,18 @@ router.get('/seller/forgot-password', function (req, res) {
         const reduxState = s.getState();
         const appString = 'login';
         const app = reactDom.renderToString(<ForgotPasswordPage marketplaceLogoUrl={marketplace.LogoUrl} success={success} type='seller' />);
-        let seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
+        const seoTitle = marketplace.SeoTitle ? marketplace.SeoTitle : marketplace.Name;
         res.send(template('page-login', seoTitle, app, appString, reduxState));
     });
 });
 
-router.post('/forgot-password', function (req, res) {
+router.post('/forgot-password', function(req, res) {
     const loginName = req.body.username;
     const type = req.body.type;
     const isSeller = req.body.isSeller;
 
-    if (loginName === "") {
-        res.redirect('/accounts/' + type + `/forgot-password?isSeller=${isSeller}&success=false`);
+    if (loginName === '') {
+        res.redirect(CommonModule.getAppPrefix() + '/accounts/' + type + `/forgot-password?isSeller=${isSeller}&success=false`);
         return;
     }
     const promiseUsers = new Promise((resolve, reject) => {
@@ -1106,7 +1024,7 @@ router.post('/forgot-password', function (req, res) {
             findExact: true
         };
 
-        client.Users.getUsers(options, function (err, result) {
+        client.Users.getUsers(options, function(err, result) {
             resolve(result);
         });
     });
@@ -1116,41 +1034,39 @@ router.post('/forgot-password', function (req, res) {
         const promiseResets = [];
 
         if (users.TotalRecords > 0) {
-            users.Records.forEach(function (user) {
+            users.Records.forEach(function(user) {
                 promiseResets.push(new Promise((resolve, reject) => {
                     const options = {
                         userId: user.ID,
                         action: 'token'
                     };
 
-                    client.Accounts.requestResetPassword(options, function (err, result) {
+                    client.Accounts.requestResetPassword(options, function(err, result) {
                         resolve(result);
                     });
                 }));
             });
 
             Promise.all(promiseResets).then((responses) => {
-                res.redirect('/accounts/' + type + `/forgot-password?isSeller=${isSeller}&success=true`);
+                res.redirect(CommonModule.getAppPrefix() + '/accounts/' + type + `/forgot-password?isSeller=${isSeller}&success=true`);
             });
-
         } else {
-            res.redirect('/accounts/' + type + `/forgot-password?isSeller=${isSeller}&success=false`);
+            res.redirect(CommonModule.getAppPrefix() + '/accounts/' + type + `/forgot-password?isSeller=${isSeller}&success=false`);
         }
     });
 });
 
-router.get('/reset-password', function (req, res) {
-    const userId = req.query['userId'];
-    const token = req.query['token'];
-    const success = req.query['success'] || null;
+router.get('/reset-password', function(req, res) {
+    const userId = req.query.userId;
+    const token = req.query.token;
+    const success = req.query.success || null;
 
-    if (!(userId && token) && success !== 'true')
-        res.redirect('/?error=invalid-reset-password');
+    if (!(userId && token) && success !== 'true') { res.redirect(CommonModule.getAppPrefix() + '/?error=invalid-reset-password'); }
 
     Promise.all([getMarketplaceInfo()]).then((responses) => {
         const marketplaceInfo = responses[0];
 
-        let isPrivate = marketplaceInfo.Settings['private-settings']['private-settings-area']['enabled'];
+        const isPrivate = marketplaceInfo.Settings['private-settings']['private-settings-area'].enabled;
 
         const s = Store.createEmptyStore({
             marketplaceLogoUrl: marketplaceInfo.LogoUrl,
@@ -1164,26 +1080,28 @@ router.get('/reset-password', function (req, res) {
         const appString = 'login';
 
         const app = reactDom.renderToString(
-            <ResetPasswordPage marketplaceLogoUrl={marketplaceInfo.LogoUrl}
+            <ResetPasswordPage
+                marketplaceLogoUrl={marketplaceInfo.LogoUrl}
                 token={token}
                 userId={userId}
                 isPrivatemarketPlace={isPrivate}
-                success={success} />
+                success={success}
+            />
         );
-        let seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
+        const seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
         res.send(template('page-login', seoTitle, app, appString, reduxState));
     });
 });
 
-router.post('/reset-password', function (req, res) {
+router.post('/reset-password', function(req, res) {
     var promiseResetPassword = new Promise((resolve, reject) => {
         const options = {
-            userId: req.body['userId'],
-            resetPasswordToken: querystring.unescape(req.body['token']),
-            password: req.body['new_password'],
-            confirmPassword: req.body['reconfirm_password']
+            userId: req.body.userId,
+            resetPasswordToken: querystring.unescape(req.body.token),
+            password: req.body.new_password,
+            confirmPassword: req.body.reconfirm_password
         };
-        client.Accounts.resetUserPassword(options, function (err, result) {
+        client.Accounts.resetUserPassword(options, function(err, result) {
             if (err) {
                 reject(err);
             }
@@ -1194,50 +1112,41 @@ router.post('/reset-password', function (req, res) {
     Promise.all([promiseResetPassword]).then((responses) => {
         const result = responses[0];
 
-        res.redirect('/accounts/reset-password?success=true');
+        res.redirect(CommonModule.getAppPrefix() + '/accounts/reset-password?success=true');
     }, (err) => {
-        res.redirect('/accounts/sign-in?error=1');
+        res.redirect(CommonModule.getAppPrefix() + '/accounts/sign-in?error=1');
     });
 });
 
-const viewChangePWPage = {
-    code: 'view-consumer-change-password-api'
-}
+router.get('/change-password', authenticated, authorizedUser, function(req, res) {
+    const success = req.query.success;
 
-router.get('/change-password', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewChangePWPage), function (req, res) {
-    let success = req.query['success'];
-    
     Promise.all([getMarketplaceInfo()]).then((responses) => {
-        const user = req.user;
+        const s = Store.createEmptyStore({
+            changePasswordReducer: { success: success },
+            userReducer: { user: req.user }
+        });
+        const marketplaceInfo = responses[0];
+        const reduxState = s.getState();
+        const appString = 'login';
 
-        getUserPermissionsOnPage(user, "Change Password", "Consumer", (permissions) => {
-            const { isAuthorizedToEdit } = permissions;
-            const s = Store.createEmptyStore({
-                changePasswordReducer: { success: success },
-                userReducer: { user: user, isAuthorizedToEdit: isAuthorizedToEdit }
-            });
-            const marketplaceInfo = responses[0];
-            const reduxState = s.getState();
-            const appString = 'login';
-
-            const app = reactDom.renderToString(
-                <ChangePasswordPage success={success} user={req.user} isAuthorizedToEdit={isAuthorizedToEdit} />);
-            let seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
-            res.send(template('page-reset', seoTitle, app, appString, reduxState));
-        });        
+        const app = reactDom.renderToString(
+            <ChangePasswordPage success={success} user={req.user} />);
+        const seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
+        res.send(template('page-reset', seoTitle, app, appString, reduxState));
     });
 });
 
-router.post('/change-password', authenticated, function (req, res) {
+router.post('/change-password', authenticated, function(req, res) {
     const options = {
         userId: req.user.ID,
-        oldPassword: req.body['oldPassword'],
-        password: req.body['password'],
-        confirmPassword: req.body['confirmPassword']
+        oldPassword: req.body.oldPassword,
+        password: req.body.password,
+        confirmPassword: req.body.confirmPassword
     };
 
     var promiseChangePassword = new Promise((resolve, reject) => {
-        client.Accounts.resetUserPassword(options, function (err, result) {
+        client.Accounts.resetUserPassword(options, function(err, result) {
             resolve(result);
         });
     });
@@ -1245,27 +1154,25 @@ router.post('/change-password', authenticated, function (req, res) {
     Promise.all([promiseChangePassword]).then((responses) => {
         const result = responses[0];
         if (result && result.Result === true) {
-            signOut(req, res, function () {
+            signOut(req, res, function() {
                 res.send({ ...result, user: null });
             });
         } else res.send({ Result: false, user: req.user });
     });
 });
 
-router.get('/non-private/be-seller', authenticated, function (req, res) {
-
+router.get('/non-private/be-seller', authenticated, function(req, res) {
     if (req.user === undefined) {
-        return res.redirect('/accounts/non-private/sign-in?isSeller=true');
+        return res.redirect(CommonModule.getAppPrefix() + '/accounts/non-private/sign-in?isSeller=true');
     }
 
     if (req.user.Roles.includes('Merchant') || req.user.Roles.includes('Submerchant')) {
-        return res.redirect('/');
+        return res.redirect(CommonModule.getAppPrefix() + '/');
     }
 
     if (req.user && req.user.Guest === false) {
-
-        let promiseMerchantUserRole = new Promise((resolve, reject) => {
-            client.Accounts.updateUserRole({ userId: req.user.ID, role: 'Merchant' }, function (err, result) {
+        const promiseMerchantUserRole = new Promise((resolve, reject) => {
+            client.Accounts.updateUserRole({ userId: req.user.ID, role: 'Merchant' }, function(err, result) {
                 resolve(result);
             });
         });
@@ -1276,38 +1183,32 @@ router.get('/non-private/be-seller', authenticated, function (req, res) {
 
             if (merchantUserRole && merchantUserRole.Result) {
                 promiseMerchant = new Promise((resolve, reject) => {
-                    client.Users.getUserDetails({ userId: req.user.ID }, function (err, details) {
+                    client.Users.getUserDetails({ userId: req.user.ID }, function(err, details) {
                         resolve(details);
                     });
                 });
-
-                if (merchantUserRole.AccessToken) {
-                    setApiToken(res, merchantUserRole.AccessToken.access_token, merchantUserRole.AccessToken.expires_in);
-                }
             }
 
             Promise.all([promiseMerchant]).then((responses) => {
                 const merchant = responses[0];
 
                 if (merchant) {
-                    req.logIn(merchant, function (err) {
+                    req.logIn(merchant, function(err) {
                         if (err) {
-                            return res.redirect('/');
+                            return res.redirect(CommonModule.getAppPrefix() + '/');
                         }
-                        return res.redirect('/merchants/settings');
+                        return res.redirect(CommonModule.getAppPrefix() + '/merchants/settings');
                     });
                 }
 
-                res.redirect('/');
+                res.redirect(CommonModule.getAppPrefix() + '/');
             });
         });
     } else {
-
         if (req.user) {
-            return res.redirect('/accounts/non-private/sign-in?isSeller=true');
+            return res.redirect(CommonModule.getAppPrefix() + '/accounts/non-private/sign-in?isSeller=true');
         }
     }
-
 });
 
 module.exports = router;

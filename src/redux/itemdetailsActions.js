@@ -5,12 +5,14 @@ if (typeof window !== 'undefined') {
 }
 var EnumCoreModule = require('../public/js/enum-core');
 var CommonModule = require('../public/js/common.js');
+const prefix  = require('../public/js/common.js').getAppPrefix();
+/* BESPOKE API */
 
 function updateSubTotal(quantity, price) {
     let priceValues = {
         subtotal: price * parseFloat(quantity),
         quantity
-    };
+    }
     return function(dispatch) {
         return dispatch({
             type: actionTypes.UPDATE_ITEMDETAILQUANTITY,
@@ -19,61 +21,59 @@ function updateSubTotal(quantity, price) {
     }
 }
 
-function updateQuantity(quantity, price, bulkDiscounts) {
-    const { PRICING_TYPE } = process.env;
-    let intQuantity = parseInt(quantity || 0);
 
+
+/* END OF BESPOKE API */
+
+function updateQuantity(number, price, bulkDiscounts) {
     let priceValues = {
-        originalPrice: price * intQuantity,
-        bulkPrice: price * intQuantity,
-        quantity: intQuantity,
+        originalPrice: price * number,
+        bulkPrice: price * number,
+        quantity: number,
         discount: 0
-    };
-
+    }
     let breakNow = false;
     return function (dispatch) {
+        //Computation for Bulk Discounts
         function inRange(x, min, max) {
             return ((x - min) * (x - max) <= 0);
         }
 
-        if (PRICING_TYPE == 'country_level' && price > 0) {
-            if (bulkDiscounts != null) {
-                bulkDiscounts.forEach(function (bulk) {
-                    if (breakNow == true) {
-                        return false;
+        if (bulkDiscounts != null) {
+            bulkDiscounts.forEach(function (bulk) {
+                if (breakNow == true) {
+                    return false;
+                }
+                let bulkComputation = (price * number) - (number * bulk.Discount);
+                if (bulk.isPercentage) {
+                    bulkComputation = (price * number) - ((price * number) * bulk.Discount) / 100;
+                }
+                if (bulk.RangeStart !== undefined) {
+                    if (inRange(number, parseInt(bulk.RangeStart), parseInt(bulk.RangeEnd)) == true) {
+                        priceValues = {
+                            originalPrice: price * number,
+                            bulkPrice: bulkComputation,
+                            quantity: number,
+                            discount: (price * number) - bulkComputation
+                        }
+                        breakNow = true;
                     }
-                    let bulkComputation = (price * intQuantity) - (intQuantity * bulk.Discount);
-                    if (bulk.IsFixed == '0') {
-                        bulkComputation = (price * intQuantity) - ((price * intQuantity) * bulk.Discount) / 100;
-                    }
-                    if (bulk.RangeStart !== undefined) {
-                        if (inRange(intQuantity, parseInt(bulk.RangeStart), parseInt(bulk.RangeEnd)) == true) {
+                } else {
+                    //OnwardPrice
+                    if (bulk.OnwardPrice !== undefined) {
+                        if (number >= parseInt(bulk.OnwardPrice)) {
                             priceValues = {
-                                originalPrice: price * intQuantity,
+                                originalPrice: price * number,
                                 bulkPrice: bulkComputation,
-                                quantity: intQuantity,
-                                discount: (price * intQuantity) - bulkComputation
+                                quantity: number,
+                                discount: (price * number) - bulkComputation
                             }
                             breakNow = true;
                         }
-                    } else {
-                        //OnwardPrice
-                        if (bulk.OnwardPrice !== undefined) {
-                            if (intQuantity >= parseInt(bulk.OnwardPrice)) {
-                                priceValues = {
-                                    originalPrice: price * intQuantity,
-                                    bulkPrice: bulkComputation,
-                                    quantity: intQuantity,
-                                    discount: (price * intQuantity) - bulkComputation
-                                }
-                                breakNow = true;
-                            }
-                        }
                     }
-                })
-            }
+                }
+            })
         }
-
         return dispatch({
             type: actionTypes.UPDATE_ITEMDETAILQUANTITY,
             priceValues: priceValues
@@ -81,20 +81,13 @@ function updateQuantity(quantity, price, bulkDiscounts) {
     }
 }
 
-function addOrEditCart(cartItemId, quantity, options, successCallback, failedCallback) {
+function addOrEditCart(cartItemId, quantity, discount, itemId, force, isComparisonOnly, successCallback, failedCallback) {
     return function (dispatch, getState) {
         let item = getState().itemsReducer.items;
-        const itemId = options.itemId;
-        const selectedQuantity = options.selectedQuantity || 0;
-        const discount = options.discount || 0;
-        const force = options.force;
-        const isComparisonOnly = options.isComparisonOnly;
-        const serviceBookingUnitGuid = options.serviceBookingUnitGuid || null;
-        const bookingSlot = options.bookingSlot;
-        const addOns = options.addOns;
+        const countryCode = getState().itemsReducer.countryCode;
 
         $.ajax({
-            url: '/items/getItemDetails',
+            url: prefix+'/items/getItemDetails',
             type: 'GET',
             data: {
                 itemId: item.ID
@@ -105,11 +98,11 @@ function addOrEditCart(cartItemId, quantity, options, successCallback, failedCal
                 item.Active = result.Active;
 
                 if (item.IsVisibleToCustomer && item.IsAvailable && item.Active) {
-                    let url = '/items/addCart';
+                    let url = prefix+'/items/addCart';
                     let method = 'POST';
 
                     if (cartItemId) {
-                        url = '/items/editCart';
+                        url = prefix+'/items/editCart';
                         method = 'PUT';
                     }
                     let guestUserID = "";
@@ -126,42 +119,25 @@ function addOrEditCart(cartItemId, quantity, options, successCallback, failedCal
                             discount: discount,
                             itemId: itemId,
                             force: force,
-                            forComparison: isComparisonOnly,
-                            guestUserID: guestUserID,                            
-                            serviceBookingUnitGuid: serviceBookingUnitGuid,
-                            bookingSlot: bookingSlot ? JSON.stringify(bookingSlot) : null,
-                            addOns: addOns ? JSON.stringify(addOns) : null,
+                            guestUserID: guestUserID,
+                            forComparison: isComparisonOnly
                         },
                         success: function (result) {
-                            if (result.ID == null && result.Code && !options.isComparisonOnly) {
-                                if (result.Code == 'INSUFFICIENT_STOCK') {
-                                    if (typeof failedCallback === 'function') {
-                                        failedCallback(EnumCoreModule.GetToastStr().Error.INSUFFICIENT_STOCK);
-                                    }
-                                } else if (result.Code == 'INVALID_SERVICE_BOOKING') {
-                                    if (typeof failedCallback === 'function') {
-                                        failedCallback(EnumCoreModule.GetToastStr().Error.INVALID_SERVICE_BOOKING);
-                                    }
-                                }
-                                return dispatch({
-                                    type: '',
-                                });
-                            }
                             if (result.AccessToken && result.AccessToken.UserId) {
                                 CommonModule.createCookie("guestUserID", result.AccessToken.UserId, 1);
                             }
                             if (item.HasChildItems && item.ChildItems) {
                                 item.ChildItems.forEach(function (child) {
-                                    if (child.ID === itemId) {
+                                    const condition = process.env.PRICING_TYPE === 'variants_level' ? child.ID === itemId : child.Tags[0].toLowerCase() === countryCode.toLowerCase();
+                                    if (condition) {
                                         if (child.StockLimited === true && !isComparisonOnly) {
-                                            //ARC9590
-                                            child.StockQuantity = parseInt(child.StockQuantity) - parseInt(selectedQuantity);
+                                            child.StockQuantity = parseInt(result.ItemDetail.StockQuantity) - parseInt(result.Quantity);
                                         }
                                     }
                                 });
                             } else {
                                 if (!isComparisonOnly) {
-                                    item.StockQuantity = parseInt(item.StockQuantity) - parseInt(selectedQuantity);
+                                    item.StockQuantity = parseInt(item.StockQuantity) - parseInt(result.Quantity);
                                 }
                             }
 
@@ -180,11 +156,7 @@ function addOrEditCart(cartItemId, quantity, options, successCallback, failedCal
                     });
                 } else {
                     if (typeof failedCallback === 'function') {
-                        let errObj = EnumCoreModule.GetToastStr().Error.ITEM_VISIBILITY_DISABLED_BY_ADMIN_OR_MERCHANT;
-                        if (isComparisonOnly) {
-                            errObj = EnumCoreModule.GetToastStr().Error.FAILED_ADD_DISABLED_ITEM_TO_COMPARISON;
-                        }
-                        failedCallback(errObj);
+                        failedCallback(EnumCoreModule.GetToastStr().Error.FAILED_ADD_DISABLED_ITEM_TO_COMPARISON);
                     }
 
                     return dispatch({
@@ -202,9 +174,10 @@ function addOrEditCart(cartItemId, quantity, options, successCallback, failedCal
 
 function selectedFeedBack(feedbackId) {
     return function (dispatch, getState) {
+        console.log("getstate: ", getState());
         let feedback = getState().itemsReducer.feedback;
         if (feedback) {
-            feedback.ItemReviews.map(function (review) { 
+            feedback.ItemReviews.map(function (review) {
                 if (review.FeedbackID === feedbackId) {
                     review.isSelected = true;
                 } else {
@@ -218,7 +191,6 @@ function selectedFeedBack(feedbackId) {
         });
     }
 }
-
 function addReplyFeedBack(feedbackId) {
     return function (dispatch, getState) {
         let feedback = getState().itemsReducer.feedback;
@@ -228,7 +200,7 @@ function addReplyFeedBack(feedbackId) {
             feedback.ItemReviews.map(function (review) {
                 if (review.isSelected === true) {
                     $.ajax({
-                        url: '/items/addReplyFeedback',
+                        url: prefix+'/items/addReplyFeedback',
                         type: 'post',
                         data: {
                             merchantId: user.ID,
@@ -236,7 +208,7 @@ function addReplyFeedBack(feedbackId) {
                             message: message
                         },
                         success: function (data) {
-                           
+
                             if (data === true) {
                                 review.Replies.push(
                                     {
@@ -255,9 +227,9 @@ function addReplyFeedBack(feedbackId) {
                         error: function (jqXHR, textStatus, errorThrown) {
                             console.log(textStatus, errorThrown);
                         }
-                    }); 
-                } 
-            });           
+                    });
+                }
+            });
         }
     }
 }
@@ -271,11 +243,62 @@ function updateMessage(message) {
     }
 }
 
+function createRFQ(rfq, callback) {
+    return function(dispatch, getState) {
+        $.ajax({
+            url: prefix + '/product-profile/create-rfq',
+            type: 'POST',
+            data: rfq,
+            success: function (result) {
+                const rfqData = result.rfq
+                const chatIdSplit = rfqData.chatId.split('|');
+                const chatUrl = prefix + '/chat/chatRFQ/' + rfqData.id + '/' + chatIdSplit[0];
+                if (callback) {
+                    callback(rfqData, chatUrl);
+                }
+                else {
+                    window.location.href = chatUrl;
+                }                
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+            }
+        });        
+    }
+}
+
+function updateRFQ(rfqID, rfq, callback) {
+    console.log('rfq', rfq);
+    return function (dispatch, getState) {
+        $.ajax({
+            url: prefix + `/product-profile/update-rfq/${rfqID}`,
+            type: 'PUT',
+            data: rfq,
+            success: function (response) {
+                if (response.result) {
+                    const chatUrl = prefix + '/chat/chatRFQ/' + rfqID + '/' + rfq.chatId;
+                    if (callback) {
+                        callback(chatUrl);
+                    }
+                    else {
+                        window.location.href = chatUrl;
+                    }
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+            }
+        });
+    }
+}
+
 module.exports = {
     updateQuantity: updateQuantity,
     addOrEditCart: addOrEditCart,
     updateSubTotal: updateSubTotal,
     selectedFeedBack: selectedFeedBack,
     addReplyFeedBack: addReplyFeedBack,
-    updateMessage: updateMessage
+    updateMessage: updateMessage, 
+    createRFQ: createRFQ,
+    updateRFQ: updateRFQ
 }

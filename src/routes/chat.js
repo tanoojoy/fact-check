@@ -1,4 +1,5 @@
 ﻿'use strict';
+
 var express = require('express');
 var chatRouter = express.Router();
 var React = require('react');
@@ -10,29 +11,24 @@ var ChatQuotationComponent = require('../views/chat/quotation/index').ChatQuotat
 var client = require('../../sdk/client');
 var authenticated = require('../scripts/shared/authenticated');
 var authorizedMerchant = require('../scripts/shared/authorized-merchant');
-var onboardedMerchant = require('../scripts/shared/onboarded-merchant');
 var authorizedUser = require('../scripts/shared/authorized-user');
 var Store = require('../redux/store');
 var EnumCoreModule = require('../public/js/enum-core');
 var CustomFieldStaticModule = require('../public/js/static/custom-field');
+let TwilioChat = require('twilio-chat');
 
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../scripts/shared/user-permissions');
+import { getDealsByUserId, getDealsByCompanyId, getDealsCountByBuyer } from './horizon-api/entity-service/deals-controller';
+import { getChatsByParams, postChatParams } from './horizon-api/entity-service/chat-controller';
+import { resolveClarivateUserId } from './horizon-api/auth-service/auth-controller';
+import { getCompanyById, getCompaniesByIds } from './horizon-api/entity-service/company-controller';
+import { updateRfq, createRfq, getRfqById } from './horizon-api/entity-service/rfq-controller';
+import { getCgiProductData, getManufacturerProductById, getMarketerProductById } from './horizon-api/entity-service/product-controller';
+import { getQuoteDetails } from './horizon-api/entity-service/quote-controller';
+import { isCompleteOnBoarding, redirectUnauthorizedUser, toInboxMessageObj, toInboxEnquiryObj, toChatMessagesObj } from '../utils';
+import { userRoles } from '../consts/horizon-user-roles';
+import tokenGenerator from './horizon-routers/token-generator';
 
-const viewCreateQuotationPage = {
-    code: 'view-merchant-create-quotation-api',
-    seoTitle: 'Create Quotation',
-    renderSidebar: false
-};
 
-const viewInboxData = {
-    code: 'view-consumer-inbox-api',
-    seoTitle: 'Inbox',
-};
-
-const viewChatData = {
-    code: 'view-consumer-chat-details-api',
-    seoTitle: 'Chat'
-}
 function getUserInboxes(userId, pageNumber, keyword, callback) {
     var promiseInbox = new Promise((resolve, reject) => {
         const options = {
@@ -49,7 +45,7 @@ function getUserInboxes(userId, pageNumber, keyword, callback) {
 
     Promise.all([promiseInbox]).then((responses) => {
         const inboxes = responses[0];
-        let inboxMessages = [];
+        let inboxMessages= [];
 
         if (inboxes.TotalRecords > 0) {
             let promiseMessages = [];
@@ -71,8 +67,6 @@ function getUserInboxes(userId, pageNumber, keyword, callback) {
 
                 promiseMessages.push(promise);
             });
-
-
 
             Promise.all(promiseMessages).then((responses) => {
                 responses.forEach(function (response) {
@@ -104,227 +98,519 @@ function getUserInboxes(userId, pageNumber, keyword, callback) {
     });
 }
 
-chatRouter.get('/', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewChatData),function (req, res) {
-    const user = req.user;
-    const channelId = req.query["channelId"];
+chatRouter.get('/generate-conversation-token', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+    const device = req.query["device"];
+    const identity = encodeURIComponent(req.query["identity"]);
+    console.log('generate-conversation-token', device, identity);
+    client.Chat.generateConversationToken(device, identity, function (err, response) {
+        res.send(response);
+    });
+});
 
-    const promiseCategories = new Promise((resolve, reject) => {
-        client.Categories.getCategories(null, function (err, categories) {
-            resolve(categories);
-        });
+chatRouter.get('/generate-token-username-company/', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+    const { username } = req.params;
+    
+    var promiseToken = new Promise((resolve, reject) => {
+        const token = tokenGenerator(username);
+        resolve(token);
     });
 
-    const promiseChatDetail = new Promise((resolve, reject) => {
-        client.Chat.getMessages(user.ID, channelId, function (err, chatDetail) {
-            resolve(chatDetail);
+    Promise.all([promiseToken]).then((responses) => {
+        const token = responses[0];
+        res.send(token);
+    });
+});
+
+chatRouter.get('/:chatId', authenticated, authorizedUser, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+    console.log('chat/chatID');
+    const context = {};
+    const userInfo = req?.user?.userInfo;
+    const hasInterlocutorId = !!req.query?.interlocutor;
+    const interlocutorId = req.query?.interlocutor;
+    const getInterlocutorCompany = hasInterlocutorId ? getCompanyById(req, interlocutorId) : Promise.resolve;
+    
+    Promise.all([getCompanyById(req), getInterlocutorCompany])
+        .then(responses => {
+            const [resCgiCompanyData, interlocutorCompanyInfo] = responses;
+            const companyInfo = resCgiCompanyData.data || {};
+            const interlocutorCompany = interlocutorCompanyInfo && interlocutorCompanyInfo.data || {};
+            const appString = 'chat';
+            const channelId = req.params.chatId;
+            const sid = req.query.sid;
+            const isBuyer = !(userInfo.role === userRoles.subMerchant);
+            
+            client.Chat.getMessageHistory(sid, function (err, response) {
+                let chatDetail = null;
+                if (response && response.result) {
+                    chatDetail = response.result;
+                }
+                console.log('chatDetail', chatDetail);
+                const s = Store.createChatStore({
+                    userReducer: {
+                        user: req?.user,
+                        isBuyer: isBuyer
+                    },
+                    companyReducer: {
+                        companyInfo: companyInfo,
+                        interlocutorCompany: interlocutorCompany
+                    },
+                    chatReducer: {
+                        channelId: channelId,
+                        sid: sid,
+                        customFields: [
+                            {
+                                ...interlocutorCompany
+                            }
+                        ],
+                        chatDetail: chatDetail
+                    }
+                });
+
+                const reduxState = s.getState();
+                const chatPageApp = reactDom.renderToString(<ChatComponent context={context}
+                    user={req?.user}
+                    isBuyer={isBuyer}
+                    chatDetail={chatDetail}
+                    interlocutorCompany={interlocutorCompany}
+                    companyInfo={companyInfo}
+                />);
+
+                let seoTitle = 'Chat';
+                if (req.SeoTitle) {
+                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+                }
+
+                res.send(template('page-chat new-search-settings', seoTitle, chatPageApp, appString, reduxState));
+            });            
         });
+});
+
+chatRouter.post('/createChat', authenticated, function (req, res) {
+    console.log('chatRouter createChat');
+    if (redirectUnauthorizedUser(req, res)) return;
+    const userClarivateId = req.body['userClarivateId'];
+    const arcadierUserId = req.body['arcadierUserId'];
+    let twillioChatId = req.body['twillioChatId'];
+    const isInitiator = req.body['isInitiator'];
+    const incomingCoId = req.body['incomingCoId'];
+    const outgoingCoId = req.body['outgoingCoId'];
+    
+    client.Chat.createConversationChannel({
+        channelName: twillioChatId,
+        buyerId: userClarivateId,
+        sellerCompanyId: outgoingCoId
+        //channelName: 'chatcommon10121636949441970',
+        //buyerId: 'c57b30a0-d26b-11ea-a606-8dbbd477c73c',
+        //sellerCompanyId: '10092'
+    }, async (err, response) => {
+        console.log('createChannelResult', response);
+        if (response.Result) {
+            twillioChatId = `${twillioChatId}|${response.Sid}`;
+            try {
+                // post (create) rfq
+                const createChatRequest = await postChatParams({ userClarivateId, twillioChatId, arcadierUserId, isInitiator, incomingCoId, outgoingCoId });
+                //console.log('createChatRequest', createChatRequest);
+                res.send({ chat: createChatRequest.data });
+            } catch (e) {
+                console.log('productProfile create RFQ Error e', e);
+            }
+        }
+    });
+})
+
+chatRouter.get('/chatRFQ/:rfqId/:chatId', authenticated, function(req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
+    const context = {};    
+    const { rfqId, chatId } = req.params;   
+    const userInfo = req?.user?.userInfo;             
+    
+    getRfqById(rfqId)
+        .then(result => {
+            const rfqData = result.data;
+            const interlocutorId = rfqData.company.id;
+            const productId = rfqData.productId;
+            const quoteId = rfqData.quoteId;
+            const chatIdSplit = rfqData.chatId.split('|');
+            const friendlyName = chatIdSplit[0];
+            let sid = '';
+            if (chatIdSplit.length > 1) {
+                sid = chatIdSplit[1];
+            }
+            client.Chat.getMessageHistory(sid, function (err, response) {
+                let chatDetail = null;
+                if (response && response.result) {
+                    chatDetail = response.result;
+                }
+                const getQuoteDetailPromise = quoteId ? getQuoteDetails(userInfo.userid, quoteId) : Promise.resolve;
+
+
+                Promise.all([getCompanyById(req), getCompanyById(req, interlocutorId), getCgiProductData(req, productId), getQuoteDetailPromise])
+                    .then(responses => {
+                        const [resCgiCompanyData, interlocutorCompanyInfo, resCgiProductData, quote] = responses;
+                        const companyInfo = resCgiCompanyData.data || {};
+                        const interlocutorCompany = interlocutorCompanyInfo && interlocutorCompanyInfo.data || {};
+                        const productInfo = resCgiProductData.data || {};
+                        const appString = 'chat';
+                        const channelId = chatId;
+                        const quoteData = quote.data;
+
+                        const customFields = [
+                            {
+                                ...interlocutorCompany
+                            },
+                            {
+                                ...productInfo
+                            },
+                            {
+                                ...quoteData
+                            },
+                            {
+                                ...rfqData
+                            }
+                        ];
+
+                        const s = Store.createChatStore({
+                            userReducer: {
+                                user: req?.user
+                            },
+                            companyReducer: {
+                                companyInfo: companyInfo
+                            },
+                            chatReducer: {
+                                channelId: channelId,
+                                sid: sid,
+                                customFields: customFields,
+                                chatDetail: chatDetail
+                            }
+                        });
+
+                        const reduxState = s.getState();
+                        const chatPageApp = reactDom.renderToString(<ChatComponent context={context}
+                            user={req?.user}
+                            chatDetail={chatDetail}
+                            interlocutorCompany={interlocutorCompany}
+                            companyInfo={companyInfo}
+                            customFields={customFields}
+                        />);
+
+                        let seoTitle = 'Chat';
+                        if (req.SeoTitle) {
+                            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+                        }
+
+                        res.send(template('page-chat new-search-settings', seoTitle, chatPageApp, appString, reduxState));
+                        
+                    });
+            });
+        });
+});
+
+chatRouter.put('/chat-update-rfq/:rfqId/', authenticated, async (req, res) => {
+    const rfqData = req.body;
+    try {
+        const { chatId, id } = rfqData;
+        //const userInfo = req?.user?.userInfo;
+        console.log('id', id);
+        await updateRfq(req, { chatId }, id);
+    }
+    catch (e) {
+
+    }
+    return;
+});
+
+const getDealsWithInterlocutor = async({ role, companyId, userId, page, size }) => {
+    if (role === userRoles.subMerchant) {
+        const deals = (await getDealsByCompanyId(companyId, page, size)).content;
+        const buyerIds = deals.map(deal => deal.rfq && deal.rfq.buyerId);
+        const usersData = await resolveClarivateUserId(buyerIds);
+        const companies = await getCompaniesByIds(usersData.map(userData => userData.clarivateCompanyId), true);
+
+        deals.forEach((deal, ix) => (deal.interlocutorCompany = companies[ix]));
+
+        return deals;
+    }
+
+    const dealsResponse = await getDealsByUserId(userId, page, size);
+    const deals = dealsResponse.data;
+
+    const companyIds = deals.map(deal => deal.rfq && deal.rfq.cgiCompanyId);
+    const companies = await getCompaniesByIds(companyIds, true);
+
+    deals.forEach((deal) => {
+        const company = companies.find((company) => deal.rfq.cgiCompanyId === company.id);
+        deal.interlocutorCompany = company;
     });
 
-    Promise.all([promiseCategories, promiseChatDetail]).then((responses) => {
-        const appString = 'chat';
-        const context = {};
-        const categories = responses[0];
-        const chatDetail = responses[1];
+    return deals;
+};
 
-        let promiseOrderDetails = null;
-        let channelCartItemDetail = null;
-        let channelItemDetail = null;
-        if (chatDetail && chatDetail.Channel) {
-            if (chatDetail.Channel.CartItemDetail) {
-                channelCartItemDetail = chatDetail.Channel.CartItemDetail;
-                if (chatDetail.Channel.CartItemDetail.ItemDetail) {
-                    channelItemDetail = chatDetail.Channel.CartItemDetail.ItemDetail;
+const getChatMessage = async (deal) => {
+    //let dealsWithMessages = [];
+    const promiseMsgHist = (sid) => {
+        return new Promise((resolve, reject) => {
+            client.Chat.getMessageHistory(sid, function (err, response) {
+                resolve(response);
+            });
+        });
+    };
+
+    const { ChannelID: channelName } = deal;
+    const channelSplit = channelName.split('|');
+    let sid = '';
+    if (channelSplit.length > 1) {
+        sid = channelSplit[1];
+    }
+    console.log('sid', sid);
+    if (sid) {
+        try {
+            const messages = await promiseMsgHist(sid);            
+            deal.messages = messages.result.Records.map(item => {
+                if (item) {
+                    console.log('item.sid', item.SID);
+                    return { author: item.Sender, body: item.Body, dateUpdated: item.DateSentTimeStamp, sid: item.SID }
+                }
+                return null;
+            });
+            console.log('getChatMessage', JSON.stringify(deal));
+        }
+        catch {
+            return { ...deal };
+        }
+    }
+    return { ...deal };
+}
+
+const getChatMessages = async (inboxes) => {
+    let updatedInboxes = [];
+    
+    try {
+        for (let deal of inboxes) {
+            try {
+                const updatedDeal = await getChatMessage(deal);
+                updatedInboxes.push(updatedDeal);
+            }
+            catch {
+
+            }            
+        };
+        return updatedInboxes;
+    }
+    catch {
+        return null;
+    }    
+}
+
+const getDealsByPage = (deals, page, size) => {
+    deals = deals.sort((a, b) => {
+        return new Date(a.updatedAt) - new Date(b.updatedAt);
+    });
+    console.log('deals sorted', deals);
+    deals = deals.slice((page - 1) * size, (size * page) - 1);
+    return deals;
+}
+
+const renderInboxRequestsQoutes = (req, res, user, companyInfo, dealsCount, isDataOnly = false, isBuyer = false) => {
+    const context = {};
+    let seoTitle = 'Inbox';
+    if (req.SeoTitle) {
+        seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+    }
+    const appString = 'chat-inbox';
+
+    let { page = 1, size = 5 } = req.query;
+    page -= 1;
+    const { role, companyId = null, ID: userId } = req.user;    
+
+    getDealsWithInterlocutor({
+            role,
+            companyId,
+            userId,
+            page,
+            size
+        }).then(async responseDeal => {
+            let deals = responseDeal;
+            if (deals) {
+                if (deals.length > size) {
+                    deals = getDealsByPage(deals, page, size);
                 }
             }
-            else if (chatDetail.Channel.ItemDetail) {
-                channelItemDetail = chatDetail.Channel.ItemDetail;
-            }
-        }
-
-        if (channelCartItemDetail && channelItemDetail && chatDetail.Channel.Offer
-            && chatDetail.Channel.Offer.Accepted
-            && channelCartItemDetail.ID == chatDetail.Channel.Offer.CartItemID
-            && channelCartItemDetail.ItemDetail.MerchantDetail.ID == user.ID) {
-            promiseOrderDetails = new Promise((resolve, reject) => {
-                const options = {
-                    userId: user.ID,
-                    orderId: channelCartItemDetail.OrderID
-                };
-                client.Orders.getOrderDetails(options, function (err, chatDetail) {
-                    resolve(chatDetail);
-                });
+            let inboxes = {
+                TotalRecords: dealsCount,
+                PageNumber: page + 1,
+                PageSize: size,
+                Records: []
+            };
+            deals.forEach((deal) => {    
+                let record = toInboxMessageObj(deal);
+                inboxes.Records.push(record);
             });
-        }
-
-        let promiseItems = new Promise((resolve, reject) => {
-
-            let itemId = channelItemDetail
-                ? channelItemDetail.ID
-                : ((channelCartItemDetail && channelCartItemDetail.ItemDetail) ? channelCartItemDetail.ItemDetail.ID : 0);
-
-            if (itemId > 0) {
-                const options = {
-                    itemId: itemId,
-                    activeOnly: false
-                };
-
-
-                client.Items.getItemDetails(options, function (err, details) {
-                    resolve(details);
-                });
+            const records = await getChatMessages(inboxes.Records);
+            //console.log('records', JSON.stringify(records));
+            inboxes.Records = [...records];
+            if (isDataOnly) {
+                return res.send({ inboxes });
             }
-            else {
-                resolve(null);
-            }
-        });
-
-        let hasBulk = false;
-
-        Promise.all([promiseItems, promiseOrderDetails]).then((responses) => {
-            let parentItem = responses[0];
-            let orderDetails = responses[1];
-
-            function inRange(x, min, max) {
-                return ((x - min) * (x - max) <= 0);
-            }
-
-            if (parentItem && parentItem.ChildItems) {
-                parentItem.ChildItems.forEach(function (child) {
-                    if (child.ID === channelItemDetail.ID) {
-                        if (child.CustomFields) {
-                            child.CustomFields.forEach(function (customfield) {
-                                if (customfield.Name.toLowerCase() === "bulkpricing") {
-                                    if (customfield.Values && customfield.Values[0] && customfield.Values[0].length > 1) {
-                                        const customFieldValue = JSON.parse(customfield.Values[0]);
-                                        const number = channelCartItemDetail.Quantity;
-                                        const price = channelItemDetail.Price;
-                                        if (customFieldValue != null) {
-                                            let breakNow = false;
-                                            customFieldValue.forEach(function (bulk) {
-                                                if (breakNow == true) {
-                                                    return false;
-                                                }
-                                                let bulkComputation = (price * number) - (number * bulk.Discount);
-                                                if (bulk.isPercentage) {
-                                                    bulkComputation = (price * number) - ((price * number) * bulk.Discount) / 100;
-                                                }
-                                                if (bulk.RangeStart !== undefined) {
-                                                    if (inRange(number, parseInt(bulk.RangeStart), parseInt(bulk.RangeEnd)) == true) {
-                                                        channelItemDetail.SubTotal = bulkComputation;
-                                                        breakNow = true;
-                                                    }
-                                                } else {
-                                                    // OnwardPrice
-                                                    if (bulk.OnwardPrice !== undefined) {
-                                                        if (number >= parseInt(bulk.OnwardPrice)) {
-                                                            channelItemDetail.SubTotal = bulkComputation;
-                                                            breakNow = true;
-                                                        }
-                                                    }
-                                                }
-                                            });
-                                        }
-                                        hasBulk = true;
-                                    }
-                                }
-                            });
-                        }
-                    }
-                });
-            }
-
-            const isItemDisabled = !(parentItem && parentItem.IsAvailable && parentItem.IsVisibleToCustomer && parentItem.Active);
-
-            let invoiceNo = null;
-            if (orderDetails && orderDetails.PaymentDetails && orderDetails.PaymentDetails.length > 0) {
-                invoiceNo = orderDetails.PaymentDetails[0].InvoiceNo;
-            }
-            getUserPermissionsOnPage(user, 'Chat Details', 'Consumer', (pagePermissions) => {
-                getUserPermissionsOnPage(user, 'Chat Details', 'Merchant', (merchantPagePermissions) => {
-                    //consumer chat details does not have add permission, only merchant
-                    //use the add permission from merchant
-                    pagePermissions.isAuthorizedToAdd = merchantPagePermissions.isAuthorizedToAdd;
-
-                    const s = Store.createChatStore({
-                        userReducer: {
-                            user: user,
-                            pagePermissions
-                        },
-                        chatReducer: {
-                            channelId: channelId,
-                            chatDetail: chatDetail,
-                            hasBulk: hasBulk,
-                            isItemDisabled: isItemDisabled,
-                            invoiceNo: invoiceNo
-                        }
-                    });
-
-                    //UN1101 //Checking ForNull to Avoid serverCrash
-                    if (channelItemDetail && channelItemDetail.Media) {
-                        channelItemDetail.Media.map(function (data, i) {
-                            data.MediaUrl = channelItemDetail.Media[i].MediaUrl;
-                        });
-                    }
-
-                    const reduxState = s.getState();
-                    const chatPageApp = reactDom.renderToString(<ChatComponent context={context}
-                        categories={categories}
-                        user={user}
-                        chatDetail={chatDetail}
-                        hasBulk={hasBulk}
-                        isItemDisabled={isItemDisabled}
-                        invoiceNo={invoiceNo}
-                        pagePermissions={pagePermissions}
-                    />);
-
-                    let seoTitle = 'Chat';
-                    if (req.SeoTitle) {
-                        seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-                    }
-
-                    res.send(template('page-seller page-chat-quotation', seoTitle, chatPageApp, appString, reduxState));
-                });
-            });
+            //Request/Quotes code above
             
+            const chatInboxes = await GetEnquiries(req);
+            
+            
+            const s = Store.createInboxStore({
+                userReducer: { user: req.user, isBuyer: isBuyer },
+                inboxReducer: {
+                    messages: inboxes,
+                    enquiries: chatInboxes
+                },
+                companyReducer: {
+                    companyInfo: companyInfo
+                },
+                marketplaceReducer: { dealsCount: dealsCount || 0 },      
+                searchReducer: {
+
+                }
+                
+            });
+            const reduxState = s.getState();
+            const InboxPage = reactDom.renderToString(
+                <ChatInboxPage
+                    currentUser={req.user}
+                    messages={inboxes}
+                    enquiries={chatInboxes}
+                    companyInfo={companyInfo}
+                    isBuyer={isBuyer}
+                />);
+        
+            res.send(template('page-chat new-search-settings', seoTitle, InboxPage, appString, reduxState));
         });
-    });
-});
+}
 
-chatRouter.get('/inbox', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewInboxData), function (req, res) {
-    let user = req.user;
-    const keyword = '';
-    const pageNumber = 1;
+chatRouter.get('/inbox/requests-quotes', authenticated, authorizedUser, async function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+    if (!isCompleteOnBoarding(req?.user)) {
+        res.redirect(getAppPrefix() + '/');
+        return;
+    }
 
-    getUserInboxes(user.ID, pageNumber, keyword, function (inboxes, inboxMessages) {
-        const appString = 'chat-inbox';
-        const context = {};
-
-        const s = Store.createInboxStore({
-            userReducer: { user: user },
-            inboxReducer: {
-                messages: inboxes,
-                inboxDatas: inboxMessages
+    const userInfo = req?.user?.userInfo;    
+    getCompanyById(req)
+        .then(resCgiCompanyData => {
+            const companyInfo = resCgiCompanyData.data || {};            
+            let dealsCount;
+            if (userInfo.role === userRoles.subMerchant) {
+                getDealsByCompanyId(req?.user?.companyId)
+                    .then(deals => {
+                        dealsCount = deals?.total;      
+                        renderInboxRequestsQoutes(req, res, userInfo, companyInfo, dealsCount, false, false);
+                    });
+            } else {
+                getDealsCountByBuyer(req.user.ID)
+                    .then(deals => {
+                        dealsCount = deals?.rfq[0]?.count;
+                        renderInboxRequestsQoutes(req, res, userInfo, companyInfo, dealsCount, false, true );
+                    });
             }
         });
-
-        const reduxState = s.getState();
-
-        let seoTitle = 'Inbox';
-        if (req.SeoTitle) {
-            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-        }
-
-        const InboxPage = reactDom.renderToString(
-            <ChatInboxPage context={context}
-                currentUser={user}
-                messages={inboxes}
-                inboxDatas={inboxMessages} />);
-
-        res.send(template('page-inbox', seoTitle, InboxPage, appString, reduxState));
-    });
 });
+
+const GetEnquiries = (req) => {
+    let { page = 1, size = 5 } = req.query;
+    page -= 1;
+    const userInfo = req?.user?.userInfo;
+    let companyInfo = {};
+    let companyId = 0;
+    let chats = [];
+    let inboxes = {};
+    
+    return new Promise((resolve, reject) => {
+        getCompanyById(req)
+            .then(resCgiCompanyData => {
+                companyInfo = resCgiCompanyData.data || {};  
+                companyId = companyInfo.id;          
+                return getChatsByParams({
+                    userId: req.user.ID,
+                    page,
+                    size
+                });
+            })
+            .then(response => {
+                chats = response ? response.content : [];
+                console.log('chats', JSON.stringify(chats));
+                inboxes = {
+                    TotalRecords: response.total,
+                    PageNumber: response.pageNumber + 1,
+                    PageSize: response.pageSize,
+                    Records: []
+                }; 
+                let interlocutorIds = chats?.map(chat => {
+                    if (chat.incomingCoId && chat.outgoingCoId) {
+                        if (chat.incomingCoId === chat.outgoingCoId) {
+                            chat.interlocutorCompanyId = chat.incomingCoId
+                            return chat.incomingCoId;
+                        }
+        
+                        return companyId === chat.incomingCoId ? chat.outgoingCoId : chat.incomingCoId;
+                    }
+                    return null;
+                });
+                console.log('interlocutorIds', interlocutorIds);
+                interlocutorIds = interlocutorIds.reduce((acc, companyId) => {
+                    if (acc && acc.find(cid => cid === companyId)) {
+                        return acc;
+                    }
+                    acc.push(companyId);
+                    return acc;
+                }, []);
+                return getCompaniesByIds(interlocutorIds, true);
+            })
+            .then(companies => {
+                chats = chats.map(chat => toInboxEnquiryObj(chat, companyId, companies));
+                return getChatMessages(chats);
+            })
+            .then(records => {
+                inboxes.Records = records;
+                resolve(inboxes);
+            }); 
+    })
+}
+
+chatRouter.get('/inbox/get-enquiries', authenticated, authorizedUser, function(req, res) {    
+    GetEnquiries(req)
+        .then(response => {
+            res.send({ inboxes: response });
+        });
+});
+
+chatRouter.get('/inbox/get-requests-quotes', authenticated, authorizedUser, function(req, res) {    
+    const userInfo = req?.user?.userInfo;
+    let companyInfo = {};
+    getCompanyById(req)
+        .then(resCgiCompanyData => {
+            companyInfo = resCgiCompanyData.data || {};            
+            let dealsCount;
+            if (userInfo.role === userRoles.subMerchant) {
+                getDealsByCompanyId(req?.user?.companyId)
+                    .then(deals => {                        
+                        dealsCount = deals?.total;      
+                        renderInboxRequestsQoutes(req, res, userInfo, companyInfo, dealsCount, true);
+                    });
+            } else {
+                getDealsCountByBuyer(req.user.ID)
+                    .then(deals => {                        
+                        dealsCount = deals?.rfq[0]?.count;
+                        renderInboxRequestsQoutes(req, res, userInfo, companyInfo, dealsCount, true);
+                    });
+            }
+        });
+})
 
 chatRouter.get('/inbox/search', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     let user = req.user;
     const keyword = req.query['keyword'];
     const pageNumber = 1;
@@ -338,6 +624,8 @@ chatRouter.get('/inbox/search', authenticated, function (req, res) {
 });
 
 chatRouter.get('/inbox/paging', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     let user = req.user;
     const keyword = req.query['keyword'];
     const pageNumber = req.query['pageNumber'];
@@ -386,14 +674,13 @@ chatRouter.get('/inbox/getUnreadCount', authenticated, function (req, res) {
                     includes: null
                 };
 
-                //this causing the problem for ARC9357 I think in the UI for superbaby we are not showing the unreadCounts. lets remove this its exception TOO MUCH REQUEST
-                //let promise = new Promise((resolve, reject) => {
-                //    client.Inbox.getChannelMessages(options, function (err, result) {
-                //        resolve(result);
-                //    });
-                //});
-                
-             //   promiseMessages.push(promise);
+                let promise = new Promise((resolve, reject) => {
+                    client.Inbox.getChannelMessages(options, function (err, result) {
+                        resolve(result);
+                    });
+                });
+
+                promiseMessages.push(promise);
             });
 
             Promise.all(promiseMessages).then((responses) => {
@@ -420,6 +707,9 @@ chatRouter.get('/inbox/getUnreadCount', authenticated, function (req, res) {
 });
 
 chatRouter.get('/generate-token', authenticated, function (req, res) {
+    console.log('generate-token');
+    if (redirectUnauthorizedUser(req, res)) return;
+
     var promiseToken = new Promise((resolve, reject) => {
         client.Chat.generateToken(req.user.ID, 'browser', function (err, token) {
             resolve(token);
@@ -432,41 +722,9 @@ chatRouter.get('/generate-token', authenticated, function (req, res) {
     });
 });
 
-chatRouter.post('/edit-cart-item-booking-slot', authenticated, authorizedMerchant, onboardedMerchant, isAuthorizedToPerformAction('add-merchant-create-quotation-api'), function (req, res) {
-    const user = req.user;
-
-    var promiseCart = new Promise((resolve, reject) => {
-        const options = {
-            userId: user.ID,
-            cartitemid: req.body['CartItemID'],
-            SubTotal: req.body['SubTotal']
-        };
-
-        if (req.body['AddOns']) {
-            options.AddOns = JSON.parse(req.body['AddOns'])
-        }
 
 
-        if (req.body['Quantity']) {
-            options.Quantity = req.body['Quantity']
-        }
-
-        if (req.body['BookingSlot']) {
-            options.BookingSlot = JSON.parse(req.body['BookingSlot']);
-        }
-
-
-        client.Orders.updateBooking(options, function (err, result) {
-            resolve(result);
-        });
-
-    });
-    Promise.all([promiseCart]).then((responses) => {
-        res.send(responses[0]);
-    });
-})
-
-chatRouter.post('/send-offer', authenticated, authorizedMerchant, onboardedMerchant, isAuthorizedToPerformAction('add-merchant-create-quotation-api'), function (req, res) {
+chatRouter.post('/send-offer', authenticated, authorizedMerchant, function (req, res) {
     const user = req.user;
 
     const offer = {
@@ -476,7 +734,7 @@ chatRouter.post('/send-offer', authenticated, authorizedMerchant, onboardedMerch
         CartItemID: req.body['CartItemID'],
         Total: req.body['Total'],
         CurrencyCode: req.body['CurrencyCode'],
-        ChannelID: req.body['ChannelID'] || null,
+        ChannelID: req.body['ChannelID'],
         MessageType: 'PRE-APPROVED',
         Message: null,
         Accepted: false,
@@ -485,18 +743,15 @@ chatRouter.post('/send-offer', authenticated, authorizedMerchant, onboardedMerch
         PaymentTermID: req.body['PaymentTermID'],
         ValidStartDate: req.body['ValidStartDate'],
         ValidEndDate: req.body['ValidEndDate'],
-        OfferDetails: JSON.parse(req.body['OfferDetails']),
-        AddOns: JSON.parse(req.body["AddOns"])
+        OfferDetails: JSON.parse(req.body['OfferDetails'])
     };
 
     var promiseCart = new Promise((resolve, reject) => {
         const options = {
             userID: offer.ToUserID,
             quantity: offer.Quantity,
-            cartID: offer.CartItemID,
-            addOns: offer.AddOns
+            cartID: offer.CartItemID
         };
-
         client.Carts.editCart(options, function (err, result) {
             resolve(result);
         });
@@ -531,8 +786,8 @@ chatRouter.post('/send-offer', authenticated, authorizedMerchant, onboardedMerch
             const accountOwner = responses[1];
 
             const chatMessage = `<span class=\"user-container\">${user.FirstName + ' ' + user.LastName}</span>` +
-                `<p class=\"chat-system-generated-msg\" data-msg-type=\"sent-quotation\">${accountOwner.DisplayName} sent a quotation.</p>` +
-                `<button class=\"btn\" id=\"quotation-button\" onclick="window.location = '${'/quotation/detail?id=' + offer.ID}';">Check Quotation</button>`;
+                                `<p class=\"chat-system-generated-msg\" data-msg-type=\"sent-quotation\">${accountOwner.DisplayName} sent a quotation.</p>` +
+	                            `<button class=\"btn\" id=\"quotation-button\" onclick="window.location = '${'/quotation/detail?id=' + offer.ID}';">Check Quotation</button>`;
 
             const promiseUpdateQuotation = new Promise((resolve, reject) => {
                 const options = {
@@ -623,6 +878,9 @@ chatRouter.put('/decline-offer', authenticated, function (req, res) {
 });
 
 chatRouter.get('/get-channels', authenticated, function (req, res) {
+
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const options = {
         pageSize: req.query['pageSize'],
         pageNumber: req.query['pageNumber'],
@@ -640,44 +898,6 @@ chatRouter.get('/get-channels', authenticated, function (req, res) {
     });
 });
 
-chatRouter.post('/create-cart', authenticated, authorizedMerchant, onboardedMerchant, isAuthorizedToPerformAction('add-merchant-create-quotation-api'), function (req, res) {
-    const userId = req.user.ID;
-    var promiseCart = new Promise((resolve, reject) => {
-        const cartOptions = {
-            userId: req.body['recipientId'],
-            quantity: req.body['quantity'],
-            itemId: req.body['itemId'],
-            force: true
-        };
-        if (process.env.PRICING_TYPE == 'service_level') {
-            cartOptions.serviceBookingUnitGuid = req.body['serviceBookingUnitGuid'] || null;
-            cartOptions.bookingSlot = req.body['bookingSlot'] ? JSON.parse(req.body['bookingSlot']) : null;
-            cartOptions.addOns = req.body['addOns'] ? JSON.parse(req.body['addOns']) : null;
-        }
-        client.Carts.addCart(cartOptions, function (err, result) {
-            if (err) {
-                if (err.toString().includes('Insufficient stock')) {
-                    reject({ Code: 'INSUFFICIENT_STOCK' });
-                } else if (err.toString().includes('Invalid service booking')) {
-                    reject({ Code: 'INVALID_SERVICE_BOOKING' });
-                } else {
-                    reject(null);
-                }
-
-            }
-            else {
-                resolve(result);
-            }
-        });
-    });
-
-    Promise.all([promiseCart]).then((responses) => {
-        res.send(responses[0]);
-    }, (err) => {
-        res.send(err);
-    });
-});
-
 chatRouter.post('/create-channel', authenticated, function (req, res) {
     const userId = req.user.ID;
     var promiseCart = new Promise((resolve, reject) => {
@@ -688,25 +908,8 @@ chatRouter.post('/create-channel', authenticated, function (req, res) {
                 itemId: req.body['itemId'],
                 force: true
             };
-            if (process.env.PRICING_TYPE == 'service_level') {
-                cartOptions.serviceBookingUnitGuid = req.body['serviceBookingUnitGuid'] || null;
-                cartOptions.bookingSlot = req.body['bookingSlot'] ? JSON.parse(req.body['bookingSlot']) : null;
-                cartOptions.addOns = req.body['addOns'] ? JSON.parse(req.body['addOns']) : null;
-            }
             client.Carts.addCart(cartOptions, function (err, result) {
-                if (err) {
-                    if (err.toString().includes('Insufficient stock')) {
-                        reject({ Code: 'INSUFFICIENT_STOCK' });
-                    } else if (err.toString().includes('Invalid service booking')) {
-                        reject({ Code: 'INVALID_SERVICE_BOOKING' });
-                    } else {
-                        reject(null);
-                    }
-
-                }
-                else {
-                    resolve(result);
-                }
+                resolve(result);
             });
         }
         else {
@@ -732,15 +935,15 @@ chatRouter.post('/create-channel', authenticated, function (req, res) {
             const channel = responses[0];
             res.send(channel);
         });
-    }, (err) => {
-        res.send(err);
     });
 });
 
 chatRouter.get('/get-recipient-addresses', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const recipientId = req.query['recipientId'];
 
-    var promiseAddresses = new Promise((resolve, reject) => {
+    var promiseAddresses= new Promise((resolve, reject) => {
         client.Addresses.getUserAddresses(recipientId, function (err, addresses) {
             resolve(addresses);
         });
@@ -764,6 +967,8 @@ chatRouter.get('/get-recipient-addresses', authenticated, function (req, res) {
 });
 
 chatRouter.get('/enquiry', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const channelId = req.query["channelId"];
 
@@ -849,6 +1054,8 @@ chatRouter.put('/accept-offer', authenticated, function (req, res) {
 });
 
 chatRouter.get('/get-offer', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     var promiseOffer = new Promise((resolve, reject) => {
         const options = {
             userId: req.user.ID,
@@ -871,7 +1078,6 @@ chatRouter.put('/update-member-last-seen-message', authenticated, function (req,
             memberId: req.body['memberId'],
             messageId: req.body['messageId']
         };
-
         client.Chat.updateMemberLastSeenMessage(userId, data, function (err, result) {
             resolve(result);
         });
@@ -884,6 +1090,8 @@ chatRouter.put('/update-member-last-seen-message', authenticated, function (req,
 });
 
 chatRouter.get('/get-chat-details', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const channelId = req.query["channelId"];
 
     const promiseChatDetails = new Promise((resolve, reject) => {
@@ -898,17 +1106,8 @@ chatRouter.get('/get-chat-details', authenticated, function (req, res) {
 });
 
 chatRouter.post('/add-channel-member', authenticated, function (req, res) {
-    // this method is for subaccounts only
-    const { user } = req;
-    let userId = user.ID;
-
-    if (user.SubBuyerID) {
-        userId = user.SubBuyerID;
-    } else if (user.SubmerchantID) {
-        userId = user.SubmerchantID;
-    }
-
     var promiseMember = new Promise((resolve, reject) => {
+        const userId = req.user.ID;
         const data = {
             channelId: req.body['channelId']
         };
@@ -923,7 +1122,9 @@ chatRouter.post('/add-channel-member', authenticated, function (req, res) {
     });
 });
 
-chatRouter.get('/quotation', authenticated, authorizedMerchant, onboardedMerchant, isAuthorizedToAccessViewPage(viewCreateQuotationPage), function (req, res) {
+chatRouter.get('/quotation', authenticated, authorizedMerchant, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const channelId = req.query['channelId'];
 
@@ -980,7 +1181,6 @@ chatRouter.get('/quotation', authenticated, authorizedMerchant, onboardedMerchan
 
             if (itemDetail) {
                 //blocker cant access chatdetails
-                //  const customFields = !itemDetail.ChildItems ? itemDetail.CustomFields : itemDetail.ChildItems.find(i => i.Tags[0] == chatItemDetail.Tags[0]).CustomFields;
                 let customFields = itemDetail.CustomFields;
                 if (itemDetail.ChildItems) {
                     itemDetail.ChildItems.forEach(function (ci) {
@@ -989,7 +1189,7 @@ chatRouter.get('/quotation', authenticated, authorizedMerchant, onboardedMerchan
                         }
                     });
                 }
-
+                console.log("teee", customFields);
                 if (customFields) {
                     availability = {};
 
@@ -1001,28 +1201,22 @@ chatRouter.get('/quotation', authenticated, authorizedMerchant, onboardedMerchan
                 }
             }
 
-            getUserPermissionsOnPage(user, 'Create Quotation', 'Merchant', (pagePermissions) => {
-                const reduxState = Store.createChatStore({
-                    userReducer: {
-                        user: user,
-                        pagePermissions
-                    },
-                    chatReducer: {
-                        chatDetail: chatDetail,
-                        paymentTerms: paymentTerms,
-                        availability: availability
-                    }
-                }).getState();
+            const reduxState = Store.createChatStore({
+                userReducer: { user: user },
+                chatReducer: {
+                    chatDetail: chatDetail,
+                    paymentTerms: paymentTerms,
+                    availability: availability
+                }
+            }).getState();
 
-                const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-                const app = reactDom.renderToString(<ChatQuotationComponent user={user}
-                    pagePermissions={pagePermissions}
-                    channelId={channelId}
-                    chatDetail={chatDetail}
-                    paymentTerms={paymentTerms} />);
+            const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            const app = reactDom.renderToString(<ChatQuotationComponent user={user}
+                channelId={channelId}
+                chatDetail={chatDetail}
+                paymentTerms={paymentTerms} />);
 
-                res.send(template('page-seller quotation-detail', seoTitle, app, 'chat-quotation', reduxState));
-            });
+            res.send(template('page-seller quotation-detail', seoTitle, app, 'chat-quotation', reduxState));
         });
     });
 });

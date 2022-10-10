@@ -1,9 +1,7 @@
-'use strict';
-let actionTypes = require('./actionTypes');
-let toastr = require('toastr');
-let Currency = require('currency-symbol-map');
-let EnumCoreModule = require('../public/js/enum-core');
-let CommonModule = require('../public/js/common.js');
+import actionTypes from './actionTypes';
+import toastr from 'toastr';
+import Currency from 'currency-symbol-map';
+import { getAppPrefix, getCookie } from '../public/js/common';
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -21,38 +19,30 @@ function populateCartPreview(cartItems) {
         minimumFractionDigits: 2,
     });
     if (arr.length > 0) {
-        arr.map(item =>  {
-            let subtotal = (item.SubTotal - (item.DiscountAmount || 0));
-            if (item.AddOns && item.AddOns.length > 0) {
-                item.AddOns.map(addOn => subtotal += parseFloat(addOn.PriceChange) || 0);
-            }
-
-            //ARC10053  the discountamount should not be round off to have the correct value.
-            let roundOffSubTotal = Math.round(subtotal * 100) / 100;
-
+        arr.map(item =>
             $(".h-cart-menu .h-cart-mid > ul").append(`
                 <li class="cart-item" key=${item.ID}>
                     <div class="item-img">
                         <img data-src=${item.ItemDetail.Media ? item.ItemDetail.Media[0].MediaUrl : null} class="lazyload" />
                     </div>
                     <div class="item-info">
-                        <p><a href="/items/${generateSlug(item.ItemDetail.Name)}/${item.ItemDetail.ID}">${item.ItemDetail.Name}<a/></p>
+                        <p><a href="${getAppPrefix()}/items/${generateSlug(item.ItemDetail.Name)}/${item.ItemDetail.ID}">${item.ItemDetail.Name}<a/></p>
                         <div class="item-price">
-                          <span class="currency">${item.CurrencyCode} ${Currency(item.CurrencyCode)}</span> 
-                          <span class="value">${formatter.format(roundOffSubTotal)}</span>
+                          <span class="currency">${item.CurrencyCode} ${Currency(item.CurrencyCode)}</span>
+                          <span class="value">${formatter.format((item.SubTotal - (item.DiscountAmount || 0)).toFixed(2))}</span>
                        </div>
                     </div>
                 </li>`
             )
-        });
-    }    
+        );
+    }
 }
 
 function getUserCarts(options, callback) {
     const { pageSize = 1000, pageNumber = 1, includes = null} = options;
     return function (dispatch, getState) {
         $.ajax({
-            url: '/cart/getUserCarts',
+            url: getAppPrefix()+'/cart/getUserCarts',
             type: 'GET',
             data: {
                 pageSize,
@@ -67,13 +57,6 @@ function getUserCarts(options, callback) {
                     cartList = result.Records;
                     cartList.map(cart => cartCount += parseInt(cart.Quantity || 0));
                 }
-
-                cartList.map(function (cart) {
-                    //ARC10053 the discountamount should not be round off to have the correct value.
-                    if (cart.DiscountAmount) {
-                        cart.DiscountAmount = parseFloat(cart.DiscountAmountNotRoundOff) || 0;
-                    }
-                });
 
                 $('#latest-cart-count').text(`${cartCount.toLocaleString()}`);
                 populateCartPreview(cartList);
@@ -104,19 +87,16 @@ function arrangeItemCarts(itemCarts) {
 }
 
 function itemSelect(ID, merchantID) {
-    const isServiceLevel = process.env.PRICING_TYPE == 'service_level';
     return function (dispatch, getState) {
         let cartPageModel = Object.assign({}, getState().cartReducer.cartPageModel);
         cartPageModel.cartList.forEach(function (merchantsId) {
             merchantsId.forEach(function (cart) {
                 if (merchantID !== "") {
                     if (cart.ItemDetail.MerchantDetail.ID === merchantID) {
-                        if ((!cart.isItemDisabled && isServiceLevel) || !isServiceLevel) {
-                            if ($(`.fancy-checkbox input[id=${merchantID}]`).is(":checked")) {
-                                cart.isChecked = "checked";
-                            } else {
-                                cart.isChecked = "";
-                            }
+                        if ($(`.fancy-checkbox input[id=${merchantID}]`).is(":checked")) {
+                            cart.isChecked = "checked";
+                        } else {
+                            cart.isChecked = "";
                         }
                     }
                 } else {
@@ -141,10 +121,10 @@ function deleteCartItem(cartId, userId) {
     let self = this;
     return function (dispatch, getState) {
         $.ajax({
-            url: "/cart/deleteCart",
+            url: getAppPrefix()+"/cart/deleteCart",
             type: "DELETE",
             data: {
-                userId: userId, 
+                userId: userId,
                 cartId: cartId
             },
             success: function (items) {
@@ -210,7 +190,7 @@ function TempoChangeQuantity(cartId, quantity) {
                     cart.variantModel.quantityModel.DiscountAmount = computeBulkDiscount(cart.variantModel.quantityModel.Price, quantity, cart.ItemDetail);
                 }
             });
-        }); 
+        });
         return dispatch({
             type: actionTypes.GET_CART_STATES,
             cartPageModel: cartPageModel
@@ -233,10 +213,10 @@ function TempoChangeVariant(cartID, groupID, variantID) {
                         });
                     }
                     if (cart.variantModel.variantDataList) {
-                                                                          
+
                         cart.variantModel.variantDataList.map(function (child) {
                             let variantIsCorrect = [];
-                            cart.variantModel.variantsSelected.map(function (vs) { 
+                            cart.variantModel.variantsSelected.map(function (vs) {
                                 if (child.Variants) {
                                     child.Variants.map(function (variant) {
                                         if (vs.GroupID === variant.GroupID &&
@@ -256,7 +236,7 @@ function TempoChangeVariant(cartID, groupID, variantID) {
                                     cart.variantModel.selectedChildID = child.ID;
                                 }
                             });
-                        });                        
+                        });
                     }
                 }
             });
@@ -284,8 +264,8 @@ function SaveSelectedVariant(cartID,maxQuantity,userID) {
                     }
 
                     let guestUserID = "";
-                    if (CommonModule.getCookie("guestUserID") && CommonModule.getCookie("guestUserID") !== "") {
-                        guestUserID = CommonModule.getCookie("guestUserID");
+                    if (getCookie("guestUserID") && getCookie("guestUserID") !== "") {
+                        guestUserID = getCookie("guestUserID");
                         if (guestUserID === userID) {
                             userID = guestUserID;
                         }
@@ -293,7 +273,7 @@ function SaveSelectedVariant(cartID,maxQuantity,userID) {
 
                     if (allowEdit === true) {
                         $.ajax({
-                            url: "/cart/editCart",
+                            url: getAppPrefix()+"/cart/editCart",
                             type: "PUT",
                             data: {
                                 itemID: cart.variantModel.selectedChildID ? cart.variantModel.selectedChildID : cart.ItemDetail.ID,
@@ -318,7 +298,7 @@ function SaveSelectedVariant(cartID,maxQuantity,userID) {
                                         }
                                     })
                                 }
-                                
+
                                 cart.variantModel.variantsSelected = data.ItemDetail.Variants;
                                 cart.variantModel.Quantity = data.Quantity;
                                 cart.variantModel.StockQuantity = data.StockQuantity;
@@ -331,61 +311,57 @@ function SaveSelectedVariant(cartID,maxQuantity,userID) {
                                 console.log(textStatus, errorThrown);
                             }
                         });
-                    } 
+                    }
                 }
             });
         });
-       
+
     };
 
 }
 
-function CheckoutButtonPressed(cartIDs, userID, callback)  {
+function CheckoutButtonPressed(cartIDs, userID, paymentTermID) {
     return function (dispatch, getState) {
         let cartPageModel = Object.assign({}, getState().cartReducer.cartPageModel);
         let shouldGoToReviewPage = true;
         const isRequisition = process.env.CHECKOUT_FLOW_TYPE == 'b2b';
-        const isServiceLevel = process.env.PRICING_TYPE == 'service_level';
 
         const { merchantPaymentTerms = null } = cartPageModel;
         let defaultPaymentTerms = [];
 
         if (cartIDs.length !== 0) {
-            if (!isServiceLevel) {
-                cartPageModel.cartList.map(function (merchantCarts) {
-                    merchantCarts.map(function (cart, i) {
-                        if (cartIDs.includes(cart.ID)) {
-                            if (cart.ItemDetail.StockLimited === true && parseInt(cart.Quantity) > parseInt(cart.ItemDetail.StockQuantity)) {
-                                shouldGoToReviewPage = false;
-                            }
+            cartPageModel.cartList.map(function (merchantCarts) {
+                merchantCarts.map(function (cart, i) {
+                    if (cartIDs.includes(cart.ID)) {
+                        if (cart.ItemDetail.StockLimited === true && parseInt(cart.Quantity) > parseInt(cart.ItemDetail.StockQuantity)) {
+                            shouldGoToReviewPage = false;
                         }
+                    }
 
-                        if (cart.ItemDetail && cart.ItemDetail.MerchantDetail) {
-                            const merchantId = cart.ItemDetail.MerchantDetail.ID;
+                    if (cart.ItemDetail && cart.ItemDetail.MerchantDetail) {
+                        const merchantId = cart.ItemDetail.MerchantDetail.ID;
 
-                            if (merchantPaymentTerms && merchantPaymentTerms.length > 0) {
-                                const merchantInfo = merchantPaymentTerms.find(p => p.merchantID == merchantId);
-                                if (merchantInfo && typeof merchantInfo !== 'undefined' && merchantInfo.paymentTerms && merchantInfo.paymentTerms.length > 0) {
-                                    const { paymentTerms } = merchantInfo;
-                                    const defaultPaymentTerm = paymentTerms.find(p => p.Default == true);
-                                    if (defaultPaymentTerm) {
-                                        if (!defaultPaymentTerms.find(p => p.merchantId == merchantId)) {
-                                            defaultPaymentTerms.push({
-                                                merchantId: merchantId,
-                                                paymentTermId: defaultPaymentTerm.ID
-                                            });
-                                        }
+                        if (merchantPaymentTerms && merchantPaymentTerms.length > 0) {
+                            const merchantInfo = merchantPaymentTerms.find(p => p.merchantID == merchantId);
+                            if (merchantInfo && typeof merchantInfo !== 'undefined' && merchantInfo.paymentTerms && merchantInfo.paymentTerms.length > 0) {
+                                const { paymentTerms } = merchantInfo;
+                                const defaultPaymentTerm = paymentTerms.find(p => p.Default == true);
+                                if (defaultPaymentTerm) {
+                                    if (!defaultPaymentTerms.find(p => p.merchantId == merchantId)) {
+                                        defaultPaymentTerms.push({
+                                            merchantId: merchantId,
+                                            paymentTermId: defaultPaymentTerm.ID
+                                        });
                                     }
                                 }
                             }
                         }
-                    });
+                    }
                 });
-            }
-
+            });
             if (shouldGoToReviewPage === true) {
                 $.ajax({
-                    url: !isRequisition ? '/cart/generateInvoiceByCartIDs' : '/cart/generateOrderByCartIDs',
+                    url: !isRequisition ? getAppPrefix()+'/cart/generateInvoiceByCartIDs' : getAppPrefix()+'/cart/generateOrderByCartIDs',
                     type: "POST",
                     data: {
                         userId: userID,
@@ -395,24 +371,12 @@ function CheckoutButtonPressed(cartIDs, userID, callback)  {
                     success: function (data) {
                         if (data) {
                             if (!isRequisition) {
-                                if (data && data.InvoiceNo) {
-                                    window.location = '/checkout/one-page-checkout?invoiceNo=' + data.InvoiceNo;
-                                } else {
-                                    let code = '';
-                                    if (data && data.code == 'INSUFFICIENT_STOCKS' && isServiceLevel) {
-                                        code = data.code;
-                                    }
-                                    if (typeof callback == 'function') callback({ success: false, code });
-                                }
+                                window.location = getAppPrefix() + '/checkout/one-page-checkout?invoiceNo=' + data.InvoiceNo;
                             } else {
-                                if (data.length > 0 && data[0] && data[0].ID) {
-                                    window.location = '/checkout/one-page-checkout?orderId=' + data[0].ID;
-                                } else {
-                                    if (typeof callback == 'function') callback({ success: false });
+                                if (data.length > 0) {
+                                    window.location = getAppPrefix() + '/checkout/one-page-checkout?orderId=' + data[0].ID;
                                 }
                             }
-                        } else {
-                            if (typeof callback == 'function') callback({ success: false });
                         }
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
@@ -427,19 +391,18 @@ function CheckoutButtonPressed(cartIDs, userID, callback)  {
 }
 
 function validateCarts(options, callback) {
-    const isServiceLevel = process.env.PRICING_TYPE == 'service_level';
     const { cartDataArr, userID } = options;
     return function(dispatch, getState) {
         $.ajax({
-            url: "/cart/validateCart",
+            url: getAppPrefix()+"/cart/validateCart",
             type: "POST",
             data: {
                 cartData: JSON.stringify(cartDataArr)
             },
             success: function (results) {
                 if (results && !results.success) {
-                    if (!isServiceLevel) toastr.error("You are unable to select the item to checkout.")
-                    if (results.data && results.data.length > 0) {            
+                    toastr.error("You are unable to select the item to checkout.");
+                    if (results.data && results.data.length > 0) {
                         const toUpdateQuantity = results.data.filter(p => p.code == 'INSUFFICIENT_STOCKS');
                         let cartPageModel = Object.assign({}, getState().cartReducer.cartPageModel);
                         if (toUpdateQuantity && toUpdateQuantity.length > 0) {
@@ -448,14 +411,14 @@ function validateCarts(options, callback) {
                                     carts.map(cart => {
                                         if (cart.ID == toUpdate.ID) {
                                             $.ajax({
-                                                url: "/cart/editCart",
+                                                url: getAppPrefix()+"/cart/editCart",
                                                 type: "PUT",
                                                 data: {
                                                     itemID: cart.ItemDetail.ID,
                                                     userID: userID,
                                                     cartID: cart.ID,
                                                     quantity: toUpdate.remainingStocks
-                                                }, 
+                                                },
                                                 success: function(data) {
                                                     cart.SubTotal = data.SubTotal;
                                                     cart.Quantity = data.Quantity;
@@ -475,7 +438,7 @@ function validateCarts(options, callback) {
                                                         cartPageModel: cartPageModel
                                                     });
 
-                                                }, 
+                                                },
                                                 error: function (jqXHR, textStatus, errorThrown) {
                                                     console.log(textStatus, errorThrown);
                                                 }
@@ -483,50 +446,11 @@ function validateCarts(options, callback) {
                                         }
                                     });
                                 });
-                            });   
-                        }
-                        if (isServiceLevel) {
-                            const disabledItems = results.data.filter(p => p.code == 'NOT_PURCHASABLE');
-                            if (disabledItems && disabledItems.length > 0) {
-                                toastr.error('Item visibility has been disabled (by marketplace Administrator or Merchant).', 'Oops! Something went wrong.')
-                                const disabledItemIds = disabledItems.map(d => d.ID);
-                                cartPageModel.cartList.map(carts => {
-                                    carts.map(cart => {
-                                        if (disabledItemIds.includes(cart.ID)) {
-                                            cart.isItemDisabled = true;
-                                            cart.isChecked = '';
-                                        }
-                                    });
-                                })
-                                return dispatch({
-                                    type: actionTypes.GET_CART_STATES,
-                                    cartPageModel: cartPageModel
-                                });
-                            }
-                            const isMerchantDisabled = results.data.filter(p => p.code == 'NOT_FOUND');
-                            if (isMerchantDisabled && isMerchantDisabled.length > 0) {
-                                const merchantIds = isMerchantDisabled.map(d => d.merchantID);
-                                cartPageModel.cartList.map(carts => {
-                                    carts.map(cart => {
-                                        if (cart && cart.ItemDetail && cart.ItemDetail.MerchantDetail && merchantIds.includes(cart.ItemDetail.MerchantDetail.ID)) {
-                                            cart.isItemDisabled = true;
-                                            cart.isMerchantDisabled = true;
-                                            cart.isChecked = '';
-                                        }
-                                    });
-                                });
-                                toastr.error('Item visibility has been disabled (by marketplace Administrator or Merchant).', 'Oops! Something went wrong.')
-                                return dispatch({
-                                    type: actionTypes.GET_CART_STATES,
-                                    cartPageModel: cartPageModel
-                                });
-                            }
-
+                            });
                         }
                     }
-
                     if (typeof callback == 'function') callback({success: false});
-                    return dispatch({
+                     return dispatch({
                         type: '',
                     });
                 } else {
@@ -582,24 +506,6 @@ function computeBulkDiscount(price, quantity, itemDetail) {
     return discountAmount;
 }
 
-function getItemDetails(itemId, callback) {
-    return function(dispatch, getState) {
-        $.ajax({
-            url: "/items/getItemDetails?itemId=" + itemId,
-            type: "GET",
-            success: function (results) {
-                if (typeof callback == 'function') callback(results);
-                return dispatch({
-                    type: '',
-                });
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log(textStatus, errorThrown);
-            }
-        });
-    }
-}
-
 module.exports = {
     getUserCarts: getUserCarts,
     arrangeItemCarts: arrangeItemCarts,
@@ -611,6 +517,5 @@ module.exports = {
     TempoChangeQuantity: TempoChangeQuantity,
     TempoChangeVariant: TempoChangeVariant,
     SaveSelectedVariant: SaveSelectedVariant,
-    CheckoutButtonPressed: CheckoutButtonPressed,
-    getItemDetails: getItemDetails
+    CheckoutButtonPressed: CheckoutButtonPressed
 }

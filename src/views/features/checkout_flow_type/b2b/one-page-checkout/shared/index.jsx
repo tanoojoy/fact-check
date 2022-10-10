@@ -1,7 +1,7 @@
 'use strict';
 const React = require('react');
 const BaseComponent = require('../../../../../shared/base');
-const HeaderLayout = require('../../../../../layouts/header').HeaderLayoutComponent;
+const HeaderLayout = require('../../../../../layouts/header/index').HeaderLayoutComponent;
 const FooterLayout = require('../../../../../layouts/footer').FooterLayoutComponent;
 const CommonModule = require('../../../../../../public/js/common');
 const OrderTotalComponent = require('./order-total');
@@ -30,6 +30,11 @@ class OnePageCheckoutMainComponent extends BaseComponent {
                 }
             });
 
+            $(".openModalRemove").on("click", function () {
+                var $parent = $(this).parents(".parent-r-b");
+                $parent.addClass("modal-delete-open");
+                $("#modalRemove").modal("show");
+            });
             $("#modalRemove .btn-gray").on("click", function (e) {
                 $(".parent-r-b").removeClass("modal-delete-open");
 
@@ -72,55 +77,52 @@ class OnePageCheckoutMainComponent extends BaseComponent {
     proceedCheckout() {
         const self = this;
         if (this.state.isProcessing) { return; }
-        
-        if (!this.props.pagePermissions.isAuthorizedToAdd) return;
-        this.props.validatePermissionToPerformAction('add-consumer-checkout-api', () => {
-            const hasEmptyDetails = CommonModule.validateFields('.fields-contact input.required');
-            const hasEmptyShipping = CommonModule.validateFields('.select_shipping select');
-            const hasEmptyRequisition = CommonModule.validateFields('.requisition-sources select');
 
-            $('.select-delivery-address').removeClass("error-con");
-            $('.select-billing-address').removeClass("error-con");
+        const hasEmptyDetails = CommonModule.validateFields('.fields-contact input.required');
+        const hasEmptyShipping = CommonModule.validateFields('.select_shipping select');
+        const hasEmptyRequisition = CommonModule.validateFields('.requisition-sources select');
 
-            const selectedAddress = self.props.buyerAddresses.filter(r => r.Selected);
-            const hasEmptySelectedAddress = selectedAddress.length < 1 && !self.props.isSameBillingAndDelivery;
-            if (hasEmptySelectedAddress) {
-                $('.select-delivery-address').addClass("error-con");
-            }
-            const selectedBillingAddress = self.props.buyerBillingAddresses.filter(r => r.Selected);
-            if (selectedBillingAddress.length < 1) {
-                $('.select-billing-address').addClass("error-con");
-            }
-            
-            if (hasEmptyDetails || hasEmptyShipping || hasEmptyRequisition || hasEmptySelectedAddress || selectedBillingAddress.length < 1) {
-                Toastr.error('Please fill out the required fields to proceed.', 'Oops! Something went wrong.');
+        $('.select-delivery-address').removeClass("error-con");
+        $('.select-billing-address').removeClass("error-con");
+
+        const selectedAddress = this.props.buyerAddresses.filter(r => r.Selected);
+        const hasEmptySelectedAddress = selectedAddress.length < 1 && !this.props.isSameBillingAndDelivery;
+        if (hasEmptySelectedAddress) {
+            $('.select-delivery-address').addClass("error-con");
+        }
+        const selectedBillingAddress = this.props.buyerBillingAddresses.filter(r => r.Selected);
+        if (selectedBillingAddress.length < 1) {
+            $('.select-billing-address').addClass("error-con");
+        }
+
+        if (hasEmptyDetails || hasEmptyShipping || hasEmptyRequisition || hasEmptySelectedAddress || selectedBillingAddress.length < 1) {
+            Toastr.error('Please fill out the required fields to proceed.', 'Oops! Something went wrong.');
+            return;
+        }
+
+        let departmentId = null;
+        let workflowId = null;
+        if (this.props.showCreateRequisition) {
+            const hasNoWorkflowForOrderTotal = this.requisition.hasNoWorkflowForOrderTotal();
+            if (hasNoWorkflowForOrderTotal) {
                 return;
             }
+            departmentId = this.requisition.getSelectedDepartmentID();
+            workflowId = this.requisition.getSelectedWorkflowID();
+        }
 
-            let departmentId = null;
-            let workflowId = null;
-            if (self.props.showCreateRequisition) {
-                const hasNoWorkflowForOrderTotal = self.requisition.hasNoWorkflowForOrderTotal();
-                if (hasNoWorkflowForOrderTotal) {
-                    return;
-                }
-                departmentId = self.requisition.getSelectedDepartmentID();
-                workflowId = self.requisition.getSelectedWorkflowID();
-            }
+        this.setState({ isProcessing: true });
 
-            self.setState({ isProcessing: true });
-        
-            $('#btnProceedPayment').prop('disabled', true);
-            $('#btnProceedPayment').addClass('disabled');
+        $('#btnProceedPayment').prop('disabled', true);
+        $('#btnProceedPayment').addClass('disabled');
 
-            self.props.postPayment(departmentId, workflowId);
-        });
+        this.props.postPayment(departmentId, workflowId);
     }
 
     addAddressValidate() {
         let hasError = CommonModule.validateFields('#addDeliveryAddress .required');
-        if (!hasError) { 
-            this.props.createAddress();  
+        if (!hasError) {
+            this.props.createAddress();
         }
     }
 
@@ -164,7 +166,7 @@ class OnePageCheckoutMainComponent extends BaseComponent {
                     <div className="main">
                     <div className="error-pg-container">
                         <div className="container">
-                            <a href="/cart" className="error-back"><i className="fa fa-angle-left" /> Back</a>
+                            <a href={CommonModule.getAppPrefix()+"/cart"} className="error-back"><i className="fa fa-angle-left" /> Back</a>
                             <div className="error-msg-txt">
                                     <div>Order is invalid</div>
                                     <div>Buyer, Merchant or item may be disabled, please check and try again.</div>

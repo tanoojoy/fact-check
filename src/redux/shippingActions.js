@@ -1,5 +1,7 @@
 ﻿'use strict';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
+
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -8,7 +10,7 @@ if (typeof window !== 'undefined') {
 function deleteShippingOptions(merchantID, shippingmethodID, callback) {
     return function (dispatch) {
         $.ajax({
-            url: "/delivery/settings/deleteShippingOptions",
+            url: prefix+"/delivery/settings/deleteShippingOptions",
             type: "POST",
             data: {
                 merchantID: merchantID,
@@ -31,7 +33,7 @@ function deleteShippingOptions(merchantID, shippingmethodID, callback) {
 function createShippingOptions(merchantID, shippingmethodObject, callback) {
     return function (dispatch) {
         $.ajax({
-            url: "/delivery/settings/createShippingOptions",
+            url: prefix+"/delivery/settings/createShippingOptions",
             type: "POST",
             data: {
                 merchantID: merchantID,
@@ -57,7 +59,7 @@ function createShippingOptions(merchantID, shippingmethodObject, callback) {
 function updateShippingOptions(merchantID, shippingmethodObject, callback) {
     return function (dispatch) {
         $.ajax({
-            url: "/delivery/settings/updateShippingOptions",
+            url: prefix+"/delivery/settings/updateShippingOptions",
             type: "POST",
             data: {
                 merchantID: merchantID,

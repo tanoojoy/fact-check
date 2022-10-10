@@ -1,0 +1,46 @@
+version: 1
+config:
+  project_name: arcadier-horizon-frontend
+  type: gradle
+  image: 'ls-docker.repo.clarivate.io/adoptopenjdk:15'
+  registry: https://ls-docker.repo.clarivate.io
+gradle:
+  inspect: false
+  release_repository: ls-central
+  spinnaker: true
+  tag: true
+archive:
+  - build/build.properties
+  - build/docker-compose.yml
+  - build/docker-compose-rendered-files.tar.bz2
+environment:
+  STAGE: dev
+  DOCKER_IMAGE_REPOS_NAME: 'ls-docker.repo.clarivate.io/'
+  DOCKER_IMAGE_NAME: 'horizon/arcadier-horizon-frontend'
+  LANG: C.UTF-8
+  BUILD_DIR: build
+  GRADLE_USE_ARTIFACTORY_PLUGIN: true
+  SKIP_PUBLISH_STAGE: false
+stages:
+  - code-build:
+      steps:
+        - ./gradlew clean
+        - ./gradlew build
+        - ./gradlew updateVersionInfo
+  - render-docker-compose:
+      steps:
+        - pwd && env | sort
+        - echo "Docker image name --> ${DOCKER_IMAGE_REPOS_NAME}${DOCKER_IMAGE_NAME}:${GIT_COMMIT}"
+        - sed -i
+          "s#MANAGEDFULLIMAGENAMEDONOTTOUCH#${DOCKER_IMAGE_REPOS_NAME}${DOCKER_IMAGE_NAME}:${GIT_COMMIT}#g" docker-compose.yml
+        - cat docker-compose.yml
+        - mv docker-compose.yml envs/ ${BUILD_DIR}/
+        - cd ${BUILD_DIR}/ &&
+          tar -cvjSf docker-compose-rendered-files.tar.bz2 envs/ *.yml &&
+          tar -jtvf docker-compose-rendered-files.tar.bz2
+        - pwd && ls -la ${BUILD_DIR}/
+  - build-docker:
+      steps:
+        - docker build -t ${DOCKER_IMAGE_REPOS_NAME}${DOCKER_IMAGE_NAME}:${GIT_COMMIT} .
+        - docker push ${DOCKER_IMAGE_REPOS_NAME}${DOCKER_IMAGE_NAME}:${GIT_COMMIT}
+        - docker rmi -f ${DOCKER_IMAGE_REPOS_NAME}${DOCKER_IMAGE_NAME}:${GIT_COMMIT}

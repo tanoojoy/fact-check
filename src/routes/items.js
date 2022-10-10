@@ -1,449 +1,624 @@
 ﻿'use strict';
-let express = require('express');
-let itemRouter = express.Router();
-let React = require('react');
-let Redux = require('redux');
-let ReactRedux = require('react-redux');
-let reactDom = require('react-dom/server');
-let Store = require('../redux/store');
-let template = require('../views/layouts/template');
-let actionTypes = require('../redux/actionTypes');
-let actions = require('../redux/actions');
+import express from 'express';
+import React from 'react';
+import Redux from 'redux';
+import { get } from 'lodash';
+import reactDom from 'react-dom/server';
+import client from '../../sdk/client';
+import authenticated from '../scripts/shared/authenticated';
+import { 
+    redirectUnauthorizedUser,
+    getMonths,
+    toItemDetailObj,
+    toProductInfoObj,
+    getNormalizedProductAttributes,
+    toCompanyProductItemDetailsInfoObj,
+    toUserCompanyInfoObj
+} from '../utils';
+import { updateUpstreamSupply } from './horizon-api/entity-service/upstream-controller';
+import { getCgiProductData, getManufacturerProductById, getMarketerProductById } from './horizon-api/entity-service/product-controller';
+import { getConnectionsDetailsByCompanyProduct, updateProduct, getCompanySources } from './horizon-api/entity-service/connections-controller';
+import {
+    getCurrenciesInfo,
+    getRequiredDocs,
+    getIncoterms,
+    getGmpStatuses,
+    getRegFilings,
+    getRegFilingsStatuses, getGmpCertificates,
+    getManufacturingStatus
+} from './horizon-api/entity-service/drop-down-controller';
+import { updateRfq, createRfq, getRfqById } from './horizon-api/entity-service/rfq-controller';
+import { getFilesList } from './horizon-api/document-sharing-service/document-sharing-controller';
+import { getQuoteDetails } from './horizon-api/entity-service/quote-controller';
+import { getCompanyById } from './horizon-api/entity-service/company-controller';
+import { CreateRFQ } from '../views/layouts/horizon-pages/create-rfq/create-rfq';
+import { ChatRFQComponent } from '../views/layouts/horizon-pages/rfq-chat';
+import { userRoles } from '../consts/horizon-user-roles';
+import { productTabs } from '../consts/product-tabs';
+import { getAppPrefix } from '../public/js/common';
+import tokenGenerator from './horizon-routers/token-generator';
+import {
+    createRfq as createRfqPPs,
+    product as productPPs,
+    rfqChat as rfqChatPPs,
+    finishedDose as finishedDosePPs,
+    createLicensingInquiry as createLicensingInquiryPPs,
+} from '../consts/page-params';
+import { productCompanyTypes } from '../consts/company-products';
+import Store from '../redux/store';
+import template from '../views/layouts/template';
+import { ItemDetailComponent } from '../views/item/index';
 
-let LandingPage = require('../views/login/landing');
-let ItemDetailComponent = require('../views/item/index').ItemDetailComponent;
+import { CreateRfqComponent } from '../views/item/rfq/create-rfq';
+import { CreateLicensingInquiry } from '../views/item/rfq/create-licensing-inquiry';
+import { ViewRfqComponent } from '../views/item/rfq/view-rfq';
 
-let client = require('../../sdk/client');
-let authenticated = require('../scripts/shared/authenticated');
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage } = require('../scripts/shared/user-permissions');
-var EnumCoreModule = require('../public/js/enum-core');
+import { constructAndSendEmail } from './users';
+import rfqQuoteEmail from '../consts/rfq-quote-email';
 
-const viewItemDetailsPage = {
-    code: 'view-consumer-item-details-api',
-}
+import {
+    GetHorizonEdmTemplateTypes
+} from '../public/js/enum-core';
 
-itemRouter.get('/:slug/:id', authenticated, isAuthorizedToAccessViewPage(viewItemDetailsPage), function (req, res) {
-    const pricingType = process.env.PRICING_TYPE;
-    
-    let currentUser = req.user;
-    const promiseItem = new Promise((resolve, reject) => {
-        const options = {
-            itemId: req.params.id,
-            activeOnly: true
-        };
+import { getSubsAccounts, getAnotherUserInfo } from './horizon-api/auth-service/auth-controller';
 
-        client.Items.getItemDetails(options, function (err, details) {
-            resolve(details);
-        });
-    });
+const itemRouter = express.Router();
 
-    const promiseCustomFieldDefinitions = new Promise((resolve, reject) => {
-        client.CustomFields.getDefinitions("Items", function (err, details) {
-            resolve(details);
-        });
+const { API, DOSE_FORM } = productTabs;
 
-    });
-
-    const promiseItemFeedback = new Promise((resolve, reject) => {
-        client.Items.getItemFeedback({ itemId: req.params.id }, function(err, feedback) {
-            resolve(feedback);
-        });
-    });
-
-    const promiseMarketplace = new Promise((resolve, reject) => {
-        let options = {
-            includes: 'ControlFlags'
-        };
-
-        client.Marketplaces.getMarketplaceInfo(options, function (err, result) {
-            resolve(result);
-        });
-    });
-    //ARC 9590
-    let idToUse = "";
-    if (req.cookies && req.cookies.guestUserID && !req.user) {
-        idToUse = req.cookies.guestUserID;
-    } else if (req.user) {
-        idToUse = req.user.ID;
+itemRouter.get('/manufacturer/:companyId/:productId', authenticated, async(req, res) => {
+    if (redirectUnauthorizedUser(req, res)) {
+        return;
     }
 
-    const options = {
-        userId: idToUse,
-        pageSize: 99,
-        pageNumber: 1,
-        includes: ['User']
-    };
-    var promiseCarts = new Promise((resolve, reject) => {
-        client.Carts.getCarts(options, function (err, result) {
-            resolve(result);
+    try {
+        const productManufacturerData = await getManufacturerProductById(req, req.params.companyId, req.params.productId);
+        const productInfo = productManufacturerData.data;
+
+        const itemViewType = productCompanyTypes.PRODUCT_COMPANY_MANUFACTURER;
+        const itemCategory = DOSE_FORM.productType;
+        const itemDetail = toItemDetailObj(productInfo, itemCategory, itemViewType);
+
+        const s = Store.createItemDetailStore({
+            userReducer: { user: req.user },
+            itemsReducer: {
+                itemDetail,
+                itemViewType
+            }
         });
-    });
 
-    const promiseItemBookings = new Promise((resolve, reject) => {
-        if (pricingType == 'service_level') {
-            client.Items.getItemBookings({ itemId: req.params.id }, function (err, bookings) {
-                resolve(bookings);
-            });
-        } else {
-            resolve([]);
-        }
-    });
+        const reduxState = s.getState();
 
-    const promiseComparisonWidgetUserPermissions = new Promise((resolve, reject) => {
-        if (!currentUser) {
-            resolve({
-                isAuthorizedToView: true,
-                isAuthorizedToAdd: true,
-                isAuthorizedToEdit: true,
-                isAuthorizedToDelete: true
-            });
-        }
-        const options = {
-            userId: currentUser.SubBuyerID || currentUser.SubmerchantID || currentUser.ID,
-            permissionName: 'Comparison Widget',
-            permissionType: 'Consumer'
-        };
-        client.Users.getUserPermissions(options, function (err, userDetails) {
-            const pageTypeWithName = `${options.permissionType.toLowerCase()}-${options.permissionName.toLowerCase().replace(/ /g, '-')}`;
-            resolve({
-                isAuthorizedToView: userDetails.includes(`view-${pageTypeWithName}-api`),
-                isAuthorizedToAdd: userDetails.includes(`add-${pageTypeWithName}-api`),
-                isAuthorizedToEdit: userDetails.includes(`edit-${pageTypeWithName}-api`),
-                isAuthorizedToDelete: userDetails.includes(`delete-${pageTypeWithName}-api`)
-            })
+        const appString = productPPs.appString;
+        const ProductApp = reactDom.renderToString(<ItemDetailComponent 
+            itemDetail={itemDetail}
+            user={req.user}
+            itemViewType={itemViewType}
+        />);
+
+        res.send(template(productPPs.bodyClass, productPPs.title, ProductApp, appString, reduxState));
+    } catch (e) {
+        console.log('finished dose Error', e);
+    }
+});
+
+itemRouter.get('/marketer/:companyId/:productId', authenticated, async(req, res) => {
+    if (redirectUnauthorizedUser(req, res)) {
+        return;
+    }
+
+    try {
+        const productManufacturerData = await getMarketerProductById(req, req.params.companyId, req.params.productId);
+        const productInfo = productManufacturerData.data;
+
+        const itemViewType = productCompanyTypes.PRODUCT_COMPANY_MARKETER;
+        const itemCategory = DOSE_FORM.productType;
+        const itemDetail = toItemDetailObj(productInfo, itemCategory, itemViewType);
+
+        const s = Store.createItemDetailStore({
+            userReducer: { user: req.user },
+            itemsReducer: {
+                itemDetail,
+                itemViewType
+            }
         });
-    });
 
+        const reduxState = s.getState();
 
+        const appString = productPPs.appString;
+        const ProductApp = reactDom.renderToString(<ItemDetailComponent 
+            itemDetail={itemDetail}
+            user={req.user}
+            itemViewType={itemViewType}
+        />);
 
-    Promise.all([promiseItem, promiseCustomFieldDefinitions, promiseItemFeedback, promiseMarketplace, promiseCarts, promiseItemBookings, promiseComparisonWidgetUserPermissions]).then((responses) => {
-        const appString = 'item-detail';
-        const itemDetails = responses[0];
-        const customFieldsDefinitions = responses[1].Records;
-        const feedback = responses[2];
-        const marketplaceInfo = responses[3];
+        res.send(template(productPPs.bodyClass, productPPs.title, ProductApp, appString, reduxState));
+    } catch (e) {
+        console.log('finished dose Error', e);
+    }
+});
 
-        const cartItems = responses[4];
-        const bookings = responses[5];
-        const comparisonWidgetPermissions = responses[6];
+itemRouter.get('/profile/:companyId/:productId', authenticated, async(req, res) => {
+    const { companyId, productId } = req.params;
+
+    if (redirectUnauthorizedUser(req, res)) {
+        return;
+    }
+
+    try {
+        const [
+            connectionsDetailsByCompanyProductRequest,
+            resCgiProductData,
+            gmpStatuses,
+            gmpCertificates,
+            regFilings,
+            regFilingsStatuses,
+            manufacturingStatuses,
+            companyData,
+            companySources,
+        ] = await Promise.allSettled([
+            getConnectionsDetailsByCompanyProduct(req, companyId, productId),
+            getCgiProductData(req),
+            getGmpStatuses(),
+            getGmpCertificates(),
+            getRegFilings(),
+            getRegFilingsStatuses(),
+            getManufacturingStatus(),
+            getCompanyById(req, companyId),
+            getCompanySources(companyId),
+        ]);
+
+        const productInfo = resCgiProductData?.value?.data || {};
+
+        const specialOffers = ['yes', 'no', 'unconfirmed'];
+        const subsNumber = companyData?.value?.data?.subsNumber || 0;
+        const productDetails = connectionsDetailsByCompanyProductRequest?.value?.data[0];
         
-        if (!itemDetails || !itemDetails.Active) return res.redirect(`/search?keywords=${req.query['name'] || req.params.slug}`);
+        let productAttributes = getNormalizedProductAttributes(productDetails, companySources?.value);
+        let product = { ...productDetails, ...productAttributes}
 
-        //ARC9590 also fix user experience
-        if (cartItems && cartItems.Records) {
-            if (itemDetails && itemDetails.ChildItems && itemDetails.ChildItems.length !== 0) {
-                itemDetails.ChildItems.map(function (ci) {
-                    cartItems.Records.forEach(function (cart) {
-                        if (cart.ItemDetail && ci.ID === cart.ItemDetail.ID) {
-                            ci.StockQuantity = ci.StockQuantity - cart.Quantity;
-                        }
-                    });
-                });
-            } else {
-                cartItems.Records.forEach(function (cart) {
-                    if (cart.ItemDetail && itemDetails.ID === cart.ItemDetail.ID) {
-                        itemDetails.StockQuantity = itemDetails.StockQuantity - cart.Quantity;
-                    }
-                });
-            }
+        const itemCategory = API.productType;
+        const itemDetail = toItemDetailObj(product, itemCategory);
+
+        const predefinedValues = {
+            gmpCertificates: gmpCertificates?.value?.data,
+            gmpStatuses: gmpStatuses?.value?.data,
+            regFilings: regFilings?.value?.data,
+            regFilingsStatuses: regFilingsStatuses?.value?.data,
+            manufacturingStatuses: manufacturingStatuses?.value?.data,
+            specialOffers
         }
 
-        if (itemDetails.ParentID) return res.redirect('/');
-
-        if (!currentUser) {
-            let guestID = '00000000-0000-0000-0000-000000000000';
-
-            if (req.cookies && req.cookies.guestUserID) {
-                guestID = req.cookies.guestUserID;
+        const s = Store.createItemDetailStore({
+            userReducer: { user: req.user },
+            itemsReducer: {
+                itemDetail,
             }
-            currentUser = {
-                ID: guestID,
-                Guest: true
-            };
-        }
-
-        let reviewAndRating = marketplaceInfo.ControlFlags.ReviewAndRating;
-
-
-        //need to Call this Because in itemDetails.merchantDetail, profpic of merchant is Null
-        const promiseMerchantDetail = new Promise((resolve, reject) => {
-            const options = {
-                token: null,
-                userId: itemDetails.MerchantDetail.ID,
-                includes: ''
-            };
-
-            client.Users.getUserDetails(options, function (err, details) {
-                resolve(details);
-            });
         });
+        const reduxState = s.getState();
+        const appString = productPPs.appString;
+        const ProductApp = reactDom.renderToString(<ItemDetailComponent 
+            itemDetail={itemDetail}
+            user={req.user}
+        />);
 
-        const promiseMerchantPaymentTerms = new Promise((resolve, reject) => {
-            client.Payments.getPaymentTerms({ merchantId: itemDetails.MerchantDetail.ID }, function (err, paymentTerms) {
-                resolve(paymentTerms);
-            });
-        });
+        res.send(template(productPPs.bodyClass, productPPs.title, ProductApp, appString, reduxState));
+    } catch (e) {
+        console.log('productProfile Error', e);
+        res.sendStatus(500);
+    }
+});
 
-        let priceValues = {
-            originalPrice: 0,
-            bulkPrice: 0,
-            quantity: 0,
-            discount: 0
+itemRouter.put('/update', authenticated, async(req, res) => {
+    if (redirectUnauthorizedUser(req, res)) {
+        return;
+    }
+    const itemInfo = req.body;
+    const productInfo = toProductInfoObj(itemInfo);
+
+    try {
+        const { userInfo } = req?.user || {};
+        const { productId, manufacturerId } = await updateProduct(userInfo.userid, productInfo) || {};
+        const updateUpstreamSupplyResponse = await updateUpstreamSupply(userInfo.userid, manufacturerId, productId, productInfo.upstreamSupply);
+
+        const productDetailsResponse = await getConnectionsDetailsByCompanyProduct(req, manufacturerId, productId);
+        const productDetails = productDetailsResponse.data[0];
+        const companySources = await getCompanySources(req.user?.companyId) || [];
+
+        let productAttributes = getNormalizedProductAttributes(productDetails, companySources)
+        let product = { ...productDetails, ...productAttributes}
+
+        const updatedItem = toItemDetailObj(product, API.productType);
+
+        res.json({ updatedItem });
+
+    } catch (e) {
+        console.log('Error', e);
+        res.sendStatus(500);
+    }
+});
+
+itemRouter.get('/token/:id?', (req, res) => {
+    const id = req.params.id;
+    res.send(tokenGenerator(id));
+});
+
+itemRouter.post('/token', (req, res) => {
+    const id = req.body.id;
+    res.send(tokenGenerator(id));
+});
+
+itemRouter.get('/:companyId/:productId/createrfq', authenticated, async (req, res) => {
+
+    if (redirectUnauthorizedUser(req, res)) return;
+
+    const {
+        companyId,
+        productId
+    } = req.params;
+    //const prevPageUrl = `${getAppPrefix()}/product-profile/profile/${companyId}/${productId}`;
+    const normalizeDropdownData = (data = []) =>
+        (data.map((el) =>
+            typeof el === 'string' ? { value: el, label: el } : { value: el.abbreviation, label: el.description }));
+
+    try {
+        const connectionsDetailsByCompanyProductRequest = await getConnectionsDetailsByCompanyProduct(req, companyId, productId);
+        const currenciesInfoRequest = await getCurrenciesInfo();
+        const requiredDocsRequest = await getRequiredDocs();
+        const incotermsRequest = await getIncoterms();
+        const rfqFormDropdowns = {
+            currenciesInfo: normalizeDropdownData(currenciesInfoRequest.data),
+            requiredDocs: normalizeDropdownData(requiredDocsRequest.data),
+            incoterms: normalizeDropdownData(incotermsRequest.data),
+            months: getMonths(),
+            years: normalizeDropdownData([new Date().getFullYear().toString(), (new Date().getFullYear() + 1).toString()]),
+            partOfMonth: normalizeDropdownData(['early', 'mid', 'late'])
         };
 
-        //Customfield Adding of DataInput
-        if (customFieldsDefinitions) {
-            customFieldsDefinitions.forEach(function (cfd) {
-                if (itemDetails.CustomFields) {
-                    itemDetails.CustomFields.forEach(function (cf) {
-                        if (cfd.Code == cf.Code) {
-                            cf.DataInputType = cfd.DataInputType;
-                            cf.DataFieldType = cfd.DataFieldType;
-                        }
-                        //Remove must get from API shippingMethod.
-                        if (cf.Name == "ItemAvailableDeliveryOptions") {
-                            itemDetails.CustomFields.pop(cf);
-                        }
+        const itemDetailExternal = connectionsDetailsByCompanyProductRequest.data[0];
+        console.log('itemDetailExternal', itemDetailExternal);
+        
+        // const itemViewType = productCompanyTypes.PRODUCT_COMPANY_MANUFACTURER;
+        // const itemCategory = DOSE_FORM.productType;
+        const itemCategory = API.productType;
+        const itemDetail = toCompanyProductItemDetailsInfoObj(itemDetailExternal, itemCategory);
 
+        const reduxState = Store.createProductPageStore({
+            userReducer: {
+                user: req.user
+            },
+            // quotationReducer: {
+            //     quotationDetail: quotationDetail,
+            //     buyerdocs: buyer
+            // },
+            itemsReducer: {
+                itemDetail, 
+                rfqFormDropdowns
+            }
+        }).getState();
 
-                        if (cf.Name == "WEIGHT") {
-                            //arc7786 get weight unit
-                            if (req.CustomFields) {
-                                req.CustomFields.forEach(function (mc) {
-                                    if (mc.Name.toLowerCase() === "weight unit" && mc.Values) {
-                                        itemDetails.WeightUnit = '(' + mc.Values[0] + ')';
-                                        cf.Name = cf.Name + itemDetails.WeightUnit;
-                                    }
-                                });
-                            }
-                        }
-                    });
-                }
-            });
-        }
-        //Get DeliveryOption
-        const promiseShippingOptions = new Promise((resolve, reject) => {
-            client.ShippingMethods.getShippingOptions(function (err, shipping) {
-                resolve(shipping);
-            });
-        });
+        const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const app = reactDom.renderToString(<CreateRfqComponent user={req.user} itemDetail={itemDetail} rfqFormDropdowns={rfqFormDropdowns} />);
 
-        const promiseShippingOptionsMerchant = new Promise((resolve, reject) => {
-            client.ShippingMethods.getShippingMethods(itemDetails.MerchantDetail.ID, function (err, addresses) {
-                resolve(addresses);
-            });
-        });
+        res.send(template('page-seller page-settings new-search-settings', seoTitle, app, 'create-rfq', reduxState));
+        
+    } catch (e) {
+        console.log('productProfile createRFQ page Error', e);
+    }
 
-        let categoryIds = [];
-        if (itemDetails.Categories) {
-            categoryIds = itemDetails.Categories.map(cat => cat.ID);
+    
+});
+
+itemRouter.get('/:companyId/:productId/createlicensinginquiry', authenticated, async(req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
+    const {
+        companyId,
+        productId
+    } = req.params;
+    const normalizeDropdownData = (data = []) =>
+        (data.map((el) =>
+            typeof el === 'string' ? { value: el, label: el } : { value: el.abbreviation, label: el.description }));
+
+    try {
+        const productManufacturerData = await getManufacturerProductById(req, companyId, productId);
+        const companyManufacturerData = await getCompanyById(req, companyId);
+        const companyDetail = companyManufacturerData.data;
+        const productInfo = productManufacturerData.data;
+        const requiredDocsRequest = await getRequiredDocs();
+        const rfqFormDropdowns = {
+            requiredDocs: normalizeDropdownData(requiredDocsRequest.data),
         };
-        const promiseCategoriesWithCustomFields = new Promise((resolve, reject) => {
-            client.Categories.getCategoriesByIds(categoryIds, function (err, categories) {
-                resolve(categories);
-            });
+        console.log(productInfo, 'AAAA')
+        const itemViewType = productCompanyTypes.PRODUCT_COMPANY_MANUFACTURER;
+        const itemCategory = DOSE_FORM.productType;
+        const itemDetail = toItemDetailObj(productInfo, itemCategory, itemViewType);
+
+        const companyInfo = toUserCompanyInfoObj(companyDetail, false);
+        const s = Store.createProductPageStore({
+              userReducer: {
+                user: req.user
+            },
+            itemsReducer: {
+                itemDetail, 
+                rfqFormDropdowns
+            },
+            companyReducer: {
+                companyInfo
+            }
         });
 
-        Promise.all([promiseMerchantDetail, promiseShippingOptions, promiseShippingOptionsMerchant, promiseCategoriesWithCustomFields, promiseMerchantPaymentTerms]).then((responses) => {
-            let merchantDetails = responses[0];
-            let shippingOptions = responses[1];
-            let shippingOptionsMerchant = responses[2];
-            let paymentTerms = responses[4];
+        const reduxState = s.getState();
+        const appString = createLicensingInquiryPPs.appString;
+        const CreateRFQApp = reactDom.renderToString(
+            <CreateLicensingInquiry
+                user={req.user}
+                itemDetail={itemDetail}
+                companyInfo={companyInfo}
+                rfqFormDropdowns={rfqFormDropdowns}
+            />
+        );
 
-            // UN-1428
-            // filter custom fields based on selected categories
-            let selectedCategoriesWithCustomFields = responses[3];
-            let temp = [];
-            if (customFieldsDefinitions) {
-                const [weightCField] = customFieldsDefinitions.filter(x => x.Name.toLowerCase() === 'weight');
-                if (weightCField) temp.push(weightCField);
-            }
+        res.send(template(createLicensingInquiryPPs.bodyClass, createLicensingInquiryPPs.title, CreateRFQApp, appString, reduxState));
+    } catch (e) {
+        console.log('productProfile create Licensing Inquiry page Error', e);
+    }
+});
 
-            if (selectedCategoriesWithCustomFields && customFieldsDefinitions) {
-                selectedCategoriesWithCustomFields.map(cat => {
-                    if (cat.CustomFields) {
-                        let cfieldCodes = cat.CustomFields.map(c => c.Code);
-                        const matches = customFieldsDefinitions.filter(x => cfieldCodes.includes(x.Code));
-                        matches.length > 0 && matches.map(m => {
-                            if (temp && temp.filter(t => t.Code == m.Code).length === 0) temp.push(m);
-                        });
-                    }
+itemRouter.post('/create-rfq', authenticated, async (req, res) => {
+    console.log('req', req.body);    
+    const { chatId, buyerId, sellerId, documentsRequired } = req.body;
+
+    const getAnotherUserDetails = (clarivateUserId, email) => {
+        return new Promise((resolve, reject) => {
+            getAnotherUserInfo(clarivateUserId)
+                .then(resp => {
+                    resolve({
+                        ...resp.data,
+                        clarivateUserId,
+                        email
+                    });
                 });
-                if (temp && itemDetails.CustomFields) {
-                    const tempCodes = temp.map(t => t.Code);
-                    const filteredCustomFieldDef = itemDetails.CustomFields.filter(cf => tempCodes.includes(cf.Code));
-                    itemDetails.CustomFields = filteredCustomFieldDef;
-                }
-            }
+        });
+    };
 
-            let shippingOptionsCombine = shippingOptions.concat(shippingOptionsMerchant);
-            let deliversTo = {
-                Name: pricingType == 'service_level' ? "Ships to: " : "Delivers to: ",
-                Values: []
-            };
-
-            let isAllCountries = false;
-            let itemShippingMethods = [];
-            if (itemDetails && itemDetails.ShippingMethods) {
-                itemShippingMethods = itemDetails.ShippingMethods;
-            }
-            if (shippingOptionsCombine && itemShippingMethods) {
-                let splitCountries = [];
-                for (let itemShippingMethod of itemShippingMethods) {
-                    const shippingMethod = shippingOptionsCombine.find(p => p.ID === itemShippingMethod.ID);
-                    if (shippingMethod && shippingMethod.CustomFields) {
-                        const deliveryOption = shippingMethod.CustomFields.find(p => p.Name === 'DeliveryOptions');
-                        if (deliveryOption) {
-                            const deliveryOptionValue = JSON.parse(deliveryOption.Values);
-                            if (deliveryOptionValue) {
-                                if (deliveryOptionValue.IsAllCountries) {
-                                    isAllCountries = true;
-                                    break;
-                                }
-                                else if (deliveryOptionValue.Countries) {
-                                    const countries = deliveryOptionValue.Countries.replace(/[\;]/gm, ',');
-                                    const countryToSplit = countries.split(",");
-                                    countryToSplit.map(function (country) {
-                                        country = country.replace(/^\s+/g, '');
-                                        if (!splitCountries.includes(country)) {
-                                            splitCountries.push(country);
-                                        }
-                                    });
-                                }
-                                else if (deliveryOptionValue.Countries == '' && deliveryOptionValue.SelectedCountries && deliveryOptionValue.SelectedCountries.length > 0) {
-                                    deliveryOptionValue.SelectedCountries.map(country => {
-                                        if (!splitCountries.includes(country.Name)) {
-                                            splitCountries.push(country.Name);
-                                        }
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (isAllCountries || EnumCoreModule.GetCountries().length === splitCountries.length) {
-                    deliversTo.Values[0] = ['All'];
-                } else {
-                    splitCountries.sort();
-                    splitCountries = splitCountries.join(", ");
-                    deliversTo.Values[0] = splitCountries.length > 0 ? splitCountries
-                        : itemShippingMethods.length > 0 ? itemShippingMethods[0].Description : '';
-                }
-            }
-
-            if (deliversTo.Values.length > 0) {
-                if (!itemDetails.CustomFields) {
-                    itemDetails.CustomFields = [];
-                }
-                itemDetails.CustomFields.push(deliversTo);
-            }
-            //Pickup
-            if (itemDetails && itemDetails.PickupAddresses) {
-                let pickupData = {
-                    Name: pricingType == 'service_level' ? "Pick-up Availability" : "Pickup Locations: ",
-                    Values: []
+    client.Chat.createConversationChannel({
+        channelName: chatId,
+        buyerId: buyerId,
+        sellerCompanyId: sellerId
+        //channelName: 'chatcommon10121636949441970',
+        //buyerId: 'c57b30a0-d26b-11ea-a606-8dbbd477c73c',
+        //sellerCompanyId: '10092'
+    }, async (err, response) => {
+        console.log('createChannelResult', response);
+        if (response.Result) {
+            req.body.chatId = `${chatId}|${response.Sid}`;
+            try {
+                // post (create) rfq
+                let rfq = {
+                    ...req.body
                 };
-                itemDetails.PickupAddresses.forEach(function(dataPick) {
-                    if (dataPick.Pickup === true) {
-                        pickupData.Values.push(dataPick.Line1);
-                    }
-                });
-                if (pickupData.Values.length == 0) {
-                    pickupData.Values.push("No");
-                }
-                if (pickupData.Values.length > 0) {
-                    if (!itemDetails.CustomFields) {
-                        itemDetails.CustomFields = [];
-                    }
-                    itemDetails.CustomFields.push(pickupData);
-                }
-            }
+                rfq.documentsRequired = req.body.documentsRequired? JSON.parse(req.body.documentsRequired) : null;
+                console.log('rfq', rfq);
 
-            if (merchantDetails === null) {
-                merchantDetails = itemDetails.MerchantDetail;
-            }
-            if (pricingType === 'country_level') {
-                const locationVariantGroupId = req.LocationVariantGroupId;
-                const userPreferredLocationId = req.UserPreferredLocationId;
-
-                if (itemDetails.ChildItems && itemDetails.ChildItems.length > 0) {
-                    itemDetails.ChildItems = itemDetails.ChildItems.filter((child) => {
-                        if (child.Variants && child.Variants.length > 0) {
-                            const hasUserLocationVariant = child.Variants.find(v => v.GroupID == locationVariantGroupId && v.ID == userPreferredLocationId) != null;
-
-                            if (hasUserLocationVariant) {
-                                return true;
+                const createRfqRequest = await createRfq(req, rfq);
+                const createdRfq = createRfqRequest.data;
+                
+                if (createdRfq) {
+                    console.log('createdRfq', createdRfq);
+                    const cgiCompanyId = createdRfq.cgiCompanyId;
+                    const subsAccounts = await getSubsAccounts(cgiCompanyId);
+                    if (subsAccounts) {
+                        const merchantUsers = subsAccounts.filter(acct => acct.role === 'MerchantSubAccount').map(item => {
+                            return {
+                                email: item.email, clarivateUserId: item.clarivateUserId
                             }
-                        }
-
-                        return false;
-                    });
-
-                    if (itemDetails.ChildItems.length > 0) {
-                        //remove location variant in variants array
-                        itemDetails.ChildItems.map((child) => {
-                            child.Variants = child.Variants.filter(v => v.GroupID != locationVariantGroupId || v.ID != userPreferredLocationId);
                         });
-                    } else {
-                        itemDetails.HasChildItems = false;
+                        const getUsersDetails = merchantUsers.map(recipient => {
+                            return getAnotherUserDetails(recipient.clarivateUserId, recipient.email);
+                        });
+                        Promise.all(getUsersDetails).then(responses => {
+                            const subscribers = responses.filter(acct => {
+                                let isSubscriber = false;
+                                if (acct.flags.notification && acct.flags.notification.rfqCreated) {
+                                    isSubscriber = true;
+                                }
+                                if (acct.sku === 'Freemium') {
+                                    isSubscriber = acct.flags.rfq.current < acct.flags.rfq.limit;
+                                }
+                                return isSubscriber;
+                            })
+                            console.log('subscribers', subscribers);
+                            if (subscribers) {
+                                const recipientEmails = subscribers.map(item => item.email);
+                                console.log('recipientEmails', recipientEmails);
+                                if (recipientEmails) {
+                                    const edmData = {
+                                        emails: recipientEmails,
+                                        notificationTitle: rfqQuoteEmail.rfqCreated.notificationTitle,
+                                        notificationMessage: rfqQuoteEmail.rfqCreated.notificationMessage,
+                                        inboxLink: '/chat/inbox/requests-quotes',
+                                        settingsLink: '/users/settings?activeTab=Notifications'
+                                    }
+                                    constructAndSendEmail(GetHorizonEdmTemplateTypes().Create_RFQ_QUOTE_EDM, edmData, (success) => {
+                                        console.log('success', success);
+                                        res.send({ rfq: createdRfq });
+                                    });
+                                }
+                                else {
+                                    res.send({ rfq: createdRfq });
+                                }
+                            }
+                            else {
+                                res.send({ rfq: createdRfq });
+                            }
+                            return;
+                        });
                     }
-                } else {
-                    return res.redirect('/'); 
                 }
-            }
+                //const marketplaceParams = EnumCoreModule.MapMarketplaceToEdmParameters(marketplace);
+                //const dataParams = EnumCoreModule.MapInvoiceToEdmParameters(response.Records[0], req.protocol, req.get('host'));
+                //const params = marketplaceParams.concat(dataParams);
+                //const edm = EnumCoreModule.MapEdmParametersToTemplate(Object.assign({}, template), params);
+                //promiseEmails.push(new Promise((resolve, reject) => {
+                //    const options = {
+                //        from: edm.From,
+                //        to: edm.To,
+                //        subject: edm.Subject,
+                //        body: edm.Body
+                //    };
 
-            getUserPermissionsOnPage(currentUser, "Item Details", "Consumer", (permissions) => {
-                let message = "";
-                const store = Store.createItemDetailStore({
-                    itemsReducer: {
-                        items: itemDetails,
-                        priceValues: priceValues,
-                        customFieldsDefinitions: customFieldsDefinitions,
-                        feedback: feedback,
-                        ReviewAndRating: reviewAndRating,
-                        message: message,
-                        bookings: bookings
-                    },
-                    cartReducer: {},
-                    userReducer: {
-                        user: currentUser,
-                        permissions: permissions,
-                        comparisonWidgetPermissions: comparisonWidgetPermissions
-                    },
-                    merchantReducer: {
-                        user: merchantDetails,
-                        paymentTerms: paymentTerms
-                    },
-                    marketplaceReducer: {
-                        ControlFlags: marketplaceInfo.ControlFlags
-                    }
-                });
-                const reduxState = store.getState();
-                const itemDetailApp = reactDom.renderToString(<ItemDetailComponent customFieldsDefinitions={customFieldsDefinitions}
-                    itemDetails={itemDetails}
-                    categories={[]}
-                    merchantDetails={merchantDetails}
-                    feedback={feedback}
-                    message={message}
-                    ControlFlags={marketplaceInfo.ControlFlags}
-                    paymentTerms={paymentTerms}
-                    priceValues={priceValues}
-                    user={currentUser}
-                    bookings={bookings}
-                    ReviewAndRating={reviewAndRating}
-                    comparisonWidgetPermissions={comparisonWidgetPermissions}
-                    permissions={permissions} />);
+                //    client.Emails.sendEdm(options, function (err, result) {
+                //        resolve(result);
+                //    });
+                //}));
 
-                let seoTitle = 'Item Detail';
-                if (req.SeoTitle) {
-                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-                }
+                //Promise.all(promiseEmails).then((responses) => {
+                //    res.send(true);
+                //})                
+            } catch (e) {
+                console.log('productProfile create RFQ Error e', e);
+            }            
+        }
+    });    
+});
 
-                res.send(template('page-item-detail', seoTitle, itemDetailApp, appString, reduxState));
-            });            
+itemRouter.put('/update-rfq/:id', authenticated, async (req, res) => {
+    const { id } = req.params;
+    
+    try {        
+        await updateRfq(req, req.body, id);
+        res.send({
+            result: true
         });
-    });
+    } catch (e) {
+        console.log('productProfile update RFQ Error e', e);
+    }
+});
+
+itemRouter.get('/viewRFQ/:rfqId/:chatId', authenticated, async (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
+    const { rfqId, chatId } = req.params;
+    getRfqById(rfqId)
+        .then(result => {
+            const rfqData = result.data;
+            const customFields = [
+                { ...rfqData }, 
+                { chatId: chatId }
+            ];
+            const reduxState = Store.createProductPageStore({
+                userReducer: {
+                    user: req.user
+                },
+                quotationReducer: {
+                    customFields: customFields
+                },                
+            }).getState();
+    
+            const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            const app = reactDom.renderToString(<ViewRfqComponent user={req.user} customFields={customFields} chatId={chatId} />);
+    
+            res.send(template('page-seller page-settings new-search-settings', seoTitle, app, 'view-rfq', reduxState));
+        });
+});
+
+itemRouter.get('/chatRFQ/:rfqId/:chatId', authenticated, async(req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+    try {
+        const getInterlocutorCompanyInfo = async(role, rfq) => {
+            const isSubmerchant = role === userRoles.subMerchant;
+            if (isSubmerchant) {
+                const interlocutorId = get(rfq, 'data.buyerId');
+                const interlocutorCompany = await getAnotherUserInfo(interlocutorId);
+                const interlocutorCompanyId = get(interlocutorCompany, 'data.clarivate_company_id');
+                return await getCompanyById(req, interlocutorCompanyId);
+            } else {
+                const interlocutorCompanyId = get(rfq, 'data.cgiCompanyId');
+                return await getCompanyById(req, interlocutorCompanyId);
+            }
+        };
+
+        const userInfo = req?.user?.userInfo;
+
+        const resCgiCompanyData = await getCompanyById(req);
+        const companyInfo = resCgiCompanyData.data || {};
+
+        const rfq = await getRfqById(req.params.rfqId);
+
+        const interlocutorCompanyInfo = await getInterlocutorCompanyInfo(userInfo.role, rfq);
+
+        const quoteId = get(rfq, 'data.quoteId', null);
+        const resCgiProductData = await getCgiProductData(req);
+        const productInfo = resCgiProductData.data || {};
+
+        let quote = {};
+        if (quoteId) {
+            quote = await getQuoteDetails(userInfo.userid, quoteId);
+        }
+
+        const s = Store.createProductPageStore({
+            userReducer: {
+                user: req.user,
+                userInfo,
+                companyInfo
+            },
+            productInfoReducer: {
+                rfqData: rfq.data,
+                quoteData: quote.data,
+                productInfo,
+                chatId: req.params.chatId,
+                interlocutorCompanyInfo: interlocutorCompanyInfo.data || {}
+            }
+        });
+        const reduxState = s.getState();
+        const appString = rfqChatPPs.appString;
+
+        const ProductApp = reactDom.renderToString(<ChatRFQComponent chatId={req.params.chatId} user={req.user} />);
+
+        res.send(template(rfqChatPPs.bodyClass, rfqChatPPs.title, ProductApp, appString, reduxState));
+    } catch (e) {
+        console.log('productChat Error', e);
+    }
+});
+
+//itemRouter.get('/viewRfq/:rfqId', authenticated, )
+
+
+
+itemRouter.post('/send-rfq', authenticated, async(req, res) => {
+    const rfqId = get(req.body, 'form.rfqId', null);
+
+    if (rfqId) {
+        // put (update rfq)
+        try {
+            const updateRfqRequest = await updateRfq(req, req.body.form, rfqId);
+        } catch (e) {
+            console.log('productProfile update RFQ Error e', e);
+        }
+    } else {
+        try {
+            // post (create) rfq
+            const userInfo = req?.user?.userInfo;
+            req.body.form.buyerId = userInfo.userid;
+            const createRfqRequest = await createRfq(req, req.body.form);
+            res.send({ rfq: createRfqRequest.data });
+        } catch (e) {
+            console.log('productProfile create RFQ Error e', e);
+        }
+    }
+});
+
+itemRouter.get('/sources/:companyId', authenticated, async(req, res) => {
+    const { companyId = null } = req.params;
+
+    try {
+        const data = await getCompanySources(companyId);
+        res.json({ productAttributes: data });
+    } catch (e) {
+        console.log(e);
+        res.sendStatus(500);
+    }
 });
 
 itemRouter.post('/addCart', function (req, res) {
@@ -458,45 +633,25 @@ itemRouter.post('/addCart', function (req, res) {
             ID: guestID,
             Guest: true
         }
-    } 
+    }
 
     const options = {
         userId: req.user.ID,
         quantity: req.body['quantity'],
         discount: req.body['discount'],
         itemId: req.body['itemId'],
-        force: req.body['force'], 
-        forComparison: req.body['forComparison']
+        force: req.body['force']
     };
-
-    if (process.env.PRICING_TYPE == 'service_level') {
-        options.serviceBookingUnitGuid = req.body['serviceBookingUnitGuid'];
-        options.bookingSlot = req.body['bookingSlot'] ? JSON.parse(req.body['bookingSlot']) : null;
-        options.addOns = req.body['addOns'] ? JSON.parse(req.body['addOns']) : null;
-    }
 
     var promiseCart = new Promise((resolve, reject) => {
         client.Carts.addCart(options, function (err, result) {
-            if(err) {
-                if (err.toString().includes('Insufficient stock')) {
-                    reject({ Code: 'INSUFFICIENT_STOCK' });
-                }
-
-                if (err.toString().includes('Invalid service booking')) {
-                    reject({ Code: 'INVALID_SERVICE_BOOKING' });
-                }
-            }
-            else {
-                resolve(result);
-            }
+            resolve(result);
         });
     });
 
     Promise.all([promiseCart]).then((responses) => {
         const cart = responses[0];
         res.send(cart);
-    },(err) => {
-        res.send(err);
     });
 });
 
@@ -511,7 +666,7 @@ itemRouter.put('/editCart', function (req, res) {
             ID: guestID,
             Guest: true
         }
-    } 
+    }
 
     const options = {
         userID: req.user.ID,
@@ -521,12 +676,6 @@ itemRouter.put('/editCart', function (req, res) {
         itemID: req.body[['itemId']],
         forComparison: req.body['forComparison'],
     };
-
-    if (process.env.PRICING_TYPE == 'service_level') {
-        options.serviceBookingUnitGuid = req.body['serviceBookingUnitGuid'];
-        options.bookingSlot = req.body['bookingSlot'] ? JSON.parse(req.body['bookingSlot']) : null;
-        options.addOns = req.body['addOns'] ? JSON.parse(req.body['addOns']) : null;
-    }
 
     var promiseCart = new Promise((resolve, reject) => {
         client.Carts.editCart(options, function (err, result) {

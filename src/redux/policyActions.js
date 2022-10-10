@@ -1,4 +1,7 @@
 'use strict';
+
+const prefix  = require('../public/js/common.js').getAppPrefix();
+
 var actionTypes = require('./actionTypes');
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -7,7 +10,7 @@ if (typeof window !== 'undefined') {
 function getPages(isContentExclude) {
     return function (dispatch) {
         $.ajax({
-            url: '/policy/getPages',
+            url: prefix+'/policy/getPages',
             type: 'GET',
             data: {
                 isContentExclude: isContentExclude

@@ -35,8 +35,8 @@ var resources = {
     Requisitions: require('./resources/requisitions'),
     ReceivingNotes: require('./resources/receivingNotes'),
     Invoices: require('./resources/invoices'),
-    UserGroups: require('./resources/userGroups'),
-    PermissionProfiles: require('./resources/PermissionProfiles')
+
+    SSO: require('./resources/sso')
 };
 client._prepResources(resources);
 

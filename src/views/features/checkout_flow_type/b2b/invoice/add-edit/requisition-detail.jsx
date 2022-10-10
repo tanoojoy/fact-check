@@ -11,7 +11,7 @@ class FeatureCreateInvoiceB2bRequisitionComponent extends React.Component {
             let purchaseNo = '-';
             if (Orders && Orders.length > 0) {
                 if (Orders[0].PurchaseOrderNo) {
-                    purchaseNo = Orders[0].CosmeticNo != null && Orders[0].CosmeticNo != "" ? Orders[0].CosmeticNo : Orders[0].PurchaseOrderNo;
+                    purchaseNo = Orders[0].PurchaseOrderNo;
                 }
                 if (Orders[0].PaymentTerm) {
                     paymentTerms = Orders[0].PaymentTerm.Name;

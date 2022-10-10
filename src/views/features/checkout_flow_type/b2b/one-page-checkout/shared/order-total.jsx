@@ -4,22 +4,35 @@ import Currency from 'currency-symbol-map';
 import BaseComponent from '../../../../../shared/base';
 
 class OrderTotalComponent extends BaseComponent {
-    componentDidMount() {
-        if (!this.props.pagePermissions.isAuthorizedToAdd) {
-            $('[data-toggle="tooltip"]').tooltip();
-        }
-    }
     getOrderSubTotal() {
-        const { charges, discount } = this.getChargesAndDiscounts();
-        return parseFloat(this.getTotal()) - charges + discount;
+        const { orderDetails } = this.props;
+        let subTotal = 0;
+        if (orderDetails && orderDetails.CartItemDetails.length > 0) {
+            const { CartItemDetails } = orderDetails;
+            CartItemDetails.map(cart => subTotal += parseFloat(cart.ItemDetail.Price * cart.Quantity) - parseFloat(cart.DiscountAmount || 0));
+        }   
+        return subTotal;
     }
 
-    getChargesAndDiscounts() {
+    getTotal() {
+        const { orderDetails } = this.props;
+        //let discount  = 0;
+        //if (orderDetails && orderDetails.CartItemDetails.length > 0) {
+        //    const { CartItemDetails } = orderDetails;
+        //    CartItemDetails.map(cart => 
+        //        discount += parseFloat(cart.DiscountAmount || 0)
+        //    )
+        //}   
+        return orderDetails.GrandTotal;
+    }
+
+    renderChargesAndDiscounts() {
         let charges = 0;
         let discount = 0;
         const ChargeReasons = ['Bank Charges', 'Custom Duties', 'Taxes', 'Late Delivery', 'Freight Costs', 'Price Change', 'Others'];
         const QuantityOptions = ['Fixed', 'Percentage'];
-        const { pendingOffer } = this.props;
+        const { pendingOffer, orderDetails } = this.props;
+        const currencyCode = orderDetails.CurrencyCode;
         if (pendingOffer) {
             const { OfferDetails } = pendingOffer;
             if (OfferDetails && OfferDetails.length > 1) {
@@ -35,23 +48,6 @@ class OrderTotalComponent extends BaseComponent {
                     });
                 }
             }
-        }
-        return { charges, discount };
-    }
-
-    getTotal() {
-        const { orderDetails } = this.props;
-        if (orderDetails) { 
-            return orderDetails.GrandTotal;
-        }
-        return 0;
-    }
-
-    renderChargesAndDiscounts() {
-        const { charges, discount } = this.getChargesAndDiscounts();
-        let currencyCode = '';
-        if (this.props.invoiceDetails) {
-            const { currencyCode } = this.props.orderDetails;
         }
         return (
             <React.Fragment>
@@ -77,6 +73,7 @@ class OrderTotalComponent extends BaseComponent {
 
     render() {
         let self = this;
+        let isDisabled = "disabled";
         let totalDeliveryCost = 0;
         if (self.props.orderSelectedDelivery && self.props.orderDetails) {
             const orderID = self.props.orderDetails.ID;
@@ -87,7 +84,7 @@ class OrderTotalComponent extends BaseComponent {
 
             });
         }
-        const extraClass = this.props.pagePermissions.isAuthorizedToAdd ? '' : 'icon-grey';
+
         return (
              //FIX ARC9207
             <div className="pcc-rigth pull-right">
@@ -101,7 +98,7 @@ class OrderTotalComponent extends BaseComponent {
                                 <span>
                                     <span className="title">Subtotal</span>
                                     <div className="item-price subTotal">
-                                        {this.renderFormatMoney(this.props.orderDetails.CurrencyCode, this.getOrderSubTotal())}
+                                        {this.renderFormatMoney(this.props.orderDetails.CurrencyCode, this.getTotal())}
                                     </div>
                                 </span>
                                 {this.renderChargesAndDiscounts()}
@@ -124,16 +121,7 @@ class OrderTotalComponent extends BaseComponent {
                             </span>
                         </div>
                         <div className="pccr-btn">
-                            <div
-                                className={`btn-green full-btn-procced btn-loader disable ${extraClass}`}
-                                id="btnProceedPayment"
-                                data-toggle={this.props.pagePermissions.isAuthorizedToAdd ? "" : "tooltip"}
-                                data-placement="top"
-                                data-original-title="You need permission to perform this action"
-                                onClick={(e) => this.props.handleProceedButton()}
-                            >
-                                Send Request
-                            </div>
+                            <div className="btn-green full-btn-procced disable" onClick={(e) => this.props.handleProceedButton()} id="btnProceedPayment">Send Request</div>
                             <div className="btn-white desktop-only"><a href={null} onClick={() => history.back()}>Cancel</a></div>
                         </div>
                     </div>

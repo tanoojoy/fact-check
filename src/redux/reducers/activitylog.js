@@ -5,8 +5,7 @@ const initialState = {
     totalRecords: '',
     ActivityLog: {},
     filters: {},
-    keyword: '',
-    isMerchantAccess: false
+    keyword: ''
 };
 
 function activityLogReducer(state = initialState, action) {

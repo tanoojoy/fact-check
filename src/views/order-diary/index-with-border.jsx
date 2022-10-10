@@ -8,7 +8,7 @@ var EnumCoreModule = require('../../public/js/enum-core');
 
 class OrderDiaryComponent extends React.Component {
     componentDidMount() {
-        this.props.fetchEvents(this.props.page || null, 'Comment');
+        this.props.fetchEvents(this.props.page || null);
     }
 
     render() {
@@ -30,9 +30,6 @@ class OrderDiaryComponent extends React.Component {
                             createEvent={this.props.createEvent}
                             showDropdownPlaceholder={this.props.showDropdownPlaceholder}
                             customUploadLabel={"Attachment"} 
-                            isAuthorizedToAdd={this.props.isAuthorizedToAdd}
-                            validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                            permissionCode={this.props.permissionCode}
                         />
                     </div>
                     <TabContentComponent

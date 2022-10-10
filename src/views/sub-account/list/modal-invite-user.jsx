@@ -12,11 +12,6 @@ class ModalInviteUserComponent extends BaseComponent {
         };
     }
 
-    closeModal() {
-        $('#modal-create-account').modal('hide');
-        $('#cover').fadeOut();
-    }
-
     sendInvitations(e) {
         if (this.state.isProcessing) return;
 
@@ -42,7 +37,7 @@ class ModalInviteUserComponent extends BaseComponent {
 
         if (isValidEmails) {
             this.props.sendInvitations(emails, $(e.target).data('registration-type'), (error) => {
-                this.closeModal();
+                $('#modal-create-account').modal('hide');
 
                 if (!error) {
                     this.showMessage(EnumCoreModule.GetToastStr().Success.SUCCESS_SUB_ACCOUNT_INVITE);
@@ -74,7 +69,7 @@ class ModalInviteUserComponent extends BaseComponent {
                 <div className="modal-dialog">
                     <div className="modal-content">
                         <div className="modal-header">
-                            <button type="button" className="close" data-dismiss="modal" onClick={() => this.closeModal()}>&times;</button>
+                            <button type="button" className="close" data-dismiss="modal">&times;</button>
                             <h4 className="modal-title" align="center">Invite Buyer Sub-Account</h4>
                         </div>
                         <div className="modal-body">

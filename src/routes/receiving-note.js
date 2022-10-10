@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 const React = require('react');
 const reactDom = require('react-dom/server');
 const express = require('express');
@@ -11,7 +13,6 @@ const client = require('../../sdk/client');
 const CreateReceivingNoteComponent = require('../views/receiving-note/create/index').CreateReceivingNoteComponent;
 const ReceivingNoteDetailComponent = require('../views/receiving-note/detail/index').ReceivingNoteDetailComponent;
 const ReceivingNoteListComponent = require('../views/receiving-note/list/index').ReceivingNoteListComponent;
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../scripts/shared/user-permissions');
 
 function getReceivingNotes(userId, filters, callback) {
     if (!filters) {
@@ -89,25 +90,9 @@ function getReceivingNotes(userId, filters, callback) {
     });
 }
 
-const viewReceivingNotesData = {
-    code: 'view-consumer-receiving-notes-api',
-    renderSidebar: true,
-};
+receivingNoteRouter.get('/create', authenticated, authorizedUser, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
 
-const viewCreateReceivingNoteData = {
-    code: 'view-consumer-create-receiving-note-api',
-    renderSidebar: true,
-};
-
-const viewReceivingNoteDetailsData = {
-    code: 'view-consumer-receiving-note-details-api',
-    renderSidebar: true,
-};
-
-const addCreateReceivingNotePermissionCode = 'add-consumer-create-receiving-note-api';
-const editReceivingNoteDetailsPermissionCode = 'add-consumer-receiving-note-details-api';
-
-receivingNoteRouter.get('/create', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewCreateReceivingNoteData), (req, res) => {
     const user = req.user;
     const purchaseOrderId = req.query['id'];
 
@@ -129,29 +114,24 @@ receivingNoteRouter.get('/create', authenticated, authorizedUser, isAuthorizedTo
         const orderDetail = responses[0];
 
         //TODO: add validation if purchase order is still allowed to create receiving note
-        getUserPermissionsOnPage(user, 'Create Receiving Note', 'Consumer', (pagePermissions) => {
-            const reduxState = store.createReceivingNoteStore({
-                userReducer: {
-                    user: user,
-                    pagePermissions: pagePermissions
-                },
-                receivingNoteReducer: {
-                    orderDetail: orderDetail
-                },
-                marketplaceReducer: {
-                    locationVariantGroupId: req.LocationVariantGroupId
-                }
-            }).getState();
 
-            const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-            const app = reactDom.renderToString(<CreateReceivingNoteComponent pagePermissions={pagePermissions} user={user} orderDetail={orderDetail} locationVariantGroupId={req.LocationVariantGroupId} />);
+        const reduxState = store.createReceivingNoteStore({
+            userReducer: {
+                user: user
+            },
+            receivingNoteReducer: {
+                orderDetail: orderDetail
+            }
+        }).getState();
 
-            res.send(template('page-seller create-good-receipt page-sidebar', seoTitle, app, 'create-receiving-note', reduxState));
-        });
+        const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const app = reactDom.renderToString(<CreateReceivingNoteComponent user={user} orderDetail={orderDetail} />);
+
+        res.send(template('page-seller create-good-receipt page-sidebar', seoTitle, app, 'create-receiving-note', reduxState));
     });
 });
 
-receivingNoteRouter.post('/create-receiving-note', authenticated, isAuthorizedToPerformAction(addCreateReceivingNotePermissionCode), (req, res) => {
+receivingNoteRouter.post('/create-receiving-note', authenticated, (req, res) => {
     const user = req.user;
 
     const promiseReceivingNote = new Promise((resolve, reject) => {
@@ -174,7 +154,9 @@ receivingNoteRouter.post('/create-receiving-note', authenticated, isAuthorizedTo
     });
 })
 
-receivingNoteRouter.get('/detail', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewReceivingNoteDetailsData), (req, res) => {
+receivingNoteRouter.get('/detail', authenticated, authorizedUser, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const id = req.query["id"];
     if (!id) return res.send("Receiving note not found.");
@@ -193,36 +175,26 @@ receivingNoteRouter.get('/detail', authenticated, authorizedUser, isAuthorizedTo
         if (receivingNoteDetails && !receivingNoteDetails.OrderID) return res.send('Order not found.');
 
         const orderDetail = receivingNoteDetails && receivingNoteDetails.Order ? receivingNoteDetails.Order : null
-        getUserPermissionsOnPage(user, 'Receiving Note Details', 'Consumer', (pagePermissions) => {
-            const reduxState = store.createReceivingNoteStore({
-                userReducer: {
-                    user: user,
-                    pagePermissions: pagePermissions
-                },
-                receivingNoteReducer: {
-                    orderDetail: orderDetail,
-                    receivingNoteDetails: receivingNoteDetails
-                },
-                marketplaceReducer: {
-                    locationVariantGroupId: req.LocationVariantGroupId
-                }
-            }).getState();
+        const reduxState = store.createReceivingNoteStore({
+            userReducer: {
+                user: user
+            },
+            receivingNoteReducer: {
+                orderDetail: orderDetail,
+                receivingNoteDetails: receivingNoteDetails
+            }
+        }).getState();
 
-            const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-            const app = reactDom.renderToString(<ReceivingNoteDetailComponent 
-                user={user}
-                receivingNoteDetails={receivingNoteDetails}
-                orderDetail={orderDetail}
-                locationVariantGroupId={req.LocationVariantGroupId}
-                pagePermissions={pagePermissions}
-            />);
+        const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const app = reactDom.renderToString(<ReceivingNoteDetailComponent user={user}  receivingNoteDetails={receivingNoteDetails} orderDetail={orderDetail}/>);
 
-            res.send(template('page-seller create-good-receipt view-receipt page-sidebar', seoTitle, app, 'receiving-note-detail', reduxState));
-        });
+        res.send(template('page-seller create-good-receipt view-receipt page-sidebar', seoTitle, app, 'receiving-note-detail', reduxState));
     });
 });
 
-receivingNoteRouter.get('/list', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewReceivingNotesData), (req, res) => {
+receivingNoteRouter.get('/list', authenticated, authorizedUser, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
 
     const filters = {
@@ -231,36 +203,34 @@ receivingNoteRouter.get('/list', authenticated, authorizedUser, isAuthorizedToAc
     };
 
     getReceivingNotes(user.ID, filters, (result) => {
-        getUserPermissionsOnPage(user, 'Receiving Notes', 'Consumer', (pagePermissions) => {
-            const reduxState = store.createReceivingNoteStore({
-                userReducer: {
-                    user: user,
-                    pagePermissions: pagePermissions
-                },
-                receivingNoteReducer: {
-                    receivingNotes: result.receivingNotes,
-                    suppliers: result.suppliers,
-                    orders: result.orders,
-                    filters: result.filters
-                }
-            }).getState();
+        const reduxState = store.createReceivingNoteStore({
+            userReducer: {
+                user: user
+            },
+            receivingNoteReducer: {
+                receivingNotes: result.receivingNotes,
+                suppliers: result.suppliers,
+                orders: result.orders,
+                filters: result.filters
+            }
+        }).getState();
 
-            const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-            const app = reactDom.renderToString(
-                <ReceivingNoteListComponent
-                    user={user}
-                    pagePermissions={pagePermissions}
-                    receivingNotes={result.receivingNotes}
-                    suppliers={result.suppliers}
-                    orders={result.orders}
-                    filters={result.filters} />);
+        const seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const app = reactDom.renderToString(
+            <ReceivingNoteListComponent
+                user={user}
+                receivingNotes={result.receivingNotes}
+                suppliers={result.suppliers}
+                orders={result.orders}
+                filters={result.filters} />);
 
-            res.send(template('page-seller goods-receipt-list page-sidebar', seoTitle, app, 'receiving-note-list', reduxState));
-        });
+        res.send(template('page-seller goods-receipt-list page-sidebar', seoTitle, app, 'receiving-note-list', reduxState));
     });
 });
 
 receivingNoteRouter.get('/filter', authenticated, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
 
     getReceivingNotes(user.ID, req.query, (result) => {
@@ -268,7 +238,7 @@ receivingNoteRouter.get('/filter', authenticated, (req, res) => {
     });
 });
 
-receivingNoteRouter.put('/void-receiving-note', authenticated, isAuthorizedToPerformAction(editReceivingNoteDetailsPermissionCode), (req, res) => {
+receivingNoteRouter.put('/void-receiving-note', authenticated, (req, res) => {
     const user = req.user;
     if (!req.body || !req.body.ID) return res.send({ success: false, message: 'Receiving note ID not found.'});
 
@@ -334,7 +304,7 @@ receivingNoteRouter.put('/void-receiving-note', authenticated, isAuthorizedToPer
 
         Promise.all([promiseAutoReceivingNote, promisePurchaseOrder]).then(responses => {
             const [ auto, orderDetail] = responses;
-            res.send({ success: receivingNoteDetails && receivingNoteDetails.Void == true, receivingNoteDetails, orderDetail });            
+            res.send({ success: receivingNoteDetails && receivingNoteDetails.Void == true, receivingNoteDetails, orderDetail });
         })
     });
 });

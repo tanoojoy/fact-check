@@ -26,7 +26,7 @@ class ShippingPaymentDetailComponent extends BaseComponent {
                 <table className="canon-table">
                     <tbody><tr>
                         <th>PO No. : </th>
-                        <td data-th="Order Status :">{order.CosmeticNo != null && order.CosmeticNo != "" ? order.CosmeticNo : order.PurchaseOrderNo}</td>
+                        <td data-th="Order Status :">{order.PurchaseOrderNo}</td>
                     </tr>
                         <tr>
                             <th>Order Status:</th>

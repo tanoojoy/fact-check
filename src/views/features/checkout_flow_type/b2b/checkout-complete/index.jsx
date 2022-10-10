@@ -1,14 +1,13 @@
 'use strict';
 const React = require('react');
 const ReactRedux = require('react-redux');
-const HeaderLayout = require('../../../../layouts/header').HeaderLayoutComponent;
+const HeaderLayout = require('../../../../layouts/header/index').HeaderLayoutComponent;
 const FooterLayout = require('../../../../layouts/footer').FooterLayoutComponent;
 const BaseComponent = require('../../../../shared/base');
 
 class CheckoutCompleteComponent extends BaseComponent {
     render() {
-        const { ID, RequisitionOrderNo,CosmeticNo } = this.props.requisitionDetail;
-       // let requisitionNo = this.props.req
+        const { ID, RequisitionOrderNo } = this.props.requisitionDetail;
         return (
             <React.Fragment>
                 <div className="header mod" id="header-section">
@@ -28,7 +27,7 @@ class CheckoutCompleteComponent extends BaseComponent {
                                 </div>
                                 <div className="tccc-bot">
                                     <span className="title">Your Requisition Order No. is:</span>
-                                    <span className="inv-text">{CosmeticNo != null && CosmeticNo != "" ? CosmeticNo : RequisitionOrderNo}</span>
+                                    <span className="inv-text">{RequisitionOrderNo}</span>
                                     <span className="inv-desc">Once your requisition order has been approved, a Purchase Order will be sent to the supplier automatically.</span>
                                     <div className="tccct-btn">
                                         <div className="btn-black requisition-btn">

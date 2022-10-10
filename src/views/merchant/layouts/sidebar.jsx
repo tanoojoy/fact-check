@@ -2,7 +2,7 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 const marketplaceActions = require('../../../redux/marketplaceActions');
-const commonModule = require('../../../public/js/common');
+const CommonModule = require('../../../public/js/common');
 
 if (typeof window !== 'undefined') {
     const $ = window.$;
@@ -11,20 +11,20 @@ if (typeof window !== 'undefined') {
 class SidebarLayoutComponent extends React.Component {
 
 	componentDidMount() {
-		commonModule.initSidebar();
+		CommonModule.initSidebar();
 		if ((this.props.logoUrl == '' || typeof this.props.logoUrl == 'undefined' || !this.props.logoUrl) && typeof this.props.loadMarketplaceInfo == 'function') {
 			this.props.loadMarketplaceInfo();
 		}
 		$("ul.sidebar-nav li > a").each(function(index, anchor) {
 			const path = $(anchor).attr('href');
 			if (window && window.location) {
-				if ((path === "/" && window.location.pathname == path) || (path !== "/" && window.location.pathname.startsWith(path))) {
+				if ((path === CommonModule.getAppPrefix()+"/" && window.location.pathname == path) || (path !== CommonModule.getAppPrefix()+"/" && window.location.pathname.startsWith(path))) {
 					$(anchor).parent().addClass('active');
 					if ($(anchor).parent().closest('.has-sub').length > 0) {
 						$(anchor).parent().closest('.has-sub').addClass('active');
 					}
 				}
-				
+
 			}
 		});
 	}
@@ -59,13 +59,13 @@ class SidebarLayoutComponent extends React.Component {
 			                <div>
 			                    <ul className="sidebar-nav">
 			                        <li>
-			                            <a href="/merchants/dashboard"><i className="fas fa-tachometer-alt fa-fw"></i> <span>Dashboard</span></a>
+			                            <a href={CommonModule.getAppPrefix()+"/merchants/dashboard"}><i className="fas fa-tachometer-alt fa-fw"></i> <span>Dashboard</span></a>
 			                        </li>
 			                        <li>
-			                            <a href="/merchants/items"><i className="fas fa-cubes fa-fw"></i> <span>Inventory</span></a>
+			                            <a href={CommonModule.getAppPrefix()+"/merchants/items"}><i className="fas fa-cubes fa-fw"></i> <span>Inventory</span></a>
 			                        </li>
 			                        <li>
-			                            <a href="/merchants/upload"><i className="fas fa-plus fa-fw"></i> <span>Add new item</span></a>
+			                            <a href={CommonModule.getAppPrefix()+"/merchants/upload"}><i className="fas fa-plus fa-fw"></i> <span>Add new item</span></a>
 			                        </li>
 			                        <li className="has-sub">
 			                            <a href="#"><i className="fas fa-file-alt fa-fw"></i> <span>Documents</span></a>
@@ -74,7 +74,7 @@ class SidebarLayoutComponent extends React.Component {
 			                                    <a href="#"><i className="fas icon-spacer fa-fw"></i> <span>Quotation</span></a>
 			                                </li>
 			                                <li>
-			                                    <a href="/merchants/order/history"><i className="fas icon-spacer fa-fw"></i> <span>Purchase Order</span></a>
+			                                    <a href={CommonModule.getAppPrefix()+"/merchants/order/history"}><i className="fas icon-spacer fa-fw"></i> <span>Purchase Order</span></a>
 			                                </li>
 			                                <li>
 			                                    <a href="#"><i className="fas icon-spacer fa-fw"></i> <span>Invoice</span></a>
@@ -82,10 +82,10 @@ class SidebarLayoutComponent extends React.Component {
 			                            </ul>
 			                        </li>
 			                        <li>
-										<a href="/subaccount/list"><i className="fas fa-key fa-fw"></i> <span>Sub Account</span></a>
+										<a href={CommonModule.getAppPrefix()+"/subaccount/list"}><i className="fas fa-key fa-fw"></i> <span>Sub Account</span></a>
 							        </li>
 			                        <li>
-			                            <a href="/delivery/settings"><i className="fas fa-shipping-fast fa-fw"></i> <span>Shipping</span></a>
+			                            <a href={CommonModule.getAppPrefix()+"/delivery/settings"}><i className="fas fa-shipping-fast fa-fw"></i> <span>Shipping</span></a>
 			                        </li>
 			                    </ul>
 			                </div>

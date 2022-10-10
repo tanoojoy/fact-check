@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 var React = require('react');
 var reactDom = require('react-dom/server');
 var template = require('../views/layouts/template');
@@ -15,14 +17,10 @@ var ComparisonSnapshotDetailListComponent = require('../views/comparison/compari
 var authenticated = require('../scripts/shared/authenticated');
 var authorizedUser = require('../scripts/shared/authorized-user');
 var client = require('../../sdk/client');
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../scripts/shared/user-permissions');
 
-const viewComparisonListPage = {
-    renderSidebar: true,
-    code: 'view-consumer-comparison-tables-api',
-}
+comparisonRouter.get('/list', authenticated, authorizedUser, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
-comparisonRouter.get('/list', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewComparisonListPage), function (req, res) {
     let user = req.user;
     let promiseComparisonList = new Promise((resolve, reject) => {
         const params = {
@@ -36,51 +34,43 @@ comparisonRouter.get('/list', authenticated, authorizedUser, isAuthorizedToAcces
             resolve(comparisons);
         });
     });
-    
+
     Promise.all([promiseComparisonList]).then((responses) => {
         const appString = 'comparison-list';
 
         const comparisons = responses[0];
 
-        getUserPermissionsOnPage(user, "Comparison Tables", "Consumer", (permissions) => {
-            const s = Store.createComparisonStore({
-                userReducer: {
-                    user: user,
-                    permissions: permissions
-                },
-                comparisonReducer: {
-                    comparisonList: comparisons,
-                    //comparisonList: comparisons.Records,
-                    comparisonToUpdate: null
-                }
-            });
-            const reduxState = s.getState();
-
-            const comparisonListApp = reactDom.renderToString(
-                <ComparisonListComponent comparisons={comparisons}
-                    totalRecords={comparisons.TotalRecords}
-                    currentUser={user}
-                    pageNumber={comparisons.PageNumber}
-                    permissions={permissions} />
-            );
-
-            let seoTitle = 'Comparison List';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const s = Store.createComparisonStore({
+            userReducer: {
+                user: user
+            },
+            comparisonReducer: {
+                comparisonList: comparisons,
+                //comparisonList: comparisons.Records,
+                comparisonToUpdate: null
             }
-
-            res.send(template('page-comparison-list comparison-list', seoTitle, comparisonListApp, appString, reduxState));
         });
-        
+        const reduxState = s.getState();
+
+        const comparisonListApp = reactDom.renderToString(
+            <ComparisonListComponent comparisons={comparisons}
+                totalRecords={comparisons.TotalRecords}
+                currentUser={user}
+                pageNumber={comparisons.PageNumber} />
+        );
+
+        let seoTitle = 'Comparison List';
+          if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+
+        res.send(template('page-comparison-list comparison-list', seoTitle, comparisonListApp, appString, reduxState));
     });
 });
 
-const viewComparisonDetailPage = {
-    renderSidebar: true,
-    code: 'view-consumer-comparison-table-details-api',
-}
+comparisonRouter.get('/detail', authenticated, authorizedUser, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
-comparisonRouter.get('/detail', authenticated, authorizedUser, isAuthorizedToAccessViewPage(viewComparisonDetailPage), function (req, res) {
     let user = req.user;
 
     const promiseComparisonList = new Promise((resolve, reject) => {
@@ -123,45 +113,42 @@ comparisonRouter.get('/detail', authenticated, authorizedUser, isAuthorizedToAcc
         if (responses[1]) {
             comparisonList = responses[1].Records;
         }
-        
+
         let comparableCustomFields = [];
         if (responses[2].TotalRecords > 0) {
             comparableCustomFields = responses[2].Records.filter(c => c.IsComparable == true);
         }
 
-        getUserPermissionsOnPage(user, "Comparison Table Details", "Consumer", (permissions) => {
-            const s = Store.createComparisonStore({
-                userReducer: {
-                    user: user, 
-                    permissions: permissions
-                },
-                comparisonReducer: {
-                    comparisonList: comparisonList,
-                    comparison: comparison,
-                    comparableCustomFields: comparableCustomFields,
-                    processing: false
-                },
-            });
-
-            const reduxState = s.getState();
-            const comparisonDetailApp = reactDom.renderToString(<ComparisonDetailComponent context={context}
-                comparison={comparison}
-                comparisonList={comparisonList}
-                comparableCustomFields={comparableCustomFields}
-                user={user}
-                permissions={permissions} />);
-
-            let seoTitle = 'Comparison Detail';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
-            }
-
-            res.send(template('page-compare-requisition', seoTitle, comparisonDetailApp, appString, reduxState));
+        const s = Store.createComparisonStore({
+            userReducer: {
+                user: user
+            },
+            comparisonReducer: {
+                comparisonList: comparisonList,
+                comparison: comparison,
+                comparableCustomFields: comparableCustomFields,
+                processing: false
+            },
         });
+
+        const reduxState = s.getState();
+        const comparisonDetailApp = reactDom.renderToString(<ComparisonDetailComponent context={context}
+            comparison={comparison}
+            comparisonList={comparisonList}
+            comparableCustomFields={comparableCustomFields}
+            user={user} />);
+
+        let seoTitle = 'Comparison Detail';
+          if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+
+        res.send(template('page-compare-requisition', seoTitle, comparisonDetailApp, appString, reduxState));
     });
 });
 
 comparisonRouter.get('/getUserComparisons', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
     if (!req.user) {
         //Guest Users
@@ -175,7 +162,7 @@ comparisonRouter.get('/getUserComparisons', authenticated, function (req, res) {
             Guest: true
         }
     }
-    
+
     const options = {
         userId: req.user.ID,
         namesOnly: req.query['namesOnly'],
@@ -195,8 +182,8 @@ comparisonRouter.get('/getUserComparisons', authenticated, function (req, res) {
     });
 });
 
-
 comparisonRouter.get('/getComparison', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
     if (!req.user) {
         //Guest Users
@@ -208,7 +195,7 @@ comparisonRouter.get('/getComparison', authenticated, function (req, res) {
             ID: guestID,
             Guest: true
         }
-    } 
+    }
 
     const options = {
         userId: req.user.ID,
@@ -239,7 +226,7 @@ comparisonRouter.post('/createComparison', authenticated, function (req, res) {
             ID: guestID,
             Guest: true
         }
-    } 
+    }
 
     const options = {
         userId: req.user.ID,
@@ -282,7 +269,7 @@ comparisonRouter.delete('/deleteComparison', authenticated, function (req, res) 
         userId: req.user.ID,
         comparisonId: req.body['comparisonId']
     };
-   
+
     var promiseComparison = new Promise((resolve, reject) => {
         client.Comparisons.deleteComparison(options, function (err, result) {
             resolve(result);
@@ -378,6 +365,8 @@ comparisonRouter.put('/clearAllComparisonDetails', authenticated, function (req,
 });
 
 comparisonRouter.get('/getComparisonByOrderId', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const options = {
         userId: req.user.ID,
         orderId: req.query['orderId'],
@@ -423,8 +412,8 @@ comparisonRouter.post('/getComparisonSnapshot', authenticated, function (req, re
 
         if (responses[0]) {
             customFields = responses[0].Records;
-        } 
-        
+        }
+
         let comparison = responses[1];
         let comparisonDetails = comparison.ComparisonDetails;
 
@@ -502,6 +491,8 @@ comparisonRouter.post('/getComparisonSnapshot', authenticated, function (req, re
 });
 
 comparisonRouter.get('/paging', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     let pageNumber = req.query['pageNumber'];
     const pageSize = 20;
 
@@ -524,6 +515,8 @@ comparisonRouter.get('/paging', authenticated, function (req, res) {
 });
 
 comparisonRouter.get('/load', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     let user = req.user;
     let pageNumber = 1;
     const pageSize = 20;
@@ -713,7 +706,7 @@ comparisonRouter.post('/exportToPDF', authenticated, function (req, res) {
                 client.Files.generateFile(options, function (err, result) {
                     resolve(result);
                 });
-            });            
+            });
 
             Promise.all([promiseFile]).then((responses) => {
                 let promiseEmails = [];

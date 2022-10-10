@@ -4,7 +4,7 @@ var React = require('react');
 var ReactRedux = require('react-redux');
 
 
-var HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+var HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 var SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 var FooterLayout = require('../../../views/layouts/footer').FooterLayoutComponent;
 var BaseComponent = require('../../shared/base');
@@ -25,16 +25,6 @@ var OrderActions = require('../../../redux/orderActions');
 
 let PurchaseOrderListComponent = require('../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/purchase_order_list/index');
 class PurchaseHistoryComponent extends BaseComponent {
-
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            orderStatusSearchLabel: 'Order Status', 
-            supplierSearchLabel: process.env.PRICING_TYPE == 'service_level' ? 'Seller' : 'Supplier'
-        }
-    }
-
     isUserMerchant() {
         const { user } = this.props;
 
@@ -70,18 +60,13 @@ class PurchaseHistoryComponent extends BaseComponent {
                 updateSelectedOrderStatus={this.props.updateSelectedOrderStatus}
                 updateSelectedSuppliers={this.props.updateSelectedSuppliers}
                 updateSelectedDates={this.props.updateSelectedDates}
-                updateKeyword={this.props.updateKeyword}
-                orderStatusSearchLabel={this.state.orderStatusSearchLabel}
-                supplierSearchLabel={this.state.supplierSearchLabel}
-                updateSelectedCartItemStatus={this.props.updateSelectedCartItemStatus}
-            />
+                updateKeyword={this.props.updateKeyword} />
         );
     }
     onDropdownChange(e) {
         this.props.updateDetailOrder(e.target.value);
     }
     componentDidMount() {
-        var self = this;
         $('td').each(function () {
 
             var th = $(this).closest('table').find('th').eq(this.cellIndex);
@@ -271,18 +256,10 @@ class PurchaseHistoryComponent extends BaseComponent {
             var checked = $control.find('.x-check:not(.parent-check) input[type=checkbox]:checked').length;
 
             if (checked === 1) {
-                $input.val($control.find('.x-check:not(.parent-check) input[type=checkbox]:checked + label').text());                
+
+                $input.val($control.find('.x-check:not(.parent-check) input[type=checkbox]:checked + label').text());
+
                 $control.addClass('choosen');
-                if ($input[0].name === "OrderStatusSearchLabel") {
-                    self.setState({
-                        orderStatusSearchLabel: $input.val()
-                    });
-                }
-                if ($input[0].name === "SupplierSearchLabel") {
-                    self.setState({
-                        supplierSearchLabel: $input.val()
-                    });
-                }                
 
             } else if (checked > 0) {
 
@@ -291,33 +268,14 @@ class PurchaseHistoryComponent extends BaseComponent {
                 if (checked > 1) {
 
                     $input.val(checked + ' ' + model);
-                    if ($input[0].name === "OrderStatusSearchLabel") {
-                        self.setState({
-                            orderStatusSearchLabel: $input.val()
-                        });
-                    }
-                    if ($input[0].name === "SupplierSearchLabel") {
-                        self.setState({
-                            supplierSearchLabel: $input.val()
-                        });
-                    }
 
                 }
 
             } else {
 
                 $input.val(default_val);
+
                 $control.removeClass('choosen');
-                if ($input[0].name === "OrderStatusSearchLabel") {
-                    self.setState({
-                        orderStatusSearchLabel: $input.val()
-                    });
-                }
-                if ($input[0].name === "SupplierSearchLabel") {
-                    self.setState({
-                        supplierSearchLabel: $input.val()
-                    });
-                }
 
             }
 
@@ -481,7 +439,6 @@ function mapDispatchToProps(dispatch) {
         updateSelectedSuppliers: (suppliers) => dispatch(purchaseActions.updateSelectedSuppliers(suppliers)),
         updateSelectedDates: (date) => dispatch(purchaseActions.updateSelectedDates(date)),
         updateKeyword: (keyword) => dispatch(purchaseActions.updateKeyword(keyword)),
-        updateSelectedCartItemStatus: (status) => dispatch(purchaseActions.updateSelectedCartItemStatus(status))
     };
 }
 

@@ -2,7 +2,7 @@
 var React = require('react');
 var ReactRedux = require('react-redux');
 
-var HeaderLayoutComponent = require('../layouts/header').HeaderLayoutComponent;
+var HeaderLayoutComponent = require('../layouts/header/index').HeaderLayoutComponent;
 var FooterLayout = require('../layouts/footer').FooterLayoutComponent;
 var ContainerComponent = require('../extensions/' + process.env.TEMPLATE + '/policy/container');
 

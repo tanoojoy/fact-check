@@ -8,7 +8,6 @@ class MerchantPurchaseSearchComponent extends React.Component {
         // this.searchOrder = this.searchOrder.bind(this);
         // this.inputChange = this.inputChange.bind(this);
         this.handlePageSizeChange = this.handlePageSizeChange.bind(this);
-        this.clearSelectedStatuses = this.clearSelectedStatuses.bind(this);
         this.state = {
             pageCount: 20
         };
@@ -87,6 +86,7 @@ class MerchantPurchaseSearchComponent extends React.Component {
         $('#btnApply').val('Apply');
     }
     searchOrder(e) {
+
         if (e === undefined || e.keyCode == 13 || e.target.tagName.toLowerCase() === 'span') {
             const self = this;
             var values = $('#filter-datepicker').val();
@@ -150,19 +150,16 @@ class MerchantPurchaseSearchComponent extends React.Component {
         const records = self.props.statuses;
         if (records) {
             return (<ul className="dropdown-menu" id="dropdown-status">
-                <li key={0}className="skip-li"><input type="text" className="q" placeholder="Search Status" /></li>
-                <li key={1}><a className="x-check parent-check" href="#"><input type="checkbox" name="status_0" id="status_0" />
+                <li className="skip-li"><input type="text" className="q" placeholder="Search Status" /></li>
+                <li><a className="x-check parent-check" href="javascript:void(0)"><input type="checkbox" name="status_0" id="status_0" />
                     <label htmlFor="status_0"> Select All</label></a></li>
                 {
                     records.map(function (obj, index) {
                         if (obj.Name && obj.Name.toLowerCase() === "ready for consumer collection") {
                             obj.Name = "Ready for Pick-up"
                         }
-                        if (obj.Name && obj.Name.toLowerCase() === "shipped" && process.env.PRICING_TYPE!=='service_level' ) {
-                            obj.Name = "Delivered"
-                        }
-                        return <li key={index + 2}><a className="x-check" href="#">
-                     <input type="checkbox" data-status-id={obj.Name} name={obj.Name} id={obj.Name} /><label htmlFor={obj.Name}>{obj.Name}</label></a></li>
+                        return <li><a className="x-check" href="javascript:void(0)">
+                     <input type="checkbox" idToPass={obj.ID} data-status-id={obj.Name} name={obj.Name} id={obj.Name} /><label htmlFor={obj.Name}>{obj.Name}</label></a></li>
                     })
                 }
             </ul>)
@@ -188,12 +185,12 @@ class MerchantPurchaseSearchComponent extends React.Component {
 
         if (result) {
             return (<ul className="dropdown-menu" id="dropdown-supplier">
-                <li key={0} className="skip-li"><input type="text" className="q" placeholder="Search Buyer" /></li>
-                <li key={1}><a className="x-check parent-check" href="#"><input type="checkbox" name="supplier_0" id="supplier_0" />
+                <li className="skip-li"><input type="text" className="q" placeholder="Search Buyer" /></li>
+                <li><a className="x-check parent-check" href="javascript:void(0)"><input type="checkbox" name="supplier_0" id="supplier_0" />
                     <label htmlFor="supplier_0"> Select All</label></a></li>
                 {
                     result.map(function (obj, index) {
-                        return <li key={index + 2}><a className="x-check" href="#">
+                        return <li><a className="x-check" href="javascript:void(0)">
                             <input type="checkbox" name={obj.ID} id={obj.Name} /><label htmlFor={obj.Name}> {obj.Name}</label></a></li>
                     })
                 }
@@ -202,10 +199,6 @@ class MerchantPurchaseSearchComponent extends React.Component {
             ""
         }
 
-    }
-
-    clearSelectedStatuses() {
-        this.props.updateSelectedOrderStatus(null);
     }
 
     render() {
@@ -220,13 +213,13 @@ class MerchantPurchaseSearchComponent extends React.Component {
                     </div>
                 </div>
                 <div className="sassy-filter lg-filter">
-                    <form id="search">
+                    <form action id="search">
                         <div className="sassy-flex">
                             <div className="sassy-l">
                                 <div>
                                     <div className="group-search">
                                         <div className="group-search-flex">
-                                            <label className="sassy-label">Filter by:</label>
+                                            <label htmlFor className="sassy-label">Filter by:</label>
                                             <span className="sassy-search" onClick={(e) => this.searchOrder(e)}>
                                                 <input type="text" className="form-control" name="keywords" id="keywords" placeholder="Search..." onKeyUp={(e) => this.searchOrder(e)} defaultValue={this.props.keyword} onChange={(e) => this.inputChange(e)} />
                                             </span>
@@ -241,7 +234,7 @@ class MerchantPurchaseSearchComponent extends React.Component {
                                                     <div className="dropdown">
                                                         <input id="supplier" type="button" data-default="Buyer" defaultValue="Buyer" className="trigger" />
                                                         <a href="#" className="btn-toggle" data-toggle="dropdown" aria-expanded="true"><b className="caret" /></a>
-                                                        <a href="#" className="x-clear"><i className="fa  fa-times-circle" /></a>
+                                                        <a href="javascript:void(0)" className="x-clear"><i className="fa  fa-times-circle" /></a>
                                                         {this.renderSupplier()}
                                                     </div>
                                                 </div>
@@ -251,7 +244,7 @@ class MerchantPurchaseSearchComponent extends React.Component {
                                                     <div className="dropdown">
                                                         <input id="status" type="button" data-default="Order Status" defaultValue="Order Status" className="trigger" />
                                                         <a href="#" className="btn-toggle" data-toggle="dropdown" aria-expanded="true"><b className="caret" /></a>
-                                                        <a href="#" className="x-clear" onClick={this.clearSelectedStatuses}><i className="fa  fa-times-circle" /></a>
+                                                        <a href="javascript:void(0)" className="x-clear"><i className="fa  fa-times-circle" /></a>
                                                         {this.renderStatuses()}
                                                     </div>
                                                 </div>

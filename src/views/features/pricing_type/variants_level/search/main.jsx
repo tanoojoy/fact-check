@@ -2,6 +2,7 @@
 const React = require('react');
 const SearchFilter = require('../../../../search/filters');
 const SearchResultHeader = require('../../../../search/result-header');
+const CommonModule = require('../../../../../public/js/common');
 
 class SearchMain extends React.Component {
     constructor(props) {
@@ -12,7 +13,7 @@ class SearchMain extends React.Component {
 	getItemPrices() {
         return this.props.items.map(i => i.Price);
     }
-    /* 
+    /*
         empty keyword + specific cat = specific cat
         empty keyword + all cat = search
         keyword + specific or all cat = keyword
@@ -46,7 +47,7 @@ class SearchMain extends React.Component {
         }
         return (
             <React.Fragment>
-                <p><a href="/">Home</a></p>
+                <p><a href={CommonModule.getAppPrefix()+"/"}>Home</a></p>
                 <i className="fa fa-angle-right" />
                 <p className="active">{breadcrumbVal}</p>
                 <i className="fa fa-angle-right package-breadcrum-text hide"></i>
@@ -61,6 +62,7 @@ class SearchMain extends React.Component {
 					categories={this.props.categories}
 					manimumPrice={0}
                     maximumPrice={0}
+                    customFields={{}}
                     priceRange={this.props.priceRange}
                     searchByFilters={this.props.searchByFilters}
                     searchByCategory={this.props.searchByCategory}
@@ -71,7 +73,7 @@ class SearchMain extends React.Component {
                     user={this.props.user}
                     currencyCode={this.props.currencyCode}
 				/>
-				<div className="search-container">
+				<div className="search-container open-sidebar">
                     <div className="container">
                         <SearchResultHeader totalRecords={this.props.totalRecords}
                             resultDisplayBehavior={this.props.resultDisplayBehavior}

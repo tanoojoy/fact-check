@@ -2,8 +2,6 @@
 
 var React = require('react');
 var BaseComponent = require('../../shared/base');
-const PermissionTooltip = require('../../common/permission-tooltip');
-
 class ListComponent extends BaseComponent {
     componentDidMount() {
         $('td').each(function () {
@@ -45,18 +43,16 @@ class ListComponent extends BaseComponent {
                                     {self.formatDateTime(comparison.CreatedDateTime)}</td>
                                 <td className="text-center" data-th="PRODUCT">{comparison.ComparisonDetails.length}</td>
                                 <td data-th="Action">
-                                    <PermissionTooltip isAuthorized={self.props.permissions.isAuthorizedToEdit} >
+                                   
                                         <a href="javascript:void(0)" className="edit_item" data-id={comparison.ID}
                                             onClick={() => self.props.showComparisonAddEdit(comparison.ID, comparison.Name)}>
                                             <i className="icon icon-edit"></i>
                                         </a>
-                                    </PermissionTooltip>
-                                    <PermissionTooltip isAuthorized={self.props.permissions.isAuthorizedToDelete} >
                                         <a href="javascript:void(0)" className="openModalRemove"
                                             data-id={comparison.ID} data-toggle="modal"
                                         onClick={() => self.props.showDeleteModalDialog(comparison.ID, comparison.Name)}>
                                             <i className="icon icon-delete"></i></a>
-                                    </PermissionTooltip>
+                                        
                                 </td>
                             </tr>
                         )

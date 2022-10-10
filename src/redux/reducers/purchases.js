@@ -5,8 +5,7 @@ const initialState = {
     history: [],
     keyword: '',
     detail: {},
-    shippingMethod: null,
-    selectedCartItemStatus: '',
+    shippingMethod: null
 };
 
 function purchaseReducer(state = initialState, action) {
@@ -51,11 +50,6 @@ function purchaseReducer(state = initialState, action) {
         case actionTypes.UPDATE_SELECTED_WORD_PO: {
             return Object.assign({}, state, {
                 keyword: action.keyword
-            })
-        }
-        case actionTypes.UPDATE_SELECTED_CART_ITEM_ORDER_STATUS: {
-            return Object.assign({}, state, {
-                selectedCartItemStatus: action.selectedCartItemStatus
             })
         }
         default:

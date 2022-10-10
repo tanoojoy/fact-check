@@ -76,12 +76,9 @@ class PricingModalComponent extends BaseComponent {
 
     savePricingDetail(event, locationId) {
         event.preventDefault();
-        const self = this;
 
-        this.props.validatePermissionToPerformAction("add-merchant-create-item-api", () => {
-            self.props.saveBulkPricing(locationId, self.state.bulkPricing);
-            $('#myModalEditPricing').modal('hide');
-        });
+        this.props.saveBulkPricing(locationId, this.state.bulkPricing);
+        $('#myModalEditPricing').modal('hide');
     }
 
     handleFixedPriceDiscountChange(e) {

@@ -2,6 +2,7 @@
 var React = require('react');
 var EnumCoreModule = require('../../../../../public/js/enum-core');
 var BaseComponent = require('../../../../shared/base');
+const CommonModule = require('../../../../../public/js/common');
 
 class ItemListTableComponent extends BaseComponent {
     constructor(props) {
@@ -13,12 +14,12 @@ class ItemListTableComponent extends BaseComponent {
     componentDidMount() {
         const { items } = this.props;
         const temp =  new Map();
-        if (items && items.length > 0) {   
+        if (items && items.length > 0) {
             items.map(i => temp.set(i.ID, i.IsAvailable))
         }
         this.setState({ itemVisibilityMap: temp });
 
-    
+
     }
 
     renderStock(item) {
@@ -89,7 +90,7 @@ class ItemListTableComponent extends BaseComponent {
                         {
                             this.props.items.map(function (item, index) {
                                 let itemLink = "edit/" + item.ID;
-                                let itemDetailsLink = "/items/" + self.generateSlug(item.Name) + "/" + item.ID;
+                                let itemDetailsLink = CommonModule.getAppPrefix()+"/items/" + self.generateSlug(item.Name) + "/" + item.ID;
                                 const itemAvailable = self.state.itemVisibilityMap.get(item.ID);
 
                                 let IsAvailable = itemAvailable !== null && typeof itemAvailable !== 'undefined' ? itemAvailable : item.IsAvailable;
@@ -120,7 +121,7 @@ class ItemListTableComponent extends BaseComponent {
                                                 </ul>
                                             </div>
                                         </td>
-                                    </tr>    
+                                    </tr>
                                 )
                             })
                         }

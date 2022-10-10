@@ -1,4 +1,6 @@
 ﻿'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 var express = require('express');
 var deliverySettingsRouter = express.Router();
 var React = require('react');
@@ -17,24 +19,11 @@ var onboardedMerchant = require('../scripts/shared/onboarded-merchant');
 
 var handlers = [authenticated, authorizedMerchant, onboardedMerchant];
 
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../scripts/shared/user-permissions');
-
-const viewDeliverySettingsPage = {
-    code: 'view-merchant-delivery-methods-api',
-    seoTitle: 'Delivery Settings Page',
-    renderSidebar: true
-};
-
-const viewDeliveryOptionsPage = {
-    code: 'view-merchant-delivery-option-api',
-    seoTitle: 'Delivery Add Edit Page',
-    renderSidebar: true
-};
-
 /* GET review checkout data. */
-deliverySettingsRouter.get('/settings', ...handlers, isAuthorizedToAccessViewPage(viewDeliverySettingsPage), function (req, res) {
+deliverySettingsRouter.get('/settings', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
-    let user = Object.assign({}, req.user);
+    let user = req.user;
     const userId = user && user.Roles && user.Roles.includes('Submerchant') ? user.SubmerchantID : user.ID;
     var promiseUserDetails = new Promise((resolve, reject) => {
         client.Users.getUserDetails({ userId }, function(err, result) {
@@ -80,33 +69,32 @@ deliverySettingsRouter.get('/settings', ...handlers, isAuthorizedToAccessViewPag
         let temp = responses[4];
         if (temp && temp.CustomFields) user.CustomFields = temp.CustomFields;
 
-        getUserPermissionsOnPage(user, 'Delivery Methods', 'Merchant', (pagePermissions) => {
-            const s = Store.createDeliverySettingsStore({
-                deliverySettingsReducer: {
-                    shippingOptionsMerchant: shippingOptionsMerchant,
-                    shippingOptionsAdmin: shippingOptionsAdmin,
-                    pickupLocations: pickupLocations.Records,
-                    customFieldDefinition: customFieldDefinition.Records
-                },
-                userReducer: {
-                    user: user,
-                    pagePermissions
-                }
-            });
-
-            let seoTitle = 'Delivery Settings Page';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const s = Store.createDeliverySettingsStore({
+            deliverySettingsReducer: {
+                shippingOptionsMerchant: shippingOptionsMerchant,
+                shippingOptionsAdmin: shippingOptionsAdmin,
+                pickupLocations: pickupLocations.Records,
+                customFieldDefinition: customFieldDefinition.Records
+            },
+            userReducer: {
+                user: user
             }
-
-            const reduxState = s.getState();
-            const deliverySettings = reactDom.renderToString(<DeliverySettingsPage pagePermissions={pagePermissions} user={user} customFieldDefinition={customFieldDefinition.Records} shippingOptionsAdmin={shippingOptionsAdmin} shippingOptionsMerchant={shippingOptionsMerchant} pickupLocations={pickupLocations.Records} />);
-            res.send(template('page-seller page-sidebar page-delivery-setting', seoTitle, deliverySettings, appString, reduxState));
         });
+
+        let seoTitle = 'Delivery Settings Page';
+          if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+
+        const reduxState = s.getState();
+        const deliverySettings = reactDom.renderToString(<DeliverySettingsPage user={user} customFieldDefinition={customFieldDefinition.Records} shippingOptionsAdmin={shippingOptionsAdmin} shippingOptionsMerchant={shippingOptionsMerchant} pickupLocations={pickupLocations.Records} />);
+        res.send(template('page-seller page-sidebar page-delivery-setting', seoTitle, deliverySettings, appString, reduxState));
     });
 });
 
-deliverySettingsRouter.get('/add-edit', ...handlers, isAuthorizedToAccessViewPage(viewDeliveryOptionsPage), function (req, res) {
+deliverySettingsRouter.get('/add-edit', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     let user = req.user;
     const shippingMethodId = req.query.shippingmethodid;
 
@@ -128,6 +116,7 @@ deliverySettingsRouter.get('/add-edit', ...handlers, isAuthorizedToAccessViewPag
         });
     });
 
+
     Promise.all([promiseShippingOptionsMerchant, promiseCustomFieldDefinition, promiseMarketplaceInformation]).then((responses) => {
         const appString = 'delivery-add-edit';
         const context = {};
@@ -135,28 +124,25 @@ deliverySettingsRouter.get('/add-edit', ...handlers, isAuthorizedToAccessViewPag
         let customFieldDefinition = responses[1];
         let marketplaceInformation = responses[2];
 
-        getUserPermissionsOnPage(user, 'Delivery Option', 'Merchant', (pagePermissions) => {
-            const s = Store.createDeliverySettingsStore({
-                deliverySettingsReducer: {
-                    manageShippingOptions: manageShippingOptions,
-                    customFieldDefinition: customFieldDefinition.Records,
-                    marketplaceInformation: marketplaceInformation
-                },
-                userReducer: {
-                    user: user,
-                    pagePermissions
-                }
-            });
-
-            let seoTitle = 'Delivery Add Edit Page';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const s = Store.createDeliverySettingsStore({
+            deliverySettingsReducer: {
+                manageShippingOptions: manageShippingOptions,
+                customFieldDefinition: customFieldDefinition.Records,
+                marketplaceInformation: marketplaceInformation
+            },
+            userReducer: {
+                user: user
             }
-
-            const reduxState = s.getState();
-            const deliveryAddEdit = reactDom.renderToString(<DeliveryAddEditComponent pagePermissions={pagePermissions} marketplaceInformation={marketplaceInformation} customFieldDefinition={customFieldDefinition.Records} manageShippingOptions={manageShippingOptions} />);
-            res.send(template('page-seller page-sidebar page-delivery-setting-edit', seoTitle, deliveryAddEdit, appString, reduxState));
         });
+
+        let seoTitle = 'Delivery Add Edit Page';
+          if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+
+        const reduxState = s.getState();
+        const deliveryAddEdit = reactDom.renderToString(<DeliveryAddEditComponent marketplaceInformation={marketplaceInformation} customFieldDefinition={customFieldDefinition.Records} manageShippingOptions={manageShippingOptions} />);
+        res.send(template('page-seller page-sidebar page-delivery-setting-edit', seoTitle, deliveryAddEdit, appString, reduxState));
     });
 });
 
@@ -209,6 +195,8 @@ deliverySettingsRouter.post('/settings/updateShippingOptions', ...handlers, func
 });
 
 deliverySettingsRouter.get('/getShippingOptions', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const deliveryAddEdit = reactDom.renderToString(<DeliveryAddEditPage />);
 
     let seoTitle = 'Delivery Add Edit Page';

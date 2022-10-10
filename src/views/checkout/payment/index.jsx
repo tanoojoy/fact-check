@@ -3,7 +3,7 @@ const React = require('react');
 const ReactRedux = require('react-redux');
 
 const FooterLayout = require('../../layouts/footer').FooterLayoutComponent;
-const HeaderLayout = require('../../layouts/header').HeaderLayoutComponent;
+const HeaderLayout = require('../../layouts/header/index').HeaderLayoutComponent;
 const BaseComponent = require('../../shared/base');
 const { CheckoutPaymentTemplateComponent, mapStateToProps, mapDispatchToProps } = require(`../../extensions/${process.env.TEMPLATE}/checkout/payment/index`);
 

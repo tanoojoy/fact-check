@@ -51,14 +51,13 @@ class UserPreferredLocation extends BaseComponent {
 
     render() {
         const { locations } = this.state;
-        let locationGroupName = locations.length !== 0 ? locations[0].GroupName : 'Select Country';
-        let selectedLocation = this.state.userPreferredLocation === '' ? locationGroupName : this.state.userPreferredLocation;
+
         return (
             <div className='input-container'>
                 <span className='title'>User Location</span>
                 <span className="select-option">
-                    <select name="country" className="get-text required" value={selectedLocation} data-react-state-name='userPreferredLocation' onChange={(e) => this.onChange(e)} >
-                        {locationGroupName !== '' ? <option value="" disable="" select="" hidden='hidden'>{locationGroupName}</option>:'' }
+                    <select name="country" className="get-text required" value={this.state.userPreferredLocation} data-react-state-name='userPreferredLocation' onChange={(e) => this.onChange(e)} >
+                        <option value="">Select your location</option>
                         {
                             locations.map((location) => {
                                 return (

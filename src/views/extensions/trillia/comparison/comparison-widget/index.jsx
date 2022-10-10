@@ -7,6 +7,7 @@ if (typeof window !== 'undefined') {
 var ModalAddEditComponent = require('../comparison-widget/modal-add-edit');
 var ModalDeleteComponent = require('../comparison-widget/modal-delete');
 var BaseComponent = require('../../../../shared/base');
+const CommonModule = require('../../../public/js/common.js');
 
 class ComparisonWidgetComponent extends BaseComponent {
     initializeCarousel() {
@@ -166,7 +167,7 @@ class ComparisonWidgetComponent extends BaseComponent {
                     }
                     <option value="">Create new comparison table</option>
                 </select>
-                <i className="fa fa-angle-down"></i> 
+                <i className="fa fa-angle-down"></i>
             </React.Fragment>
         )
     }
@@ -245,7 +246,7 @@ class ComparisonWidgetComponent extends BaseComponent {
                                 </div>
                                 <div className="w-35">
                                     <button className="add-comp-list-btn white" type="button" data-toggle="" data-target=".bs-example-modal-sm" onClick={(e) => this.showAddEditModal(this.getComparisonId())}>
-                                        <img src="/assets/images/pencil.svg" />
+                                        <img src={CommonModule.getAppPrefix() + "/assets/images/pencil.svg"} />
                                     </button>
                                 </div>
                                 <div className="form-element half">

@@ -1,6 +1,6 @@
 ﻿'use strict';
 const React = require('react');
-const commonModule = require('../../public/js/common');
+const CommonModule = require('../../public/js/common');
 
 class LanguageMenuComponentTemplate extends React.Component {
     render() {
@@ -10,7 +10,7 @@ class LanguageMenuComponentTemplate extends React.Component {
                     <div className="dd-select" style={{ width: 'auto', background: 'rgb(238, 238, 238)' }}>
                         <input className="dd-selected-value" type="hidden" id="SelectLanguage" value="1" />
                         <a className="dd-selected">
-                            <img className="dd-selected-image" src="/assets/images/country_flags/en.svg" style={{ marginRight: '5px' }} />
+                            <img className="dd-selected-image" src={CommonModule.getAppPrefix() + '/assets/images/country_flags/en.svg'} style={{ marginRight: '5px' }} />
                             <label className="dd-selected-text" style={{ lineHeight: 17 }}>EN</label>
                         </a>
                         <span className="dd-pointer dd-pointer-down"></span>
@@ -19,7 +19,7 @@ class LanguageMenuComponentTemplate extends React.Component {
                         <li>
                             <a className="dd-option dd-option-selected">
                                 <input className="dd-option-value" type="hidden" value="1" />
-                                <img src="/assets/images/country_flags/en.svg" className="dd-option-image" />
+                                <img src={CommonModule.getAppPrefix() + "/assets/images/country_flags/en.svg"} className="dd-option-image" />
                                 <label className="dd-option-text">EN</label>
                             </a>
                         </li>

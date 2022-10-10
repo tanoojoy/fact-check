@@ -1,6 +1,7 @@
 ﻿'use strict';
 var React = require('react');
 var BaseComponent = require('../../../shared/base');
+const CommonModule = require('../../../../public/js/common.js');
 
 class ItemList extends BaseComponent {
 
@@ -30,7 +31,7 @@ class ItemList extends BaseComponent {
 
         return (
             this.props.itemDetails.Records.map(function (itemDetail) {
-                let detailLink = "/items/" + self.generateSlug(itemDetail.Name) + '/' + itemDetail.ID;
+                let detailLink = CommonModule.getAppPrefix()+"/items/" + self.generateSlug(itemDetail.Name) + '/' + itemDetail.ID;
                 const { AverageRating } = itemDetail;
 
                 function renderFormatWrapper() {
@@ -74,7 +75,7 @@ class ItemList extends BaseComponent {
     }
 
     renderReviews() {
-        
+
         var self = this;
 
         if (typeof self.props.merchantFeedback == 'undefined')
@@ -122,7 +123,7 @@ class ItemList extends BaseComponent {
     }
 
     getMerchantFeedBackTotalRecords() {
-        
+
         var self = this;
 
         if (typeof self.props.merchantFeedback == 'undefined')
@@ -132,7 +133,7 @@ class ItemList extends BaseComponent {
     }
 
     doSearch() {
-        
+
         var self = this;
         self.props.searchStoreFront(self.props.keyword, self.props.merchantID, self.props.itemDetails.PageNumber)
         self.props.searchMerchantFeedback({

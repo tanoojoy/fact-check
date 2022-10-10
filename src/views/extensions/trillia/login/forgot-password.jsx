@@ -3,6 +3,7 @@ var React = require('react');
 var ReactRedux = require('react-redux');
 var BaseComponent = require('../../../shared/base');
 var EnumCoreModule = require('../../../../public/js/enum-core');
+const CommonModule = require('../../../public/js/common.js');
 
 class ForgotPasswordComponent extends BaseComponent {
     resetPassword() {
@@ -22,7 +23,7 @@ class ForgotPasswordComponent extends BaseComponent {
             <div className="login-container">
                 <div className="icon-logo"> <img src={this.props.marketplaceLogoUrl} /> </div>
                 <div className="login-box">
-                    <div className="lb-head full-width head-buyer"> <a href="/"><img src="/assets/images/back.svg" /></a> <span>Forgot Password</span> </div>
+                    <div className="lb-head full-width head-buyer"> <a href="/"><img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"} /></a> <span>Forgot Password</span> </div>
                     <div className="lb-body full-width">
                         <form id="frmReset" action="/accounts/forgot-password" method="post" autoComplete="off">
                             <div className="lbb-input">

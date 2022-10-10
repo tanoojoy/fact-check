@@ -5,17 +5,14 @@ var PickUpOption = require('../settings/pickup-option');
 var DeliveryOptionSettings = require('../settings/delivery-option-settings');
 var modal = require('../settings/modal');
 
-var HeaderLayout = require('../../../views/layouts/header').HeaderLayoutComponent;
+var HeaderLayout = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 var SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 var FooterLayout = require('../../../views/layouts/footer').FooterLayoutComponent;
 var addressActions = require('../../../redux/addressActions');
 var shippingActions = require('../../../redux/shippingActions');
 var userActions = require('../../../redux/userActions');
-const BaseComponent = require('../../shared/base');
 
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
-
-class DeliverySettingsComponent extends BaseComponent {
+class DeliverySettingsComponent extends React.Component {
 
     componentDidMount() {
         var self = this;
@@ -49,25 +46,8 @@ class DeliverySettingsComponent extends BaseComponent {
                         <div className="delivery-setting-container">
                             <div className="container-fluid">
                                 <span className="h-title">Shipping Settings</span>
-                                <DeliveryOptionSettings
-                                    pagePermissions={this.props.pagePermissions}
-                                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                    customFieldDefinition={self.props.customFieldDefinition}
-                                    updateUserInfo={self.props.updateUserInfo}
-                                    deleteShippingMethod={self.props.deleteShippingMethod}
-                                    user={this.props.user}
-                                    shippingOptionsMerchant={self.props.shippingOptionsMerchant}
-                                    shippingOptionsAdmin={self.props.shippingOptionsAdmin}
-                                    pickupLocations={self.props.pickupLocations} />
-                                <PickUpOption
-                                    pagePermissions={this.props.pagePermissions}
-                                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                    createAddress={this.props.createAddress}
-                                    user={this.props.user}
-                                    deleteAddress={self.props.deleteAddress}
-                                    shippingOptionsMerchant={self.props.shippingOptionsMerchant}
-                                    shippingOptions={self.props.shippingOptionsAdmin}
-                                    pickupLocations={self.props.pickupLocations} />
+                                <DeliveryOptionSettings customFieldDefinition={self.props.customFieldDefinition} updateUserInfo={self.props.updateUserInfo} deleteShippingMethod={self.props.deleteShippingMethod} user={this.props.user} shippingOptionsMerchant={self.props.shippingOptionsMerchant} shippingOptionsAdmin={self.props.shippingOptionsAdmin} pickupLocations={self.props.pickupLocations} />
+                                <PickUpOption createAddress={this.props.createAddress} user={this.props.user} deleteAddress={self.props.deleteAddress} shippingOptionsMerchant={self.props.shippingOptionsMerchant} shippingOptions={self.props.shippingOptionsAdmin} pickupLocations={self.props.pickupLocations} />
                             </div>
                         </div>
                     </div>
@@ -86,7 +66,6 @@ class DeliverySettingsComponent extends BaseComponent {
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
-        pagePermissions: state.userReducer.pagePermissions,
         shippingOptionsMerchant: state.deliverySettingsReducer.shippingOptionsMerchant,
         shippingOptionsAdmin: state.deliverySettingsReducer.shippingOptionsAdmin,
         pickupLocations: state.deliverySettingsReducer.pickupLocations,
@@ -96,7 +75,6 @@ function mapStateToProps(state, ownProps) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
         deleteAddress: (addressId) => dispatch(addressActions.deleteAddress(addressId)),
         createAddress: (body) => dispatch(addressActions.createAddress(body)),
         deleteShippingMethod: (merchantID, shippingmethodID) => dispatch(shippingActions.deleteShippingOptions(merchantID, shippingmethodID)),

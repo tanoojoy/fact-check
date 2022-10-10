@@ -1,5 +1,6 @@
 ﻿'use strict';
 var React = require('react');
+let CommonModule = require('../../../../public/js/common.js');
 
 class UserMenuComponentTemplate extends React.Component {
     renderName() {
@@ -17,16 +18,16 @@ class UserMenuComponentTemplate extends React.Component {
     renderSettings() {
         if (typeof this.props.user.Roles !== 'undefined' && this.props.user.Roles != null && (this.props.user.Roles.includes('Merchant') || this.props.user.Roles.includes('Submerchant'))) {
             return (
-                <li><a href="/merchants/settings">Settings</a></li>
+                <li><a href={CommonModule.getAppPrefix()+"/merchants/settings"}>Settings</a></li>
             )
         }
 
         return (
-            <li><a href="/users/settings">Settings</a></li>    
+            <li><a href={CommonModule.getAppPrefix()+"/users/settings"}>Settings</a></li>
         )
     }
 
-    render() {        
+    render() {
 
 
         if (typeof this.props.user !== 'undefined' && this.props.user != null && this.props.user.Guest === false) {
@@ -36,7 +37,7 @@ class UserMenuComponentTemplate extends React.Component {
                 hide = "hide";
             }
 
-          
+
             return (
                 <li className="h-username" onClick={(e) => this.props.showUserMenu(e)}>
                     <span>
@@ -46,8 +47,8 @@ class UserMenuComponentTemplate extends React.Component {
                     <ul className="h-dd-menu hide-me">
                         <li><a href="/purchase/history">Purchase History</a></li>
                         {this.renderSettings()}
-                        <li className={hide}><a href="/accounts/change-password">Reset Password</a></li>
-                        <form action="/accounts/sign-out" method="post" style={{ cursor: 'pointer'}}>
+                        <li className={hide}><a href={CommonModule.getAppPrefix()+"/accounts/change-password"}>Reset Password</a></li>
+                        <form action={CommonModule.getAppPrefix()+"/accounts/sign-out"} method="post" style={{ cursor: 'pointer'}}>
                             <li><a id="signout-form" onClick={(e) => this.props.signOut(e)}>Logout</a></li>
                         </form>
                     </ul>
@@ -61,7 +62,7 @@ class UserMenuComponentTemplate extends React.Component {
                 }
 
                 let loc = (location.pathname + search).substr(1);
-                return `/accounts/non-private/sign-in?returnUrl=${loc}`
+                return `${CommonModule.getAppPrefix()}/accounts/non-private/sign-in?returnUrl=${loc}`
             }
 
             return (

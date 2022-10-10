@@ -5,6 +5,7 @@ var ReactRedux = require('react-redux');
 var Store = require('../../redux/store.js');
 
 if (window.APP === 'chat') {
+    
     var ChatComponent = require('../../views/chat/index').ChatComponentHome;
     const store = Store.createChatStore(window.REDUX_DATA);
 
@@ -17,6 +18,7 @@ if (window.APP === 'chat') {
 }
 
 if (window.APP === 'chat-quotation') {
+    
     const ChatQuotationHome = require('../../views/chat/quotation/index').ChatQuotationHome;
     const store = Store.createChatStore(window.REDUX_DATA);
 

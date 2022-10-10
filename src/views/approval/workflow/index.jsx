@@ -2,7 +2,7 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayoutComponent = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 
 const WorkflowPageHeading = require('./heading');
@@ -12,7 +12,6 @@ const WorkflowPagination = require('../../common/pagination');
 
 const DeleteWorkflowModal = require('./delete-workflow-modal');
 const { deleteApprovalWorkflow, filterApprovalList, updateSearchFilters } = require('../../../redux/approvalActions');
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
 
 if (typeof window !== 'undefined') { var $ = window.$; }
 
@@ -36,17 +35,9 @@ class ApprovalWorkflowComponent extends React.Component {
 					<div className="main">
 						<div className="orderlist-container">
 							<div className="container-fluid">
-								<WorkflowPageHeading 
-									workflows={this.props.workflows}
-									isAuthorizedToAdd={this.props.isAuthorizedToAdd}
-									validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-								/>
+								<WorkflowPageHeading workflows={this.props.workflows} />
 								<WorkflowPageFilter  updateSearchFilters={this.props.updateSearchFilters} filterApprovalList={this.props.filterApprovalList} />
-								<WorkflowList
-									workflows={this.props.workflows}
-									isAuthorizedToDelete={this.props.isAuthorizedToDelete}
-									validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-								/>
+								<WorkflowList workflows={this.props.workflows} />
 								<WorkflowPagination {...pagingInfo} />
 							</div>
 						</div>
@@ -64,8 +55,6 @@ function mapStateToProps(state, ownProps) {
 	return {
 		user: state.userReducer.user,
 		workflows: state.approvalReducer.workflows,
-        isAuthorizedToAdd: state.userReducer.pagePermissions.isAuthorizedToAdd,
-        isAuthorizedToDelete: state.userReducer.pagePermissions.isAuthorizedToDelete
 	}
 }
 
@@ -74,7 +63,6 @@ function mapDispatchToProps(dispatch) {
 		deleteApprovalWorkflow: (id, callback) => dispatch(deleteApprovalWorkflow(id, callback)),
 		filterApprovalList: (pageSize, pageNumber, tableName) => dispatch(filterApprovalList(pageSize, pageNumber, tableName)),
 		updateSearchFilters: (filters) => dispatch(updateSearchFilters(filters)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
 	}
 }
 

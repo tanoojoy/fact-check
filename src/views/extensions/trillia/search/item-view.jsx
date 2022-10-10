@@ -2,6 +2,7 @@
 var React = require('react');
 
 var BaseComponent = require('../../../shared/base');
+const CommonModule = require('../../../../public/js/common.js');
 class SearchItemViewComponent extends BaseComponent {
 
     renderRating() {
@@ -18,7 +19,7 @@ class SearchItemViewComponent extends BaseComponent {
                 {Array.from(self.props.items).map(function (item, index) {
                     return (
                         <div className="item-box" key={item.ID}>
-                            <a href={"/items/" + self.generateSlug(item.Name) + "/" + item.ID}>
+                            <a href={CommonModule.getAppPrefix()+"/items/" + self.generateSlug(item.Name) + "/" + item.ID}>
                                 <div className="item-image">
                                     <img src={item.Media[0].MediaUrl} />
                                 </div>

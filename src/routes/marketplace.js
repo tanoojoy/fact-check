@@ -1,10 +1,14 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 var express = require('express');
 var marketplaceRouter = express.Router();
 
 var client = require('../../sdk/client');
 
 marketplaceRouter.get('/getInfo', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     var promiseMarketplace = new Promise((resolve, reject) => {
         var options = {
             includes: "ControlFlags"
@@ -52,17 +56,6 @@ marketplaceRouter.get('/getInfo', function (req, res) {
             favIconData = result.Settings["themes"]["theme-1"]["favicon"];
         }
 
-        let locationVariantGroupId = null;
-        if (process.env.PRICING_TYPE == 'country_level') {
-            if (result.CustomFields) {
-                const customField = result.CustomFields.find(c => c.Code.startsWith('locationid'));
-
-                if (customField && customField.Values.length > 0) {
-                    locationVariantGroupId = customField.Values[0];
-                }
-            }
-        }
-
         let marketplaceInfo = {
             Name: result.Name,
             SeoTitle: result.SeoTitle,
@@ -75,12 +68,11 @@ marketplaceRouter.get('/getInfo', function (req, res) {
             IsPrivateEnabled: isPrivateEnabled,
             GoogleAnalytics: googleAnalytics,
             FavIconData: favIconData,
-            ControlFlags: result.ControlFlags,
-            LocationVariantGroupId: locationVariantGroupId
+            ControlFlags: result.ControlFlags
         };
-       
+
         res.send(marketplaceInfo);
     });
 });
 
-module.exports = marketplaceRouter;         
+module.exports = marketplaceRouter;

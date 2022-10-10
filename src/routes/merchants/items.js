@@ -1,4 +1,6 @@
 ﻿'use strict';
+import { redirectUnauthorizedUser } from '../../utils';
+
 var express = require('express');
 var merchantItemRouter = express.Router();
 var React = require('react');
@@ -15,15 +17,9 @@ var client = require('../../../sdk/client');
 
 var handlers = [authenticated, authorizedMerchant, onboardedMerchant];
 
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../../scripts/shared/user-permissions');
+merchantItemRouter.get('/', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
-const viewInventoryPage = {
-    code: 'view-merchant-inventory-api',
-    seoTitle: 'Your Items',
-    renderSidebar: true
-};
-
-merchantItemRouter.get('/', ...handlers, isAuthorizedToAccessViewPage(viewInventoryPage), function (req, res) {
     const user = req.user;
 
     var promiseItems = new Promise((resolve, reject) => {
@@ -58,35 +54,41 @@ merchantItemRouter.get('/', ...handlers, isAuthorizedToAccessViewPage(viewInvent
         let items = responses[0];
         let marketplaceInfo = responses[1];
 
-        getUserPermissionsOnPage(user, 'Inventory', 'Merchant', (pagePermissions) => {
-            const s = Store.createItemListStore({
-                userReducer: {
-                    user: user,
-                    pagePermissions
-                },
-                itemsReducer: {
-                    items: items.Records,
-                    pageSize: items.PageSize,
-                    pageNumber: items.PageNumber,
-                    totalRecords: items.TotalRecords,
-                    itemToDelete: null,
-                    controlFlags: marketplaceInfo.ControlFlags
-                }
-            });
-
-            const reduxState = s.getState();
-            let seoTitle = 'Your Items';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const context = {};
+        const appString = 'merchant-item-list';
+        const s = Store.createItemListStore({
+            userReducer: { user: user },
+            itemsReducer: {
+                items: items.Records,
+                pageSize: items.PageSize,
+                pageNumber: items.PageNumber,
+                totalRecords: items.TotalRecords,
+                itemToDelete: null,
+                controlFlags: marketplaceInfo.ControlFlags
             }
-
-            const app = reactDom.renderToString(<MerchantItemListComponent pagePermissions={pagePermissions} user={req.user} items={items.Records} />);
-            res.send(template('page-seller page-item-list page-sidebar', seoTitle, app, 'merchant-item-list', reduxState));
         });
+
+        const reduxState = s.getState();
+        let seoTitle = 'Your Items';
+          if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+
+        const app = reactDom.renderToString(<MerchantItemListComponent context={context} user={req.user} items={items.Records} />);
+        res.send(template('page-seller page-item-list page-sidebar', seoTitle, app, appString, reduxState));
     });
 });
 
-merchantItemRouter.get('/search', ...handlers, isAuthorizedToAccessViewPage(viewInventoryPage), function (req, res) {
+merchantItemRouter.get('/:id([0-9]+)', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
+    console.log('merchant item details access: ', Date.now());
+    res.send('merchant item detail home page');
+});
+
+merchantItemRouter.get('/search', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const keyword = req.query['keyword'];
     const pageNumber = req.query['pageNumber'];
@@ -117,23 +119,19 @@ merchantItemRouter.get('/search', ...handlers, isAuthorizedToAccessViewPage(view
     });
 });
 
-merchantItemRouter.put('/edit/:itemId', ...handlers, isAuthorizedToPerformAction('edit-merchant-inventory-api'), function (req, res) {
+merchantItemRouter.put('/edit', ...handlers, function (req, res) {
     const user = req.user;
-    const itemId = req.params['itemId'];
+    const itemId = req.body['itemId'];
+    const isAvailable = req.body['isAvailable'];
 
     const options = {
         merchantId: user.ID,
         itemId: itemId,
-        data: req.body
+        isAvailable: isAvailable,
     };
 
-    const webApiToken = req.cookies['webapitoken'];
-
-    if (!webApiToken)
-        return res.send(null);
-
     var promiseItems = new Promise((resolve, reject) => {
-        client.Items.editItem(webApiToken, options, function (err, result) {
+        client.Items.editItem(options, function (err, result) {
             resolve(result);
         });
     });
@@ -143,7 +141,7 @@ merchantItemRouter.put('/edit/:itemId', ...handlers, isAuthorizedToPerformAction
     });
 });
 
-merchantItemRouter.delete('/delete', ...handlers, isAuthorizedToPerformAction('delete-merchant-inventory-api'), function (req, res) {
+merchantItemRouter.delete('/delete', ...handlers, function (req, res) {
     const user = req.user;
     const itemId = req.body['itemId'];
 
@@ -153,7 +151,7 @@ merchantItemRouter.delete('/delete', ...handlers, isAuthorizedToPerformAction('d
     };
 
     var promiseItems = new Promise((resolve, reject) => {
-        client.Items.deleteItem(req.cookies['webapitoken'], options, function (err, result) {
+        client.Items.deleteItem(options, function (err, result) {
             resolve(result);
         });
     });

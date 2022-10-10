@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="14px" viewBox="0 0 16 14" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Shape</title>
+    <g id="Buyer-and-Seller" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="B-03-3-Company-3" transform="translate(-108.000000, -637.000000)" fill="#08A6D9">
+            <g id="Regulatory-Inspections" transform="translate(72.000000, 496.000000)">
+                <g id="Tables" transform="translate(24.000000, 70.000000)">
+                    <g id="Row-1" transform="translate(0.000000, 58.000000)">
+                        <g id="Left-Icon---Text" transform="translate(12.000000, 10.000000)">
+                            <g id="tokens/icons/action/verified" transform="translate(0.000000, 2.000000)">
+                                <path d="M10.2667474,1 L11.5267482,3.13333337 L13.9334139,3.67999999 L13.7067471,6.14000003 L15.3334141,8 L13.7067471,9.85999997 L13.9334139,12.3199997 L11.5267482,12.8666662 L10.2667474,14.9933332 L8.00008106,14.0200005 L5.73341443,15 L4.47341457,12.873333 L2.06674792,12.3266665 L2.29341468,9.85999997 L0.666748047,8 L2.29341468,6.13333321 L2.06674792,3.66666667 L4.47341457,3.1266667 L5.73341443,1 L8.00008106,1.97333336 L10.2667474,1 Z M10.626692,5.25976562 L6.72669251,9.17309867 L5.18002599,7.61976547 L4.19335938,8.6064321 L6.72669251,11.1464319 L11.613359,6.24643225 L10.626692,5.25976562 Z" id="Shape"></path>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

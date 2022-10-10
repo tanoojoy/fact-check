@@ -80,7 +80,7 @@ class NonPrivateSignUpComponent extends BaseComponent {
             }
 
             $('#frmlogin').submit();
-          
+
         })
         e.preventDefault();
         return false;
@@ -110,11 +110,11 @@ class NonPrivateSignUpComponent extends BaseComponent {
                         <div className="icon-logo"> <img src={this.props.marketplaceLogoUrl} /> </div>
                         <div className="login-box">
                             <div className="lb-head full-width head-buyer">
-                                <a href={`/accounts/non-private/sign-in?isSeller=${this.props.isSeller || false}`}><img src="/assets/images/back.svg" /></a>
+                                <a href={`${CommonModule.getAppPrefix()}/accounts/non-private/sign-in?isSeller=${this.props.isSeller || false}`}><img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"} /></a>
                                 <span>Register with Us</span>
                             </div>
                             <div className="lb-body full-width">
-                                <form id="frmlogin" action="/accounts/non-private/sign-up" method="post" autoComplete="off">
+                                <form id="frmlogin" action={CommonModule.getAppPrefix()+"/accounts/non-private/sign-up"} method="post" autoComplete="off">
                                     <div className="lbb-input">
                                         <input type="hidden" className="input-text isSeller" placeholder="isSeller" id="isSeller" name="isSeller" data-react-state-name="isSeller" value={this.props.isSeller || false} />
                                         <input type="text" className="input-text username" placeholder="Username" name="username" data-react-state-name="username" value={this.state.username} onKeyDown={(e) => this.avoidWhiteSpaceOnKeyDown(e)} onChange={(e) => this.onChange(e)} />
@@ -131,7 +131,7 @@ class NonPrivateSignUpComponent extends BaseComponent {
                                         <span><a href={`/accounts/non-private/sign-in?isSeller=${this.props.isSeller || false}`}>Login</a></span>
                                     </div>
                                 </form>
-                                
+
                             </div>
                         </div>
                     </div>

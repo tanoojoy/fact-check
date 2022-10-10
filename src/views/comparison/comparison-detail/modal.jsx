@@ -75,7 +75,7 @@ class ComparisonDetailModalComponent extends React.Component {
 
                                     <p align="left">We will send the PDF to your email address</p>
 
-                                    <input type="email" id="emailPDF" name="email" placeholder="Email Address" multiple/>
+                                    <input type="email" id="emailPDF" name="email" placeholder="Email Address"/>
 
                                 </div>
 

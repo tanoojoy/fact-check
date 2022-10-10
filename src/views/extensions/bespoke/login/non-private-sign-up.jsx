@@ -4,7 +4,7 @@ var ReactRedux = require('react-redux');
 var BaseComponent = require('../../../shared/base');
 var EnumCoreModule = require('../../../../public/js/enum-core');
 var AccountActions = require('../../../../redux/accountAction');
-var CommonModule = require('../../../../../src/public/js/common.js');
+var CommonModule = require('../../../../public/js/common.js');
 
 class NonPrivateSignUpComponent extends BaseComponent {
 
@@ -81,7 +81,7 @@ class NonPrivateSignUpComponent extends BaseComponent {
 
             $('#isSeller').val(isSeller)
             $('#frmlogin').submit();
-          
+
         })
         e.preventDefault();
         return false;
@@ -111,11 +111,11 @@ class NonPrivateSignUpComponent extends BaseComponent {
                         <div className="icon-logo"> <img src={this.props.marketplaceLogoUrl} /> </div>
                         <div className="login-box">
                             <div className="lb-head full-width head-buyer">
-                                <a href="/accounts/non-private/sign-in"><img src="/assets/images/back.svg" /></a>
+                                <a href={CommonModule.getAppPrefix()+"/accounts/non-private/sign-in"}><img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"} /></a>
                                 <span>Register with Us</span>
                             </div>
                             <div className="lb-body full-width">
-                                <form id="frmlogin" action="/accounts/non-private/sign-up" method="post" autoComplete="off">
+                                <form id="frmlogin" action={CommonModule.getAppPrefix()+"/accounts/non-private/sign-up"} method="post" autoComplete="off">
                                     <div className="lbb-input">
                                         <input type="hidden" className="input-text isSeller" placeholder="isSeller" id="isSeller" name="isSeller" data-react-state-name="isSeller" value={this.state.isSeller} onChange={(e) => this.onChange(e)} />
                                         <input type="text" className="input-text username" placeholder="Username" name="username" data-react-state-name="username" value={this.state.username} onKeyDown={(e) => this.avoidWhiteSpaceOnKeyDown(e)} onChange={(e) => this.onChange(e)} />
@@ -129,10 +129,10 @@ class NonPrivateSignUpComponent extends BaseComponent {
                                     </div>
                                     <div className="lbb-bottom-text">
                                         <span>Already a member?</span>
-                                        <span><a href="/accounts/non-private/sign-in">Login</a></span>
+                                        <span><a href={CommonModule.getAppPrefix()+"/accounts/non-private/sign-in"}>Login</a></span>
                                     </div>
                                 </form>
-                                
+
                             </div>
                         </div>
                     </div>

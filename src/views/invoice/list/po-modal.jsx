@@ -48,39 +48,27 @@ class POModalComponent extends BaseComponent {
     }
 
     createInvoiceFromPO(e) {
-        const self = this;
         e.preventDefault();
-
-        this.props.validatePermissionToPerformAction(`add-${this.props.permissionPageType}-invoices-api`, () => {
-            const poNum = $('#metric_affected').val();
-            let hasError = false;
-            if (poNum) {
-                const po = self.props.purchaseOrders.filter((item) => ($.trim(item.PurchaseOrderNo) === $.trim(poNum)));
-                if (po && po.length > 0) {
-                    window.location.href = '/merchants/invoice/create?purchaseOrderId=' + po[0].ID;
-                }
-                else {
-
-                    let po = this.props.purchaseOrders.filter((item) => ($.trim(item.CosmeticNo) === $.trim(poNum)));
-
-                    if (po)
-                        return window.location = '/merchants/invoice/create?purchaseOrderId=' + po[0].ID;
-                    else
-                        hasError = true;
-
-
-                }
+        const poNum = $('#metric_affected').val();
+        let hasError = false;
+        if (poNum) {
+            const po = this.props.purchaseOrders.filter((item) => ($.trim(item.PurchaseOrderNo) === $.trim(poNum)));
+            if (po && po.length > 0) {
+                window.location.href = '/invoice/create?purchaseOrderId=' + po[0].ID;
             }
             else {
                 hasError = true;
             }
+        }
+        else {
+            hasError = true;
+        }
 
-            if (hasError) {
-                self.setState({
-                    showError: true
-                });
-            }
-        });
+        if (hasError) {
+            this.setState({
+                showError: true
+            });
+        }
     }
 
     render() {
@@ -89,7 +77,6 @@ class POModalComponent extends BaseComponent {
         if (searchPONumber) {
             purchaseOrders = purchaseOrders.filter(item => item.PurchaseOrderNo.toLowerCase().includes(searchPONumber.toLowerCase()));
         }
-        //ARC10131 remove value
         return (
             <React.Fragment>
                 <div id="modalHavePO" className="filter-modal modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
@@ -110,7 +97,7 @@ class POModalComponent extends BaseComponent {
                                                     data-default=""                                                     
                                                     className="form-control sassy-control po-number" 
                                                     required="" 
-                                                  
+                                                    value={selectedOrderPONum} 
                                                     onChange={this.onChange}
                                                 />
                                                 <a href="#" className="btn-toggle" data-toggle="dropdown"><b className="caret"></b></a>
@@ -133,7 +120,7 @@ class POModalComponent extends BaseComponent {
                                                             return (<li key={order.ID}>
                                                                 <a className="x-check" onClick={() => (this.selectInvoice(order.PurchaseOrderNo))}>
                                                                     <input type="checkbox" name={order.PurchaseOrderNo} id={`po_${index}`} />
-                                                                    <label htmlFor={`po_${index}`}> {order.CosmeticNo != null && order.CosmeticNo != "" ? order.CosmeticNo :  order.PurchaseOrderNo}</label>
+                                                                    <label htmlFor={`po_${index}`}> {order.PurchaseOrderNo}</label>
                                                                 </a>
                                                             </li>)
                                                         })

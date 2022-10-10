@@ -18,10 +18,8 @@ class BuyerLoginComponent extends BaseComponent {
         if (typeof window !== 'undefined') {
             var $ = window.$;
         }
-      
-        if (this.props.error && this.props.error == '5') {
-            this.showMessage(EnumCoreModule.GetToastStr().Error.UNREGISTERED_LOGIN_ACCOUNT);
-        } else if (this.props.error && this.props.error === '2') {
+
+        if (this.props.error && this.props.error === '2') {
             this.showMessage(EnumCoreModule.GetToastStr().Error.INVALID_TOKEN);
         } else if (this.props.error) {
             this.showMessage(EnumCoreModule.GetToastStr().Error.INVALID_LOGIN_CREDENTIALS);
@@ -217,7 +215,7 @@ class BuyerLoginComponent extends BaseComponent {
                 }
             }
         }
-    } 
+    }
 
     render() {
         const self = this;
@@ -231,7 +229,7 @@ class BuyerLoginComponent extends BaseComponent {
                     <div className="login-box">
                         <div className="lb-head full-width head-buyer">
                             <a href="/">
-                                <img src="/assets/images/back.svg"></img>
+                                <img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"}></img>
                             </a>
                             <span>Login as a Buyer</span>
                         </div>
@@ -256,7 +254,6 @@ class BuyerLoginComponent extends BaseComponent {
 }
 
 function mapStateToProps(state, ownProps) {
-
     return {
         type: state.type,
         host: state.host,

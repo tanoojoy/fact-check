@@ -2,26 +2,23 @@
 const React = require('react');
 const toastr = require('toastr');
 
-const HeaderLayout = require('../layouts/header').HeaderLayoutComponent;
+const HeaderLayout = require('../layouts/header/index').HeaderLayoutComponent;
 const FooterLayout = require('../layouts/footer').FooterLayoutComponent;
 const ReactRedux = require('react-redux');
 
 const BaseComponent = require('../shared/base');
 const cartActions = require('../../redux/cartActions');
-const actionTypes = require('../../redux/actionTypes');
+
 const CommonModule = require('../../public/js/common');
 const { OrderSummary,  customMapDispatchToProps } = require('./order-summary');
-const CustomMethods = require('../features/pricing_type/' + process.env.PRICING_TYPE + '/cart/custom');
-const PermissionTooltip = require('../common/permission-tooltip');
-const { validatePermissionToPerformAction } = require('../../redux/accountPermissionActions');
 
-class CartPageComponent extends CustomMethods {
+class CartPageComponent extends BaseComponent {
     constructor(props) {
         super(props);
     }
 
     itemUrl(itemName, itemId) {
-        return "/items/" + this.generateSlug(itemName) + "/" + itemId;
+        return CommonModule.getAppPrefix()+"/items/" + this.generateSlug(itemName) + "/" + itemId;
     }
 
     arrangeMerchants() {
@@ -40,9 +37,9 @@ class CartPageComponent extends CustomMethods {
                     }
                 } else if (merchantsIds.length === 0) {
                     merchantsIds.push(cart.ItemDetail.MerchantDetail.ID);
-                }              
+                }
             });
-            //Arranging Items            
+            //Arranging Items
             merchantsIds.forEach(function (merchantId) {
                 let merchantItems = [];
                 self.props.cartPageModel.cartList.forEach(function (cart) {
@@ -52,11 +49,11 @@ class CartPageComponent extends CustomMethods {
                 });
                 arrangedCartItems.push(merchantItems);
             });
-           
-        }        
+
+        }
         self.props.arrangeItemCarts(arrangedCartItems);
     }
-    
+
     componentDidMount() {
         this.arrangeMerchants();
         //Check If Have Guest
@@ -70,13 +67,11 @@ class CartPageComponent extends CustomMethods {
     componentDidUpdate() {
         let self = this;
         $(".openModalRemove").on("click", function () {
-            self.props.validatePermissionToPerformAction("delete-consumer-cart-api", () => {
-                var $parent = $(this).parents(".parent-r-b");
-                $parent.addClass("modal-delete-open");
-                $("#modalRemove").modal("show");
-                let cartId = $(this).attr("id");
-                self.props.deleteSelectCartId(cartId);
-            });     
+            var $parent = $(this).parents(".parent-r-b");
+            $parent.addClass("modal-delete-open");
+            $("#modalRemove").modal("show");
+            let cartId = $(this).attr("id");
+            self.props.deleteSelectCartId(cartId);
         });
         $("#modalRemove .btn-gray").on("click", function (e) {
             $(".parent-r-b").removeClass("modal-delete-open");
@@ -85,22 +80,17 @@ class CartPageComponent extends CustomMethods {
             self.props.deleteSelectCartId("");
         });
         $("#modalRemove #btnRemove").on("click", function (e) {
-            self.props.validatePermissionToPerformAction("delete-consumer-cart-api", () => {
-                $("#modalRemove").modal("hide");
-                //$(".parent-r-b.modal-delete-open").remove(); 
-                e.stopImmediatePropagation();
-                self.props.deleteCartItem(self.props.cartPageModel.cartItemToDelete, self.props.user.ID);
-            });
+            $("#modalRemove").modal("hide");
+         //   $(".parent-r-b.modal-delete-open").remove();
+            e.stopImmediatePropagation();
+            self.props.deleteCartItem(self.props.cartPageModel.cartItemToDelete, self.props.user.ID);
         });
 
         $(".cart-edit").on("click", function (e) {
-            const $this = $(this);
-            self.props.validatePermissionToPerformAction("edit-consumer-cart-api", () => {
-                let cartId = $this.attr("id");
-                e.stopImmediatePropagation();
-                self.props.editCartItem(cartId);
-                $("#cartItemEdit").modal("show");
-            });            
+            let cartId = $(this).attr("id");
+            e.stopImmediatePropagation();
+            self.props.editCartItem(cartId);
+            $("#cartItemEdit").modal("show");
         });
 
         let guestUserID = "";
@@ -122,19 +112,15 @@ class CartPageComponent extends CustomMethods {
     }
 
     renderVariants(itemDetail) {
-        const { locationVariantGroupId } = this.props;
-
         if (itemDetail && itemDetail.Variants) {
             let el = [];
-            itemDetail.Variants.forEach(function (variant, i) {
-                if (variant.GroupID != locationVariantGroupId) {
-                    el.push(
-                        <span key={i} className="if-txt">
-                            <span>{variant.GroupName}:</span>
-                            <span>{variant.Name}</span>
-                        </span>
-                    );
-                }
+            itemDetail.Variants.forEach(function (variant,i) {
+                el.push(
+                    <span key={i} className="if-txt">
+                        <span>{variant.GroupName}:</span>
+                        <span>{variant.Name}</span>
+                    </span>
+                );
             });
             return el;
         }
@@ -171,9 +157,6 @@ class CartPageComponent extends CustomMethods {
         let self = this;
         let el = [];
         if (this.props.cartPageModel.cartList && this.props.cartPageModel.cartList.length > 0 && this.props.cartPageModel.isArranged === true) {
-            if (typeof this.customRenderCartItem == 'function') {
-                return this.customRenderCartItem(this.props.cartPageModel.cartList, self.props.itemSelect);
-            }
             this.props.cartPageModel.cartList.forEach(function (merchantsId, indx) {
                 let itemImageUrl = '';
                 let sellerName = '';
@@ -204,7 +187,7 @@ class CartPageComponent extends CustomMethods {
                                         id={cart.ID}
                                         name="item-options[]"
                                         checked={cart.isChecked}
-                                        onChange={() => { self.props.itemSelect(cart.ID, "") }} 
+                                        onChange={() => { self.props.itemSelect(cart.ID, "") }}
                                     />
                                     <label htmlFor={cart.ID} />
                                 </span>
@@ -223,16 +206,12 @@ class CartPageComponent extends CustomMethods {
                             </td>
                             <td>
                                 <div className="cart-act">
-                                    <PermissionTooltip isAuthorized={self.props.isAuthorizedToEdit} extraClassOnUnauthorized="icon-grey">
-                                        <span id={cart.ID} className="cart-item-edit cart-edit">
-                                            <a href="#">Edit</a>
-                                        </span>
-                                    </PermissionTooltip>
-                                    <PermissionTooltip isAuthorized={self.props.isAuthorizedToDelete} extraClassOnUnauthorized="icon-grey">
-                                        <span id={cart.ID} className="cbcr-delete openModalRemove">
-                                            <i className="fa fa-trash"></i>
-                                        </span>
-                                    </PermissionTooltip>
+                                    <span id={cart.ID} className="cart-item-edit cart-edit">
+                                        <a href="#">Edit</a>
+                                    </span>
+                                    <span id={cart.ID} className="cbcr-delete openModalRemove">
+                                        <i className="fa fa-trash"></i>
+                                    </span>
                                 </div>
                             </td>
                         </tr>
@@ -241,7 +220,7 @@ class CartPageComponent extends CustomMethods {
                 if (sellerName) {
                     el.push(
                         <div className="cart-box full-width" key={indx}>
-                            <div className="cb-header">  
+                            <div className="cb-header">
                                 <div className="cb-checkbox">
                                     <span className="fancy-checkbox full-width">
                                         <input type="checkbox" id={merchantId}
@@ -282,7 +261,7 @@ class CartPageComponent extends CustomMethods {
                     )
                 }
 
-            }); 
+            });
             return el;
         } else {
             return "";
@@ -327,7 +306,7 @@ class CartPageComponent extends CustomMethods {
                 if (minQuantity < 1) {
                     if (cartItem.ItemDetail.CustomFields) {
                         const moqCustoms = cartItem.ItemDetail.CustomFields.filter(r => r.Code.includes('moq'));
-                        if (moqCustoms && moqCustoms.length > 0) {
+                        if (moqCustoms) {
                             const moqCustom = moqCustoms[0];
                             minQuantity = moqCustom.Values[0] * 1;
                         }
@@ -402,7 +381,7 @@ class CartPageComponent extends CustomMethods {
                                     Name: varcom.Name,
                                     ID: varcom.ID
                                 });
-                            }                            
+                            }
                         });
                         if (variantNameList) {
                             variantNameList.forEach(function (vnl,i) {
@@ -500,15 +479,13 @@ class CartPageComponent extends CustomMethods {
     }
 
     onUpdateCartBtnClick(cartItemID, maxQuantity, minQuantity) {
-        this.props.validatePermissionToPerformAction("edit-consumer-cart-api", () => {
-            const quantity = $("#quantityVal").val();
-            const result = this.validateQuantityField(quantity, maxQuantity, minQuantity);
-            if (!result.error) {
-                this.props.SaveSelectedVariant(cartItemID, quantity, this.props.user.ID);
-            } else {
-                toastr.error(result.message);
-            }
-        });        
+        const quantity = $("#quantityVal").val();
+        const result = this.validateQuantityField(quantity, maxQuantity, minQuantity);
+        if (!result.error) {
+            this.props.SaveSelectedVariant(cartItemID, quantity, this.props.user.ID);
+        } else {
+            toastr.error(result.message);
+        }
     }
 
     renderDeletePopup() {
@@ -529,7 +506,7 @@ class CartPageComponent extends CustomMethods {
         );
     }
 
-    render() {        
+    render() {
         let isEmpty = (this.props.cartPageModel.cartList && this.props.cartPageModel.cartList.length !== 0) ? 'hide' : '';
         return (
             <React.Fragment>
@@ -540,7 +517,7 @@ class CartPageComponent extends CustomMethods {
                     <div className="cart-container">
                         <div className="container">
                             <div className="h-parent-child-txt full-width">
-                                <p><a href="/">Home</a></p>
+                                <p><a href={CommonModule.getAppPrefix()+"/"}>Home</a></p>
                                 <i className="fa fa-angle-right" />
                                 <p className="active">My Cart</p>
                             </div>
@@ -551,7 +528,7 @@ class CartPageComponent extends CustomMethods {
                             </div>
                             <div className={"cart-empty " + isEmpty}>
                                 <div className="cart-top-sec-left2">
-                                    <img className="cart-empty-image" src="/assets/images/cart_icon.svg" alt="cart-empty" /></div>
+                                    <img className="cart-empty-image" src={CommonModule.getAppPrefix() + "/assets/images/cart_icon.svg"} alt="cart-empty" /></div>
                                 <div className="cart-top-sec-right2">
                                     <p className="seems-cart-empty-txt">It seems like your cart is empty</p>
                                     <p className="start-search-add-txt">Start searching and adding!</p>
@@ -562,14 +539,10 @@ class CartPageComponent extends CustomMethods {
                             </div>
                             <OrderSummary
                                 cartPageModel={this.props.cartPageModel}
-                                checkoutPressedCallback={this.checkoutPressedCallback}
                                 CheckoutButtonPressed={this.props.CheckoutButtonPressed}
                                 validateCarts={this.props.validateCarts}
                                 user={this.props.user}
-                                processing={this.props.processing}
-                                setProcessing={this.props.setProcessing}
                                 controlFlags={this.props.controlFlags}
-                                getItemDetails={this.props.getItemDetails}
                             />
                         </div>
                     </div>
@@ -588,11 +561,7 @@ function mapStateToProps(state, ownProps) {
     return {
         cartPageModel: state.cartReducer.cartPageModel,
         user: state.userReducer.user,
-        controlFlags: state.marketplaceReducer.ControlFlags,
-        locationVariantGroupId: state.marketplaceReducer.locationVariantGroupId,
-        processing: state.cartReducer.processing,
-        isAuthorizedToEdit: state.userReducer.pagePermissions.isAuthorizedToEdit, 
-        isAuthorizedToDelete: state.userReducer.pagePermissions.isAuthorizedToDelete, 
+        controlFlags: state.marketplaceReducer.ControlFlags
     };
 }
 
@@ -607,9 +576,6 @@ function mapCommonDispatchToProps(dispatch) {
         deleteCartItem: (cartId, userId) => dispatch(cartActions.deleteCartItem(cartId, userId)),
         arrangeItemCarts: (itemCarts) => dispatch(cartActions.arrangeItemCarts(itemCarts)),
         getUserCarts: (options, callback) => dispatch(cartActions.getUserCarts(options, callback)),
-        getItemDetails: (itemId, callback) => dispatch(cartActions.getItemDetails(itemId, callback)),
-        setProcessing: (processing) => dispatch({ type: actionTypes.PROCESSING, processing: processing }),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
     };
 }
 
@@ -623,7 +589,7 @@ function mapDispatchToProps(dispatch) {
 const CartPage = ReactRedux.connect(
     mapStateToProps,
     mapDispatchToProps
-    
+
 )(CartPageComponent)
 
 module.exports = {

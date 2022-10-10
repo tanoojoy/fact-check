@@ -2,6 +2,7 @@
 const React = require('react');
 const SearchFilter = require('../../../search/filters');
 const SearchResultHeader = require('../../../search/result-header');
+const CommonModule = require('../../../../public/js/common');
 
 class SearchMain extends React.Component {
     constructor(props) {
@@ -12,7 +13,7 @@ class SearchMain extends React.Component {
 	getItemPrices() {
         return this.props.items.map(i => i.Price);
     }
-    /* 
+    /*
         empty keyword + specific cat = specific cat
         empty keyword + all cat = search
         keyword + specific or all cat = keyword
@@ -46,7 +47,7 @@ class SearchMain extends React.Component {
         }
         return (
             <React.Fragment>
-                <p><a href="/">Home</a></p>
+                <p><a href={CommonModule.getAppPrefix()+"/"}>Home</a></p>
                 <i className="fa fa-angle-right" />
                 <p className="active">{breadcrumbVal}</p>
                 <i className="fa fa-angle-right package-breadcrum-text hide"></i>

@@ -11,8 +11,7 @@ const initialState = {
     googleAnalytics: null,
     isPrivateEnabled: true,
     ControlFlags: {},
-    isMerchantRestrictedOnly: false,
-    locationVariantGroupId: null
+    isMerchantRestrictedOnly: false
 };
 
 function marketplaceReducer(state = initialState, action) {
@@ -33,7 +32,6 @@ function marketplaceReducer(state = initialState, action) {
                 isPrivateEnabled: action.isPrivateEnabled,
                 ControlFlags: action.ControlFlags,
                 isMerchantRestrictedOnly: action.isMerchantRestrictedOnly,
-                locationVariantGroupId: action.locationVariantGroupId
             });
         }
         default:

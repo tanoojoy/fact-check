@@ -123,7 +123,7 @@ class Detail extends React.Component {
     renderRequisitionDetails() {
         const { requisitionDetail } = this.props;
         if (requisitionDetail) {
-            const { RequisitionOrderNo, RequestorName, MetaData, Status, Orders, CosmeticNo } = requisitionDetail;
+            const { RequisitionOrderNo, RequestorName, MetaData, Status, Orders } = requisitionDetail;
             let shippingMethod = '';
             let paymentTerms = '';
             if (Orders && Orders.length > 0) {
@@ -153,7 +153,7 @@ class Detail extends React.Component {
                 <tbody>
                     <tr>
                         <th>Requisition No. : </th>
-                        <td data-th="Requisition Status :">{CosmeticNo != null && CosmeticNo != "" ? CosmeticNo : RequisitionOrderNo}</td>
+                        <td data-th="Requisition Status :">{RequisitionOrderNo}</td>
                     </tr>
                     <tr>
                         <th>Requisition Status :</th>

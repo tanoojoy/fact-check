@@ -10,7 +10,7 @@ import {
     onTextChangeAddAddress, addressToDelete, deliveryChanged, onTextChangeUser, calculateCost, updateBuyerAddress, postPayment,
     updateIsSameBilingAndDelivery, deleteAddress, createAddress, clearAddAddressModal
 } from '../../../../../../redux/checkoutReviewAction';
-import { validatePermissionToPerformAction } from '../../../../../../redux/accountPermissionActions';
+
 
 class OnePageCheckoutComponent extends BaseComponent {
 
@@ -41,9 +41,7 @@ function mapStateToProps(state, ownProps) {
         departments: state.checkoutReducer.departments,
         showCreateRequisition: state.checkoutReducer.showCreateRequisition,
         isSameBillingAndDelivery: state.checkoutReducer.isSameBillingAndDelivery,
-        pendingOffer: state.checkoutReducer.pendingOffer,
-        locationVariantGroupId: state.marketplaceReducer.locationVariantGroupId,
-        pagePermissions: state.userReducer.pagePermissions,
+        pendingOffer: state.checkoutReducer.pendingOffer
     };
 }
 
@@ -65,7 +63,6 @@ function mapDispatchToProps(dispatch) {
         updateBuyerAddress: (address) => dispatch(updateBuyerAddress(address)),
         postPayment: (departmentId, workflowId) => dispatch(postPayment(null, null, departmentId, workflowId)),
         updateIsSameBilingAndDelivery: (value) => dispatch(updateIsSameBilingAndDelivery(value)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
     }
 }
 

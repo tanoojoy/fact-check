@@ -1,5 +1,6 @@
 ﻿'use strict';
 var React = require('react');
+const CommonModule = require('../../public/js/common');
 
 class UserMenuComponentTemplate extends React.Component {
     renderName() {
@@ -17,12 +18,12 @@ class UserMenuComponentTemplate extends React.Component {
     renderSettings() {
         if (typeof this.props.user.Roles !== 'undefined' && this.props.user.Roles != null && (this.props.user.Roles.includes('Merchant') || this.props.user.Roles.includes('Submerchant'))) {
             return (
-                <li><a href="/merchants/settings">Settings</a></li>
+                <li><a href={CommonModule.getAppPrefix()+"/merchants/settings"}>Settings</a></li>
             )
         }
 
         return (
-            <li><a href="/users/settings">Settings</a></li>    
+            <li><a href={CommonModule.getAppPrefix()+"/users/settings"}>Settings</a></li>
         )
     }
 
@@ -48,7 +49,7 @@ class UserMenuComponentTemplate extends React.Component {
         }
 
         if (showChangepassword) {
-            return (<li><a href="/accounts/change-password">Change Password</a></li>);
+            return (<li><a href={CommonModule.getAppPrefix()+"/accounts/change-password"}>Change Password</a></li>);
         }
         return;
     }
@@ -60,7 +61,7 @@ class UserMenuComponentTemplate extends React.Component {
        // }
         //if (process.env.CHECKOUT_FLOW_TYPE == 'b2c') return "/purchase/history";
         //return "/quotation/list?buyer=true";
-        return "/purchase/history";
+        return CommonModule.getAppPrefix()+"/purchase/history";
     }
 
     render() {
@@ -75,7 +76,7 @@ class UserMenuComponentTemplate extends React.Component {
                         <li><a href={this.getRedirectLink()}>Buyer Docs</a></li>
                         {this.renderSettings()}
                         {this.renderChangePasswordMenu()}
-                        <form action="/accounts/sign-out" method="post" style={{ cursor: 'pointer'}}>
+                        <form action={CommonModule.getAppPrefix()+"/accounts/sign-out"} method="post" style={{ cursor: 'pointer'}}>
                             <li><a id="signout-form" onClick={(e) => this.props.signOut(e)}>Logout</a></li>
                         </form>
                     </ul>
@@ -88,8 +89,8 @@ class UserMenuComponentTemplate extends React.Component {
                     search = search.replace('?error=invalid-token', '');
                 }
 
-                let loc = (location.pathname + search).substr(1);
-                return `/accounts/non-private/sign-in?returnUrl=${loc}`
+                const loc = (location.pathname + search).substr(1);
+                return `${CommonModule.getAppPrefix()}/accounts/non-private/sign-in?returnUrl=${loc}`;
             }
 
             return (

@@ -6,8 +6,6 @@ var BaseClassComponent = require('../../shared/base.jsx');
 var EnumCoreModule = require('../../../../src/public/js/enum-core.js');
 var toastr = require('toastr');
 
-const PermissionTooltip = require('../../common/permission-tooltip');
-
 class DeliveryOptionComponent extends BaseClassComponent {
 
     constructor(props) {
@@ -131,6 +129,11 @@ class DeliveryOptionComponent extends BaseClassComponent {
                 });
         }
 
+
+        $("#btnAddDeliveryRate").on("click", function () {
+            $(".delivery-rate-content").slideToggle();
+        });
+
         $("body").on("change", "#Onwards", function () {
             if ($(this).is(":checked")) {
                 $(".range-b").removeClass('hide');
@@ -159,6 +162,7 @@ class DeliveryOptionComponent extends BaseClassComponent {
         var self = this;
         if (self.state.deliveryModal_DeliveryRate && self.state.deliveryModal_DeliveryRate.length > 0) {
             return (
+
                 self.state.deliveryModal_DeliveryRate.map(function (rate, index) {
                     let currencyCode = self.state.manageShippingOptions.CurrencyCode || process.env.DEFAULT_CURRENCY;
                     return (
@@ -171,17 +175,15 @@ class DeliveryOptionComponent extends BaseClassComponent {
                                 </div>
                             </td>
                             <td data-th className="text-right">
-                                <PermissionTooltip isAuthorized={self.props.pagePermissions.isAuthorizedToDelete} extraClassOnUnauthorized={'icon-grey'}>
-                                    <span className={self.showRemoveButton(index)} onClick={(e) => self.showRemoveRate()}><i class="fa fa-times"></i></span>
-                                </PermissionTooltip>
+                                <span className={self.showRemoveButton(index)} onClick={(e) => self.showRemoveRate()}><i class="fa fa-times"></i></span>
                             </td>
                         </tr>
                     )
                 })
-            );
+            )
         }
         else
-            return null;
+            return ('')
     }
 
     showRemoveButton(index) {
@@ -275,69 +277,76 @@ class DeliveryOptionComponent extends BaseClassComponent {
         var self = this;
         var dRate = self.state.deliveryModal_DeliveryRate;
 
-        this.props.validatePermissionToPerformAction('add-merchant-delivery-option-api', () => {
-            $('.range-box-notif ').hide()
+        $('.range-box-notif ').hide()
 
-            // check here the latset delivery
-            if (dRate.length > 0) {
-                var latestDrate = self.state.deliveryModal_DeliveryRate[dRate.length - 1];
-                if (parseFloat(latestDrate.MaximumRange) >= parseFloat(self.state.crud_rangeFrom)) {
+        // check here the latset delivery
+        if (dRate.length > 0) {
+            var latestDrate = self.state.deliveryModal_DeliveryRate[dRate.length - 1];
+            if (parseFloat(latestDrate.MaximumRange) >= parseFloat(self.state.crud_rangeFrom)) {
 
-                    self.setState(
-                        {
-                            latestFromRatePrice: latestDrate.MaximumRange
-                        }, function () {
-                            $('.range-box-notif ').show()
-                        });
-                    e.preventDefault()
-                    return;
-                }
-            }
-
-            if (!self.isNumeric(self.state.crud_deliveryCost) && self.state.crud_deliveryCost !== "") {
-                $('.delivery-cost').addClass('error-con');
-                toastr.error("Invalid Delivery Cost", "Invalid Value");
-                return
-            }
-
-            $('.fromTo-notif').hide();
-            //check if from and to logic
-            if (parseFloat(self.state.crud_rangeFrom) > parseFloat(self.state.crud_rangeTo) && self.state.crud_onwards == false) {
-                $('.fromTo-notif').show()
+                self.setState(
+                    {
+                        latestFromRatePrice: latestDrate.MaximumRange
+                    }, function () {
+                        $('.range-box-notif ').show()
+                    });
                 e.preventDefault()
                 return;
+
             }
+        }
 
-            self.validateFields();
+        if (!self.isNumeric(self.state.crud_deliveryCost) && self.state.crud_deliveryCost !== "") {
+            
+            $('.delivery-cost').addClass('error-con');
+            toastr.error("Invalid Delivery Cost", "Invalid Value");
+            return
+        }
 
-            //custom css reding of the select
-            //// SELECT
-            if ($(".sol-current-selection div").length < 1) {
-                $('.sol-container').addClass('error-con');
-            } else {
-                $('.sol-container').removeClass('error-con');
-            }
+        $('.fromTo-notif').hide();
+        //check if from and to logic
+        if (parseFloat(self.state.crud_rangeFrom) > parseFloat(self.state.crud_rangeTo) && self.state.crud_onwards == false) {
+            $('.fromTo-notif').show()
+            e.preventDefault()
+            return;
+        }
 
-            if (self.state.description.length < 1 || $('#my-select').val().join() == "" || self.state.deliveryModal_MinimumLeadTime.length < 1 || self.state.deliveryModal_DeliveryFrom.length < 1)
-                return false;
-            ///SELECT
+        self.validateFields();
 
-            //GENERIC
-            if (self.state.crud_deliveryCost.length < 1 || self.state.crud_rangeFrom.length < 1 || self.state.crud_deliveryRatename.length < 1)
-                return false;
+        //custom css reding of the select
+        //// SELECT
+        if ($(".sol-current-selection div").length < 1) {
+            $('.sol-container').addClass('error-con');
+        } else {
+            $('.sol-container').removeClass('error-con');
+        }
 
-            if (self.state.crud_rangeTo.length < 1 && self.state.crud_onwards == false)
-                return false;
+        if (self.state.description.length < 1 || $('#my-select').val().join() == "" || self.state.deliveryModal_MinimumLeadTime.length < 1 || self.state.deliveryModal_DeliveryFrom.length < 1)
+            return false;
+        ///SELECT
 
-            dRate.push({
-                Cost: self.state.crud_deliveryCost,
-                MaximumRange: self.state.crud_rangeTo,
-                MinimumRange: self.state.crud_rangeFrom,
-                Name: self.state.crud_deliveryRatename,
-                Onwards: self.state.crud_onwards.toString()
-            })
 
-            self.setState({
+        //GENERIC
+        if (self.state.crud_deliveryCost.length < 1 || self.state.crud_rangeFrom.length < 1 || self.state.crud_deliveryRatename.length < 1)
+            return false;
+
+
+
+        if (self.state.crud_rangeTo.length < 1 && self.state.crud_onwards == false)
+            return false;
+
+
+
+        dRate.push({
+            Cost: self.state.crud_deliveryCost,
+            MaximumRange: self.state.crud_rangeTo,
+            MinimumRange: self.state.crud_rangeFrom,
+            Name: self.state.crud_deliveryRatename,
+            Onwards: self.state.crud_onwards.toString()
+        })
+
+        self.setState(
+            {
                 deliveryModal_DeliveryRate: dRate,
                 crud_deliveryCost: '',
                 crud_rangeTo: '',
@@ -346,27 +355,25 @@ class DeliveryOptionComponent extends BaseClassComponent {
             }, function () {
                 $('#btnAddDeliveryRate').click()
             });
-        });
+
+
     }
 
     showRemoveRate() {
-        this.props.validatePermissionToPerformAction('delete-merchant-delivery-option-api', () => {
-            $('#modalRemoveRate').modal('show');
-        });
+        $('#modalRemoveRate').modal('show')
     }
 
     onDoRemoveRate() {
         var self = this;
 
-        this.props.validatePermissionToPerformAction('delete-merchant-delivery-option-api', () => {
-            var test = self.state.deliveryModal_DeliveryRate;
-            test.splice(self.state.deliveryModal_DeliveryRate.length - 1, 1);
+        var test = self.state.deliveryModal_DeliveryRate;
+        test.splice(self.state.deliveryModal_DeliveryRate.length - 1, 1)
 
-            self.setState({
+        self.setState(
+            {
                 deliveryModal_DeliveryRate: test
             }, function () {
             });
-        });
     }
 
     toShowErrorOnwards() {
@@ -412,17 +419,10 @@ class DeliveryOptionComponent extends BaseClassComponent {
         }
     }
 
-    toggleDeliveryRate() {
-        this.props.validatePermissionToPerformAction('add-merchant-delivery-option-api', () => {
-            $(".delivery-rate-content").slideToggle();
-        });
-    }
-
     render() {
         var self = this;
         var unitStr = self.showRangeHeader('forDataEntry') ? `(${self.showRangeHeader('forDataEntry')})` : '';
-        var rangeHeaderUnitStr = self.showRangeHeader() ? `(${self.showRangeHeader()})` : '';
-
+        var rangeHeaderUnitStr =  self.showRangeHeader() ? `(${self.showRangeHeader()})` : '';
         return (
             <React.Fragment>
                 <div id="modalRemoveRate" className="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
@@ -460,6 +460,7 @@ class DeliveryOptionComponent extends BaseClassComponent {
                                                 )
                                             })
                                         }
+
                                     </optgroup>
                                 </select>
                             </div>
@@ -521,9 +522,7 @@ class DeliveryOptionComponent extends BaseClassComponent {
                             </tbody>
                         </table>
                     </div>
-                    <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                        <div className="btn-add-delivery-rate" id="btnAddDeliveryRate" onClick={(e) => this.toggleDeliveryRate()}>Add Shipping Rate</div>
-                    </PermissionTooltip>
+                    <div className="btn-add-delivery-rate" id="btnAddDeliveryRate">Add Shipping Rate</div>
                     <div className="delivery-rate-content">
                         <div className="dsae-content-inputs un-inputs">
                             <div className="dsae-form-input">
@@ -586,9 +585,7 @@ class DeliveryOptionComponent extends BaseClassComponent {
                                 </div>
                                 <div id='onwardError' className={self.toShowErrorOnwards()}>Unable to add new calculation if latest is set to 'onwards'</div>
                             </div>
-                            <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                                <div className="btn-save" id="btnSaveDeliveryRate" onClick={(e) => self.onDeliveryRateSave(e)}>Save</div>
-                            </PermissionTooltip>
+                            <div className="btn-save" id="btnSaveDeliveryRate" onClick={(e) => self.onDeliveryRateSave(e)}>Save</div>
                         </div>
                     </div>
                 </div>

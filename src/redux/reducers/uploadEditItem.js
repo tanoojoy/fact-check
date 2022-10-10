@@ -32,8 +32,16 @@ const initialState = {
         locationItems: [],
         locations: [],
         selectedLocationIds: [],
-        savedChildItemIds: []
-    }
+        savedChildItemIds: [],
+    },
+    referenceItem: {},
+    item: {},
+    predefinedValues: null,
+    selectedRow: {
+        id: null,
+        code: ''
+    },
+    pageType: ''
 };
 
 function uploadEditItemReducer(state = initialState, action) {
@@ -55,7 +63,12 @@ function uploadEditItemReducer(state = initialState, action) {
         }
         case actionTypes.ITEM_UPLOAD_EDIT_UPDATE_DATA: {
             return Object.assign({}, state, {
-                itemModel: action.itemModel
+                item: action.item
+            });
+        }
+        case actionTypes.SET_SELECTED_ROW: {
+            return Object.assign({}, state, {
+                selectedRow: action.selectedRow
             });
         }
         case actionTypes.ITEM_UPLOAD_EDIT_GET_CUSTOMFIELDS: {

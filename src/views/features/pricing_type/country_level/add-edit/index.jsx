@@ -1,12 +1,12 @@
 'use strict';
 let React = require('react');
 let BaseComponent = require('../../../../shared/base');
+let AvailabilityComponent = require('../add-edit/availability');
 let PricingComponent = require('../add-edit/pricing');
+let PricingModalComponent = require('../add-edit/pricing-modal');
 let MerchantItemActions = require('../../../../../redux/merchantItemActions');
 const DeliveryComponent = require('../..../../../../../merchant/item/upload-edit/delivery');
 const VariantComponent = require('./variant');
-
-const { validatePermissionToPerformAction } = require('../../../../../redux/accountPermissionActions');
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -69,7 +69,8 @@ class PricingFeatureComponent extends BaseComponent {
                 <DeliveryComponent
                     shippingModel={this.props.itemModel.shippingModel}
                     searchShippings={this.props.searchShippings}
-                    shippingSelectedChanged={this.props.shippingSelectedChanged} />  
+                    shippingSelectedChanged={this.props.shippingSelectedChanged}
+                    uploadOrEditData={this.props.uploadOrEditData} />  
                 <div className="clearfix" />
                 <VariantComponent {...this.props} />  
                 <div className="clearfix" />
@@ -90,7 +91,6 @@ class PricingFeatureComponent extends BaseComponent {
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
-        pagePermissions: state.userReducer.pagePermissions,
         itemModel: state.uploadEditItemReducer.itemModel,
         pricingItem: state.uploadEditItemReducer.pricingItem,
         modalStatus: state.uploadEditItemReducer.modalStatus
@@ -99,8 +99,6 @@ function mapStateToProps(state, ownProps) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
-
         closeDeletePopUp: () => dispatch(MerchantItemActions.closeDeletePopUp()),
         createCustomField: (data) => dispatch(MerchantItemActions.createCustomField(data)),
         onPriceChanged: (e, countryCode) => dispatch(MerchantItemActions.onPriceChanged(e, countryCode)),

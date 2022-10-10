@@ -2,7 +2,7 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayoutComponent = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 const BaseComponent = require('../../shared/base');
 if (typeof window !== 'undefined') { var $ = window.$; }

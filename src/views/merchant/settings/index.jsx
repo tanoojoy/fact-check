@@ -5,7 +5,7 @@ var ProfileSettingsComponent = require('../../user/settings/profile');
 var PaymentComponent = require('../../user/settings/payment');
 var AddressSettingsComponent = require('../../user/settings/address');
 
-var HeaderLayoutComponent = require('../../layouts/header').HeaderLayoutComponent;
+var HeaderLayoutComponent = require('../../layouts/header/index').HeaderLayoutComponent;
 var FooterLayout = require('../../../views/layouts/footer').FooterLayoutComponent;
 
 var addressActions = require('../../../redux/addressActions');
@@ -15,8 +15,7 @@ var toastr = require('toastr');
 
 const PaymentTermComponent = require('./payment-term');
 const PaymentTermActions = require('../../../redux/paymentTermActions');
-
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
+const CommonModule = require('../../../public/js/common.js');
 
 class MerchantSettingsIndexComponent extends React.Component {
     componentDidMount() {
@@ -41,22 +40,23 @@ class MerchantSettingsIndexComponent extends React.Component {
             toastr.error("Please complete the onboarding.", "Oops! Something is wrong.");
         }
 
-        $('#settings-tab a').on('click', function (e, isSkipClickEvent) {
+        $('#settings-tab a').on('click', function (e) {
             e.preventDefault();
 
             let currentActive = $("ul li.active a").attr('href');
 
             if (currentActive == '#Profile') {
-                if (!isSkipClickEvent) {
-                    $('.profile-next').trigger('click');
-                    return !($('#Profile').find('.error-con').length > 0)
-                }
-            } else if (currentActive == '#Address') {
+                $('.profile-next').trigger('click');
+                return !($('#Profile').find('.error-con').length > 0)
+            }
+            else if (currentActive == '#Address') {
 
                 $('#addAddress').trigger('click')
 
                 return !(self.props.addresses.length < 1)
-            } else if (currentActive == '#Payment') {
+            }
+
+            else if (currentActive == '#Payment') {
                 let result = !$('.account-not-link .mandatory-payment').length
 
                 if (result == false) {
@@ -68,22 +68,10 @@ class MerchantSettingsIndexComponent extends React.Component {
 
             return true
         });
-
-        $('#settings-tab a').on('show.bs.tab', function (e) {
-            var target = $(e.target).attr("href");
-
-            if (target == '#Address') {
-                self.props.validatePermissionToPerformAction('view-merchant-addresses-api');
-            } else if (target == '#Payment') {
-                self.props.validatePermissionToPerformAction('view-merchant-payment-methods-api');
-            } else if (target == '#Paymentterms') {
-                self.props.validatePermissionToPerformAction('view-merchant-payment-terms-api');
-            }
-        });
     }
 
     render() {
-        var self = this;
+        var self = this
         return (
             <React.Fragment>
                 <div id="settings-index-container">
@@ -94,7 +82,7 @@ class MerchantSettingsIndexComponent extends React.Component {
                         <div className="settings-container">
                             <div className="container">
                                 <div className="h-parent-child-txt full-width">
-                                    <p><a href="/">Home</a></p>
+                                    <p><a href={CommonModule.getAppPrefix()+"/"}>Home</a></p>
                                     <i className="fa fa-angle-right"></i>
                                     <p className="active">User Settings</p>
                                 </div>
@@ -113,8 +101,6 @@ class MerchantSettingsIndexComponent extends React.Component {
                                         <div className="tab-content">
                                             <ProfileSettingsComponent
                                                 componentType={'merchant'}
-                                                pagePermissions={this.props.pagePermissions.profilePagePermissions}
-                                                validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
                                                 customFieldDefinition={this.props.customFieldDefinition}
                                                 user={this.props.user}
                                                 userLogins={this.props.userLogins}
@@ -122,9 +108,6 @@ class MerchantSettingsIndexComponent extends React.Component {
                                                 getLocations={this.props.getLocations}
                                                 createCustomFieldDefinition={this.props.createCustomFieldDefinition} />
                                             <AddressSettingsComponent
-                                                componentType={'merchant'}
-                                                validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                                addressPermissions={this.props.pagePermissions.addressPagePermissions}
                                                 deleteAddress={this.props.deleteAddress}
                                                 addresses={this.props.addresses}
                                                 user={this.props.user}
@@ -132,8 +115,6 @@ class MerchantSettingsIndexComponent extends React.Component {
                                                 updateUserToOnboard={this.props.updateUserToOnboard} />
                                             <PaymentComponent paymentGateways={self.props.paymentGateways}
                                                 user={this.props.user}
-                                                pagePermissions={this.props.pagePermissions.paymentMethodPagePermissions}
-                                                validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
                                                 paymentAcceptanceMethod={self.props.paymentAcceptanceMethod}
                                                 createPaymentAcceptanceMethodAsync={self.props.createPaymentAcceptanceMethodAsync}
                                                 getPaymentAcceptanceMethods={self.props.getPaymentAcceptanceMethods}
@@ -141,8 +122,6 @@ class MerchantSettingsIndexComponent extends React.Component {
                                                 stripeLoginUrl={self.props.stripeLoginUrl}
                                                 saveOmiseAccount={self.props.saveOmiseAccount}/>
                                             <PaymentTermComponent user={this.props.user}
-                                                pagePermissions={this.props.pagePermissions.paymentTermPagePermissions}
-                                                validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
                                                 paymentTerms={this.props.paymentTerms}
                                                 addPaymentTerm={this.props.addPaymentTerm}
                                                 deletePaymentTerm={this.props.deletePaymentTerm}
@@ -167,7 +146,6 @@ class MerchantSettingsIndexComponent extends React.Component {
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
-        pagePermissions: state.userReducer.pagePermissions,
         currentUser: state.currentUserReducer.user,
         addresses: state.settingsReducer.addresses,
         userLogins: state.settingsReducer.userLogins,
@@ -182,7 +160,6 @@ function mapStateToProps(state, ownProps) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
         createAddress: (address) => dispatch(addressActions.createAddress(address)),
         deleteAddress: (addressId) => dispatch(addressActions.deleteAddress(addressId)),
         updateUserInfo: (userInfo) => dispatch(userActions.updateUserInfo(userInfo)),

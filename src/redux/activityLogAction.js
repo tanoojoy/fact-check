@@ -5,6 +5,7 @@ if (typeof window !== 'undefined') {
 }
 var Moment = require('moment');
 const ExportJsonExcel = require('js-export-excel');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 
 function formatDateTime(timestamp, format) {
 
@@ -29,12 +30,9 @@ function getCityAndCountry(value, array) {
 }
 
 function searchActivityLog(logName) {
-    return function (dispatch, getState) {
-        const { isMerchantAccess } = getState().activityLogReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
-
+    return function (dispatch) {
         $.ajax({
-            url: `${extraPath}/activity-logs/search`,
+            url: prefix+'/activity-logs/search',
             type: 'get',
             data: {
                 logName: logName
@@ -54,12 +52,9 @@ function searchActivityLog(logName) {
 }
 
 function goToPage(pageNo, filters) {
-    return function (dispatch, getState) {
-        const { isMerchantAccess } = getState().activityLogReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
-
+    return function (dispatch) {
         $.ajax({
-            url: `${extraPath}/activity-logs/paging`,
+            url: prefix+'/activity-logs/paging',
             type: 'get',
             data: {
                 pageNumber: pageNo,
@@ -80,12 +75,9 @@ function goToPage(pageNo, filters) {
 }
 
 function exportToExcel(startDate, endDate) {
-    return function (dispatch, getState) {
-        const { isMerchantAccess } = getState().activityLogReducer;
-        const extraPath = isMerchantAccess ? '/merchants' : '';
-
+    return function (dispatch) {
         $.ajax({
-            url: `${extraPath}/activity-logs/export`,
+            url: prefix+'/activity-logs/export',
             type: 'GET',
             data: {
                 startDate: startDate,
@@ -155,7 +147,7 @@ function exportToExcel(startDate, endDate) {
 function addPageAnaylytics(options) {
     return function (dispatch) {
         $.ajax({
-            url: '/merchants/activity-logs/addPageAnaylytics',
+            url: prefix+'/merchants/activity-logs/addPageAnaylytics',
             type: 'post',
             data: JSON.stringify(options.data),
             contentType: 'application/json',
@@ -175,7 +167,7 @@ function hasPageAnaylytics(options, callback) {
 
     return function (dispatch) {
         $.ajax({
-            url: '/merchants/activity-logs/hasPageAnaylytics',
+            url: prefix+'/merchants/activity-logs/hasPageAnaylytics',
             type: 'post',
             data: JSON.stringify(options),
             contentType: 'application/json',

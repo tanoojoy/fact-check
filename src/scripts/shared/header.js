@@ -7,7 +7,7 @@ var Store = require('../../redux/store.js');
 
 const app = document.getElementById('header-section');
 if (app !== null) {
-    var HeaderLayout = require('../../views/layouts/header').HeaderLayout;
+    var HeaderLayout = require('../../views/layouts/header/index').HeaderLayout;
 
     const store = Store.createHeaderStore(window.REDUX_DATA);
 

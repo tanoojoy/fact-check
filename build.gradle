@@ -1,0 +1,147 @@
+buildscript {
+	repositories {
+		mavenCentral()
+		maven { url = "https://clojars.org/repo/" }
+		maven { url "https://plugins.gradle.org/m2/" }
+		maven { url "http://repo.clarivate.io/artifactory/infra-release" }
+		maven {
+			url "https://repo.clarivate.io/artifactory/repo"
+			metadataSources {
+				mavenPom()
+				artifact()
+			}
+		}
+	}
+	dependencies {
+		classpath group: 'org.sonarsource.scanner.gradle', name: 'sonarqube-gradle-plugin', version: '2.7.1'
+		classpath 'com.clarivate.plugin.gradle:gradle-app-version-plugin:1.0.12'
+		classpath("com.netflix.nebula:gradle-ospackage-plugin:8.4.1")
+		classpath 'net.researchgate:gradle-release:2.8.0'
+		classpath 'org.jfrog.buildinfo:build-info-extractor-gradle:latest.release'
+		classpath 'org.ajoberstar.grgit:grgit-gradle:4.0.1'
+	}
+}
+
+plugins {
+	id 'java'
+	id 'jacoco'
+/*  Fix for windows gradle long classpath issue.
+    Fixes JavaExec tasks that error out with message "CreateProcess error=206, The filename or extension is too long"*/
+	id 'com.github.ManifestClasspath' version '0.1.0-RELEASE'
+	id 'org.sonarqube' version '2.7'
+	id "com.jfrog.artifactory" version "4.10.0"
+	id 'net.nemerosa.versioning' version '2.14.0'
+	id 'net.researchgate.release' version '2.6.0'
+}
+
+repositories {
+	maven {
+		url "https://repo.clarivate.io/artifactory/repo"
+		metadataSources {
+			mavenPom()
+			artifact()
+		}
+	}
+	mavenCentral()
+}
+
+dependencies {
+
+	implementation 'com.clarivate.plugin.gradle:gradle-app-version-plugin:1.0.12'
+
+	runtime 'com.clarivate.plugin.gradle:gradle-app-version-plugin:1.0.12'
+	testAnnotationProcessor 'org.projectlombok:lombok:1.18.16'
+}
+
+apply plugin: 'nebula.ospackage'
+apply plugin: 'maven-publish'
+apply plugin: 'com.clarivate.buildmetadata'
+apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'idea'
+apply plugin: 'distribution'
+apply plugin: 'java-library-distribution'
+apply plugin: 'nebula.ospackage'
+
+version = project.baseversion+"-"+project.ext.properties.release
+
+test {
+	useJUnitPlatform()
+}
+test {
+	finalizedBy jacocoTestReport // report is always generated after tests run
+}
+jacocoTestReport {
+	dependsOn test // tests are required to run before generating the report
+}
+
+task updateVersionInfo() {
+	doLast {
+		def job_name = System.getenv("JOB_NAME")
+		def build_url = System.getenv("BUILD_URL")
+		def git_branch = System.getenv("GIT_BRANCH")
+		def git_url = System.getenv("GIT_URL")
+		def git_commit = System.getenv("GIT_COMMIT")
+		def file = new File("$rootDir/build/build.properties")
+		if (!file.exists()) {
+			file.createNewFile()
+		}
+		file.text = """
+application_version=$version
+application_name=$project.name
+job_name=$job_name
+build_url=$build_url
+git_branch=$git_branch
+git_url=$git_url
+git_commit=$git_commit
+git_author_name='author'
+git_author_email='email'
+git_local_branch='master'
+"""
+	}
+}
+
+artifactory {
+	println "Artifactory is called"
+	contextUrl = "${artifactory_context_url}"
+	publish {
+		repository {
+			repoKey = "${artifactory_repo_key}"
+			username = System.env.ARTIFACTORY_USERNAME
+			password = System.env.ARTIFACTORY_PASSWORD
+			maven = false
+		}
+	}
+	clientConfig.setIncludeEnvVars(true)
+	clientConfig.setEnvVarsExcludePatterns('*PASSWORD*,*USERNAME*')
+	clientConfig.info.setBuildName(System.env.JOB_NAME?.replace('/', ' :: '))
+	clientConfig.info.setBuildNumber(System.env.BUILD_NUMBER)
+}
+
+task svcVersion {
+	doLast {
+		def file = new File("$projectDir/build/svcVersion.txt")
+		file.createNewFile()
+		file.text = """version=$version
+applicationName=.name
+"""
+	}
+}
+
+/** Maven Publisihing */
+publishing {
+	publications {
+		dockerComposeRendered(MavenPublication) {
+			println "Inside Maven Publishing..."
+			groupId = "${artifactory_group_docker_compose}"
+			artifactId = project.getName()
+			version = version
+			// Tell maven to prepare the docker compose rendered ".bz2" file for publishing
+			artifact file("$buildDir/docker-compose-rendered-files.tar.bz2")
+		}
+	}
+}
+
+artifactoryPublish {
+	publishArtifacts = true
+	publications(publishing.publications.dockerComposeRendered)
+}

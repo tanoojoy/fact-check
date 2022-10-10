@@ -1,4 +1,6 @@
 ﻿'use strict';
+import { redirectUnauthorizedUser } from '../../utils';
+
 var express = require('express');
 var pagingLogRouter = express.Router();
 var React = require('react');
@@ -12,9 +14,16 @@ var client = require('../../../sdk/client');
 var Store = require('../../redux/store');
 /* GET review checkout data. */
 pagingLogRouter.get('/', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
+    console.log('load activity log paging: ', Date.now());
     let user = req.user;
+    console.log(">>>>>>>>>routes pageNumber paging req query>>>>>>>>>>>>>>>>>>>", req.query['pageNumber'])
+    //let keyword = req.query['keyword'];
     const pageNumber = req.query['pageNumber'];
     let pageSize = 20;
+    //console.log(">>>>>>>>>routes pageNumber>>>>>>>>>>>>>>>>>>>", pageNumber)
+    //console.log(">>>>>>>>>routes pageSize>>>>>>>>>>>>>>>>>>>", pageSize)
     let promiseLog = new Promise((resolve, reject) => {
         client.ActivityLog.getActivityLog(user.ID, pageSize, pageNumber, "", "", "", function (err, callback) {
             resolve(callback);

@@ -7,23 +7,9 @@ if (typeof window !== 'undefined') {
 var ModalAddEditComponent = require('../comparison-widget/modal-add-edit');
 var ModalDeleteComponent = require('../comparison-widget/modal-delete');
 var BaseComponent = require('../../shared/base');
-
-var PermissionTooltip = require('../../common/permission-tooltip');
-
+let CommonModule = require('../../../public/js/common.js');
 
 class ComparisonWidgetComponent extends BaseComponent {
-    constructor(props) {
-        super(props);
-        this.state = {
-            permission: {
-                isAuthorizedToView: true,
-                isAuthorizedToAdd: true,
-                isAuthorizedToDelete: true,
-                isAuthorizedToEdit: true
-            }
-        };
-    }
-
     initializeCarousel() {
         if (!$('.multiple-compare').hasClass('slick-initialized')) {
             $('.multiple-compare').slick({
@@ -100,7 +86,8 @@ class ComparisonWidgetComponent extends BaseComponent {
 
     showAddEditModal(id) {
         this.props.setComparisonToUpdate(id);
-        $('.bs-example-modal-sm').modal('show');       
+
+        $('.bs-example-modal-sm').modal('show');
     }
 
     showDeleteModal(id) {
@@ -137,9 +124,6 @@ class ComparisonWidgetComponent extends BaseComponent {
         this.initializeCarousel();
         this.getComparisons();
         this.EnableDisableComparisonWidget();
-
-
-        
     }
 
     componentWillUpdate() {
@@ -161,10 +145,7 @@ class ComparisonWidgetComponent extends BaseComponent {
             }
         } else {
             this.initializeCarousel();
-            $('[data-toggle="tooltip"]').hover(function () {
-                $(this).tooltip({ show: null });
-            });
-        }        
+        }
     }
 
     compareNow() {
@@ -172,7 +153,7 @@ class ComparisonWidgetComponent extends BaseComponent {
 
         if (user && user.Guest == true) {
             const returnUrl = (location.pathname + location.search).substr(1);
-            location.href = `/accounts/non-private/sign-in?returnUrl=${returnUrl}`;
+            location.href = `${CommonModule.getAppPrefix()}/accounts/non-private/sign-in?returnUrl=${returnUrl}`;
 
             return;
         }
@@ -206,10 +187,9 @@ class ComparisonWidgetComponent extends BaseComponent {
         )
     }
 
-    renderComparisonDetails() {        
+    renderComparisonDetails() {
         const self = this;
         let slides = [];
-        const isSpacetime = process.env.PRICING_TYPE === 'service_level';        
 
         if (typeof this.props.comparison !== 'undefined' && $.isEmptyObject(this.props.comparison) === false) {
             slides = (this.props.comparison.ComparisonDetails || []).map(function (detail, index) {
@@ -217,87 +197,29 @@ class ComparisonWidgetComponent extends BaseComponent {
                 let item = null;
                 let merchant = null;
                 let price = 0;
-
                 if (cartItem) {
                     item = detail.CartItem.ItemDetail;
                     merchant = detail.CartItem.ItemDetail.MerchantDetail;
-                }
-                else {
+                    price = detail.Offer ? detail.Offer.Total : detail.CartItem.SubTotal - detail.CartItem.DiscountAmount;
+                } else {
                     return;
                 }
 
-                if (isSpacetime) {
-                    let addOnPrice = 0;
-                    if (cartItem.AddOns) {
-                        cartItem.AddOns.forEach(function (addOn) {
-                            addOnPrice += addOn.PriceChange;
-                        });
-                    }
-                    price = cartItem.SubTotal + addOnPrice;
-                }
-                else {
-                    price = detail.Offer ? detail.Offer.Total : detail.CartItem.SubTotal - detail.CartItem.DiscountAmount;                    
-                }
                 return (
                     <div key={detail.ID} className="col-sm-3">
                         <div className="compare-item">
                             <div id={'product_' + index}>
-                                {
-                                    !isSpacetime && 
-                                    (
-                                        <React.Fragment>
-                                            <span className="sup-tit">
-                                                {merchant.DisplayName}
-                                                {self.props.comparisonWidgetPermissions.isAuthorizedToDelete ?
-                                                    (<span className=" delete-comp-item">
-                                                        <i className="fa fa-times" onClick={(e) => self.showDeleteModal(detail.ID)}></i>
-                                                    </span>):
-                                                    (<span className=" delete-comp-item" tabindex="0" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="You need permission to perform this action">
-                                                        <i className="fa fa-times"></i>
-                                                    </span>)}
-                                                
-                                            </span>
-                                            <div className="compimg-thumb">
-                                                <img src={item.Media && item.Media.length > 0 ? item.Media[0].MediaUrl : ''} className="img-responsive" />
-                                            </div>
-                                            <div className="comp-desc">
-                                                <span className="item-name" style={{ whiteSpace: 'nowrap' }}> {item.Name} </span>
-                                                <span className="comp-qty">Qty: {cartItem.Quantity}</span>
-                                                <span className="comp-price">
-                                                    {self.renderFormatMoney(cartItem.CurrencyCode, price)}
-                                                </span>
-                                            </div>
-                                        </React.Fragment>
-                                    )                                    
-                                }    
-                                {
-                                    isSpacetime && 
-                                    (
-                                        <React.Fragment>
-                                            <span className="sup-tit">
-                                                {merchant.DisplayName}
-                                                {self.props.comparisonWidgetPermissions.isAuthorizedToDelete ?
-                                                    (<span className=" delete-comp-item">
-                                                        <i className="fa fa-times" onClick={(e) => self.showDeleteModal(detail.ID)}></i>
-                                                    </span>) :
-                                                    (<span className=" delete-comp-item" tabindex="0" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="You need permission to perform this action">
-                                                        <i className="fa fa-times"></i>
-                                                    </span>)}
-                                            </span>
-                                            <div className="compimg-thumb">
-                                                <img className="img-responsive" src={item.Media && item.Media.length > 0 ? item.Media[0].MediaUrl : ''} />                                            
-                                            </div>
-                                            <div className="comp-desc">
-                                                <span className="item-name">
-                                                    {item.Name}
-                                                </span>
-                                                <span className="comp-price">
-                                                    {self.renderFormatMoney(cartItem.CurrencyCode, price)}
-                                                </span>
-                                            </div>
-                                        </React.Fragment>
-                                    )
-                                }
+                                <span className="sup-tit">{merchant.DisplayName}<span className=" delete-comp-item" ><i className="fa fa-times" onClick={(e) => self.showDeleteModal(detail.ID)}></i></span></span>
+                                <div className="compimg-thumb">
+                                    <img src={item.Media && item.Media.length > 0 ? item.Media[0].MediaUrl : ''} className="img-responsive" />
+                                </div>
+                                <div className="comp-desc">
+                                    <span className="item-name"> {item.Name} </span>
+                                    <span className="comp-qty">Qty: {cartItem.Quantity}</span>
+                                    <span className="comp-price">
+                                        {self.renderFormatMoney(cartItem.CurrencyCode, price)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -318,10 +240,6 @@ class ComparisonWidgetComponent extends BaseComponent {
     }
 
     render() {
-        let compareBtnText = 'Compare Now';
-        if (process.env.PRICING_TYPE === 'service_level') {
-            compareBtnText = 'Compare';
-        }        
         return (
             <React.Fragment>
                 <div className="compare-desk">
@@ -330,55 +248,38 @@ class ComparisonWidgetComponent extends BaseComponent {
                             <i className="fa fa-angle-up"></i> Comparison Table <span id="listname_title">({this.getComparisonName()})</span>
                         </span>
                     </div>
-                    {this.state.permission.isAuthorizedToView ?
-                        (
-                            <div className="container">
-                                <div className="row">
-                                    <div className="col-sm-9">
-                                        <div className="multiple-compare">
-                                            {this.renderComparisonDetails()}
-                                        </div>
-                                    </div>
-                                    <div className="col-sm-3">
-                                        <div className="form-element w-65">
-                                            {this.renderComparisonDropdown()}
-                                        </div>
-                                        <div className="w-35">
-                                            <PermissionTooltip isAuthorized={this.props.comparisonWidgetPermissions.isAuthorizedToEdit}>
-                                                <button className={this.props.comparisonWidgetPermissions.isAuthorizedToEdit ? "add-comp-list-btn white" : "add-comp-list-btn white disabled"} type="button" data-toggle="" data-target=".bs-example-modal-sm" onClick={(e) => this.showAddEditModal(this.getComparisonId())}>
-                                                    <img src="/assets/images/pencil.svg" />
-                                                </button>
-                                            </PermissionTooltip>
-                                        </div>
-                                        <div className="form-element">
-                                            <a href="#" className="gr-compare-btn" onClick={() => this.compareNow()}>{compareBtnText}</a>
-                                        </div>
-                                    </div>
+                    <div className="container">
+                        <div className="row">
+                            <div className="col-sm-9">
+                                <div className="multiple-compare">
+                                    {this.renderComparisonDetails()}
                                 </div>
                             </div>
-                        ) :
-                        (
-                            <div className="container">
-                                <div className="row">
-                                    <div className="permission-message">You need permission to access this page</div>
+                            <div className="col-sm-3">
+                                <div className="form-element w-65">
+                                    {this.renderComparisonDropdown()}
+                                </div>
+                                <div className="w-35">
+                                    <button className="add-comp-list-btn white" type="button" data-toggle="" data-target=".bs-example-modal-sm" onClick={(e) => this.showAddEditModal(this.getComparisonId())}>
+                                        <img src={CommonModule.getAppPrefix() + "/assets/images/pencil.svg"} />
+                                    </button>
+                                </div>
+                                <div className="form-element">
+                                    <a href="#" className="gr-compare-btn" onClick={() => this.compareNow()}>Compare Now</a>
                                 </div>
                             </div>
-                        )}
-                        
+                        </div>
+                    </div>
                 </div>
                 <ModalAddEditComponent
                     comparison={this.props.comparison}
                     comparisonToUpdate={this.props.comparisonToUpdate}
                     createComparison={this.props.createComparison}
-                    editComparison={this.props.editComparison}
-                    isAuthorizedToAdd={this.props.comparisonWidgetPermissions.isAuthorizedToAdd}
-                    isAuthorizedToEdit={this.props.comparisonWidgetPermissions.isAuthorizedToEdit}
-                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                />
+                    editComparison={this.props.editComparison} />
                 <ModalDeleteComponent
                     deleteComparisonDetail={this.props.deleteComparisonDetail} />
             </React.Fragment>
-        );        
+        );
     }
 }
 

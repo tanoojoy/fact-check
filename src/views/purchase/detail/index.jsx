@@ -2,50 +2,51 @@
 let React = require('react');
 let ReactRedux = require('react-redux');
 
-let HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+let HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 let SidebarLayoutComponent = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
+let FooterLayout = require('../../../views/layouts/footer').FooterLayoutComponent;
 let BaseComponent = require('../../shared/base');
 let toastr = require('toastr');
-let TableContentComponent = require('../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/detail/table.jsx');
-let TransactionSummaryComponent = require('../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/detail/transaction_summary.jsx');
+let TableItemsComponent = require('../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/' + process.env.PRICING_TYPE + '/purchase_detail/table-items.jsx');
+let TransactionSummaryComponent = require('../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/transaction_summary.jsx');
 let OrderDiaryComponent = require('../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/order-diary');
-let ShippingPaymentDetailComponent = require('../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/detail/shipping_payment_detail');
+let ShippingPaymentDetailComponent = require('../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/shipping_payment_detail');
+var CommonModule = require('../../../public/js/common.js');
+//import TransactionDetailComponent from './transaction-detail';
+//import OrderListComponent from './order-list';
 import { submitFeedbackForCartItem } from '../../../redux/purchaseActions';
-import { validatePermissionToPerformAction } from '../../../redux/accountPermissionActions';
 
 // Order Diary
 var OrderDiaryActions = require('../../../redux/orderDiaryActions');
 
+
 class PurchaseDetailComponent extends BaseComponent {
+
     componentDidMount() {
+
         const target = $(".popup-area.order-item-feedback-popup");
         const cover = $("#cover");
         const self = this;
         $('.btn-feedback').click(function (e) {
-            if (!self.props.isAuthorizedToAdd) return;
-            const $this = $(this);
-            self.props.validatePermissionToPerformAction('add-consumer-purchase-order-details-api', () => {
-                const hasFeedback = $this.attr('has-feedback');
-                if (hasFeedback == '0') {
+            const hasFeedback = $(this).attr('has-feedback');
+            if (hasFeedback == '0') {
 
-                    target.fadeIn();
-                    cover.fadeIn();
+                target.fadeIn();
+                cover.fadeIn();
 
-                    $('body').addClass('modal-open');
-                    const itemUrl = $this.attr('item-url');
-                    const itemImgUrl = $this.attr('item-image-url');
-                    const itemName = $this.attr('item-name');
-                    const cartItemID = $this.attr('cart-item-id');
-                    self.setState({ selectedCartItemID: cartItemID });
-                    $('.ordr-dtls-item-iteminfo .item-img a').attr('href', itemUrl)
-                    $('.ordr-dtls-item-iteminfo .item-img a img').attr('src', itemImgUrl);
-                    $('.ordr-dtls-item-iteminfo .item-info-text div a').attr('href', itemUrl);
-                    $('.ordr-dtls-item-iteminfo .item-info-text div a').text(itemName);
-                } else {
-                    toastr.warning('You already posted a review.', 'Failed in Posting Review')
-                }
-            });
-           
+                $('body').addClass('modal-open');
+                const itemUrl = $(this).attr('item-url');
+                const itemImgUrl = $(this).attr('item-image-url');
+                const itemName = $(this).attr('item-name');
+                const cartItemID = $(this).attr('cart-item-id');
+                self.setState({ selectedCartItemID: cartItemID });
+                $('.ordr-dtls-item-iteminfo .item-img a').attr('href', itemUrl)
+                $('.ordr-dtls-item-iteminfo .item-img a img').attr('src', itemImgUrl);
+                $('.ordr-dtls-item-iteminfo .item-info-text div a').attr('href', itemUrl);
+                $('.ordr-dtls-item-iteminfo .item-info-text div a').text(itemName);
+            } else {
+                toastr.warning('You already posted a review.', 'Failed in Posting Review')
+            }
         });
 
         $('#stars').on('starrr:change', function (e, value) {
@@ -128,23 +129,24 @@ class PurchaseDetailComponent extends BaseComponent {
         //        break;
         //}
         return quote;
-    }
-
+    };
     renderSupplierAddress() {
         let shippingAddress = null;
         let supplierDisplayName = null;
-        let detail = process.env.CHECKOUT_FLOW_TYPE === 'b2b' ? this.props.detail : this.props.detail.Orders[0]
 
-        if (detail) {
-            shippingAddress = detail.DeliveryFromAddress;
-            supplierDisplayName = detail.MerchantDetail ? detail.MerchantDetail.DisplayName : '';
+        if (this.props.detail.Orders) {
+            shippingAddress = this.props.detail.Orders[0].DeliveryFromAddress;
+            supplierDisplayName = this.props.detail.Orders[0].MerchantDetail.DisplayName;
+        } else {
+            //For B2b unxpected change of Model
+            shippingAddress = this.props.detail.DeliveryFromAddress;
+            supplierDisplayName = this.props.detail.MerchantDetail.DisplayName;
+
         }
+        const supplierName = shippingAddress.Name && shippingAddress.Name.split('|').length > 1 ? shippingAddress.Name.replace('|', ' ') : shippingAddress.Name;
+        const line2 = shippingAddress.Line2 ? shippingAddress.Line2 : "";
 
-        if (typeof shippingAddress != 'undefined' && shippingAddress && shippingAddress.Name) {
-
-            const supplierName = typeof shippingAddress != 'undefined' && shippingAddress && shippingAddress.Name && shippingAddress.Name.split('|').length > 1 ? shippingAddress.Name.replace('|', ' ') : shippingAddress.Name;
-            const line2 = typeof shippingAddress != 'undefined' && shippingAddress && shippingAddress.Line2 ? shippingAddress.Line2 : "";
-
+        if (shippingAddress && shippingAddress.Name) {
             return (
                 <div className="col-md-4">
                     <table className="canon-table purchase-address-sec">
@@ -183,7 +185,6 @@ class PurchaseDetailComponent extends BaseComponent {
                                     {shippingAddress.PostCode}<br />
                                 </td>
                             </tr>
-                            {this.renderSupplierEmailContact()}
                         </tbody>
                     </table>
                 </div>
@@ -193,31 +194,6 @@ class PurchaseDetailComponent extends BaseComponent {
         }
 
     }
-
-    renderSupplierEmailContact() {
-        let detail = process.env.CHECKOUT_FLOW_TYPE === 'b2b' ? this.props.detail : this.props.detail.Orders[0]
-        let contactNo = '';
-        let email = '';
-        if (detail) {
-             contactNo = detail.MerchantDetail.PhoneNumber;
-             email = detail.MerchantDetail.Email;
-        }
-       
-        if (process.env.PRICING_TYPE === "service_level") {
-            return (
-                <React.Fragment>
-                    <tr>
-                        <td data-th="Supplier :">{ contactNo }</td>
-                    </tr>
-                    <tr>
-                        <td data-th="Supplier :">{ email }</td>
-                    </tr>
-                </React.Fragment>
-            );
-        }
-        return null;
-    }
-
     renderShippingAddress() {
         let shippingAddress = null;
         if (this.props.detail.Orders) {
@@ -394,8 +370,23 @@ class PurchaseDetailComponent extends BaseComponent {
                                 </div>
                             </div>
                         </section>
-                        <TableContentComponent {...this.props} />
-                        <TransactionSummaryComponent {...this.props} checkoutFlowType={process.env.CHECKOUT_FLOW_TYPE} showNotes={process.env.PRICING_TYPE == 'service_level'} />
+                        <section className="sassy-box no-border box-order-items">
+                            <table className="table order-data table-items">
+                                <thead>
+                                    <tr>
+                                        <th className="text-left">Item Description</th>
+                                        {this.props.enableReviewAndRating === true ? <th>Review</th> : <th>&nbsp;</th>}
+                                        <th>Quantity</th>
+                                        <th width="171px">Unit Price</th>
+                                        <th width="171px">Total Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <TableItemsComponent {...this.props} enableReviewAndRating={this.props.enableReviewAndRating} />
+                                </tbody>
+                            </table>
+                        </section>
+                        <TransactionSummaryComponent {...this.props} checkoutFlowType={process.env.CHECKOUT_FLOW_TYPE} />
                         <OrderDiaryComponent
                             eventCustomField={this.props.eventCustomField}
                             events={this.getAllEvents()}
@@ -408,16 +399,12 @@ class PurchaseDetailComponent extends BaseComponent {
                             updateSelectedSection={this.props.updateSelectedSection}
                             updateSelectedTabSection={this.props.updateSelectedTabSection}
                             setUploadFile={this.props.setUploadFile}
-                            createEvent={this.props.createEvent}
-                            isAuthorizedToAdd={this.props.isAuthorizedToAdd}
-                            validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                        />
+                            createEvent={this.props.createEvent} />
                     </div>
                 </div>
             </div>
         );
     }
-
     renderFeedBackPopUp() {
         return (
             <div className="popup-area order-item-feedback-popup" style={{ display: 'none' }}>
@@ -426,7 +413,7 @@ class PurchaseDetailComponent extends BaseComponent {
                         <div className="pull-left">LEAVE A FEEDBACK FOR:</div>
                         <div className="pull-right">
                             <a href={'#'} className="close-popup-icon">
-                                <img src="/assets/images/icon-cross-black.png" />
+                                <img src={CommonModule.getAppPrefix() + "/assets/images/icon-cross-black.png"} />
                             </a>
                         </div>
                         <div className="clearfix" />
@@ -496,12 +483,12 @@ class PurchaseDetailComponent extends BaseComponent {
 }
 
 function mapStateToProps(state, ownProps) {
+
     return {
         user: state.userReducer.user,
         detail: state.purchaseReducer.detail,
         shippingMethod: state.purchaseReducer.shippingMethod,
         enableReviewAndRating: state.purchaseReducer.enableReviewAndRating,
-        locationVariantGroupId: state.marketplaceReducer.locationVariantGroupId,
         // Order Diary
         eventCustomField: state.orderDiaryReducer.eventCustomField,
         events: state.orderDiaryReducer.events,
@@ -510,8 +497,8 @@ function mapStateToProps(state, ownProps) {
         selectedTabSection: state.orderDiaryReducer.selectedTabSection,
         uploadFile: state.orderDiaryReducer.uploadFile,
         isValidUpload: state.orderDiaryReducer.isValidUpload,
-        isSuccessCreate: state.orderDiaryReducer.isSuccessCreate,
-        isAuthorizedToAdd: state.userReducer.pagePermissions.isAuthorizedToAdd
+        isSuccessCreate: state.orderDiaryReducer.isSuccessCreate
+
     }
 }
 
@@ -523,8 +510,7 @@ function mapDispatchToProps(dispatch) {
         updateSelectedSection: (section) => dispatch(OrderDiaryActions.updateSelectedSection(section)),
         updateSelectedTabSection: (section) => dispatch(OrderDiaryActions.updateSelectedTabSection(section)),
         setUploadFile: (file, isValid) => dispatch(OrderDiaryActions.setUploadFile(file, isValid)),
-        createEvent: (event, formData) => dispatch(OrderDiaryActions.createEvent(event, formData)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
+        createEvent: (event, formData) => dispatch(OrderDiaryActions.createEvent(event, formData))
     };
 }
 

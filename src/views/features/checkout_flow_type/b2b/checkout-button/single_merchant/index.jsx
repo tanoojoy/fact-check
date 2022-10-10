@@ -16,14 +16,8 @@ class CheckoutButtonComponent extends React.Component {
             cartDataArr: this.props.cartDataArr,
             userID: this.props.user.ID
         }
-        //ARC10283
-
-        if (this.props.processing == true) return;
-        this.props.setProcessing(true);
-
         this.props.validateCarts(opt, function(result) { 
             if (result.success) self.props.CheckoutButtonPressedWrapper(self.props.cartIDs, self.props.user.ID); 
-            else self.props.setProcessing(false);
         });
 	}
 	

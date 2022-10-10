@@ -9,7 +9,11 @@ const initialState = {
     totalRecords: '',
     keyword: '',
     unreadCount: 0,
-    inboxDatas: []
+    inboxDatas: [],
+    hasUnreadMessages: false,
+    messages: {}, 
+    enquiries: {}
+
 };
 
 function inboxReducer(state = initialState, action) {
@@ -19,6 +23,12 @@ function inboxReducer(state = initialState, action) {
             return Object.assign({}, state, {
                 ...state,
                 messages: action.getUserMessages
+            })
+        }
+        case actionTypes.FETCH_ENQUIRIES: {
+            return Object.assign({}, state, {
+                ...state,
+                enquiries: action.payload
             })
         }
         case actionTypes.UPDATE_INBOXSEARCHTEXT: {
@@ -39,6 +49,11 @@ function inboxReducer(state = initialState, action) {
         case actionTypes.GET_UNREAD_COUNT: {
             return Object.assign({}, state, {
                 unreadCount: action.unreadCount
+            });
+        }
+        case actionTypes.UPDATE_UNREAD_INDICATOR: {
+            return Object.assign({}, state, {
+                hasUnreadMessages: action.hasUnreadMessages
             });
         }
         default:

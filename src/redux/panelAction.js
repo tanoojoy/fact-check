@@ -1,5 +1,6 @@
 ﻿'use strict';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -7,7 +8,7 @@ if (typeof window !== 'undefined') {
 function asyncLoadingPanels() {
     return function (dispatch) {
         $.ajax({
-            url: '/panel/getPanels',
+            url: prefix+'/panel/getPanels',
             type: 'GET',
             data: {
                 pageSize: 24,

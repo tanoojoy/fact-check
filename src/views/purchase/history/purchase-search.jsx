@@ -80,6 +80,7 @@ class PurchaseSearchComponent extends React.Component {
         });
     } 
     searchOrder(e) {
+
         if (e===undefined || e.keyCode == 13 || e.target.tagName.toLowerCase() === 'span') {
             const self = this;
             var values = $('#filter-datepicker').val();
@@ -95,9 +96,6 @@ class PurchaseSearchComponent extends React.Component {
                 if (text && text.toLowerCase() === "ready for pick-up") {
                     text = "Ready For Consumer Collection"
                 }
-                if (text && text.toLowerCase() === "shipped") {
-                    text = "Delivered"
-                }
 
                 if (id !== "status_0")
                     statuses += text + ',';
@@ -108,9 +106,6 @@ class PurchaseSearchComponent extends React.Component {
                     var text = $($(this).prop("labels")).text();
                     if (text && text.toLowerCase() === "ready for pick-up") {
                         text = "Ready For Consumer Collection"
-                    }
-                    if (text && text.toLowerCase() === "shipped") {
-                        text = "Delivered"
                     }
 
                     if ($(this).attr('id') !== "status_0")
@@ -141,13 +136,8 @@ class PurchaseSearchComponent extends React.Component {
                 pageNumber: 1,
                 status:  statuses.slice(0, -1)
             };
-            if (process.env.CHECKOUT_FLOW_TYPE === 'b2c' && process.env.PRICING_TYPE === 'service_level') {
-                filter.status = undefined;
-                filter.cartItemFulfilmentStatuses = statuses.slice(0, -1);
-            }
             self.props.updateSelectedSuppliers(suppliers);
-            self.props.updateSelectedOrderStatus(filter.status);
-            self.props.updateSelectedCartItemStatus(filter.cartItemFulfilmentStatuses);
+            self.props.updateSelectedOrderStatus(statuses.slice(0, -1));
             //    self.props.updateKeyword(this.props.keyword);
             self.props.updateSelectedDates({
                 StartDate: Math.round(new Date(startDate).getTime() / 1000),
@@ -173,9 +163,6 @@ class PurchaseSearchComponent extends React.Component {
                     records.map(function (obj, index) {
                         if (obj.Name && obj.Name.toLowerCase() === "ready for consumer collection") {
                             obj.Name = "Ready for Pick-up"
-                        }
-                        if (obj.Name && obj.Name.toLowerCase() === "delivered" && process.env.PRICING_TYPE == 'service_level') {
-                            obj.Name = "Shipped"
                         }
                         return <li key={index}><a className="x-check" href="#">
                         <input type="checkbox" data-status-id={obj.Name} name={obj.Name} id={obj.Name} /><label htmlFor={obj.Name}>{obj.Name}</label></a></li>
@@ -203,10 +190,9 @@ class PurchaseSearchComponent extends React.Component {
                 }
             }
         }
-        const supplierStr = process.env.PRICING_TYPE == 'service_level'? 'Seller' : 'Supplier';
         if (result) {
             return (<ul className="dropdown-menu" id="dropdown-supplier">
-                <li className="skip-li"><input type="text" className="q" placeholder={"Search " + supplierStr} /></li>
+                <li className="skip-li"><input type="text" className="q" placeholder="Search Supplier" /></li>
                 <li><a className="x-check parent-check" href="#"><input type="checkbox" name="supplier_0" id="supplier_0" />
                     <label htmlFor="supplier_0"> Select All</label></a></li>
                 {
@@ -223,7 +209,6 @@ class PurchaseSearchComponent extends React.Component {
     }
     
     render() {
-        const supplierStr = process.env.PRICING_TYPE == 'service_level'? 'Seller' : 'Supplier';
         return (
             <React.Fragment>
             <div className="sc-upper">
@@ -254,7 +239,7 @@ class PurchaseSearchComponent extends React.Component {
                                         <span className="select-sassy-wrapper">
                                             <div className="advanced-select" data-model="Supplier Selected">
                                                 <div className="dropdown">
-                                                    <input id="supplier" type="button" data-default={supplierStr} value={this.props.supplierSearchLabel}  className="trigger" name="Supplier" name="SupplierSearchLabel" />
+                                                    <input id="supplier" type="button" data-default="Supplier" defaultValue="Supplier" className="trigger" />
                                                     <a href="#" className="btn-toggle" data-toggle="dropdown" aria-expanded="true"><b className="caret" /></a>
                                                     <a href="#" className="x-clear"><i className="fa  fa-times-circle" /></a>
                                                         {this.renderSupplier()}
@@ -264,7 +249,7 @@ class PurchaseSearchComponent extends React.Component {
                                         <span className="select-sassy-wrapper">
                                             <div className="advanced-select" data-model="Status Selected">
                                                 <div className="dropdown">
-                                                    <input id="status" type="button" data-default="Order Status" value={this.props.orderStatusSearchLabel} className="trigger" name="OrderStatusSearchLabel" />
+                                                    <input id="status" type="button" data-default="Order Status" defaultValue="Order Status" className="trigger" />
                                                     <a href="#" className="btn-toggle" data-toggle="dropdown" aria-expanded="true"><b className="caret" /></a>
                                                     <a href="#" className="x-clear"><i className="fa  fa-times-circle" /></a>
                                                         {this.renderStatuses()}

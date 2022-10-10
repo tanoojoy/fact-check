@@ -2,26 +2,22 @@
 var actionTypes = require('../actionTypes');
 
 const initialState = {
-    user: null,
-    addresses: [],
-    shippingOptions: [],
-    pickupOptions: [],
-    invoiceDetails: null,
-    orderDetails: null,
-    orderSelectedDelivery: new Map(),
-    customFieldDefinition: [],
-    paymentGateways: [],
-    paymentAcceptanceMethod: [],
-    paypalLoginUrl: '',
-    stripeLoginUrl: '',
-    paymentTerms: [],
-    addressIDToDelete: null,
-    billingAddresses: [],
-    addressPermissions: {
-        isAuthorizedToView: false,
-        isAuthorizedToAdd: false,
-        isAuthorizedToDelete: false,
-    }
+    user: null, 
+    addresses: [], 
+    shippingOptions: [], 
+    pickupOptions: [], 
+    invoiceDetails: null, 
+    orderDetails: null, 
+    orderSelectedDelivery: new Map(), 
+    customFieldDefinition: [], // USE BY HORIZON
+    paymentGateways: [], 
+    paymentAcceptanceMethod: [], 
+    paypalLoginUrl: '', 
+    stripeLoginUrl: '', 
+    paymentTerms: [], 
+    addressIDToDelete: null, 
+    billingAddresses: [], 
+    userInfoFormUniqueGuid: null, // USE BY HORIZON 
 };
 
 function settingsReducer(state = initialState, action) {
@@ -83,8 +79,7 @@ function settingsReducer(state = initialState, action) {
         //ONE PAGE CHECKOUT
         case actionTypes.UPDATE_SELECTED_ADDRESS: {
             return Object.assign({}, state, {
-                addresses: action.addresses,
-                shippingOptions: action.shippingOptions
+                addresses: action.addresses
             });
         }
         case actionTypes.UPDATE_SELECTED_BILLING_ADDRESS: {
@@ -113,6 +108,13 @@ function settingsReducer(state = initialState, action) {
                 addresses: action.addresses,
                 billingAddresses: action.billingAddresses
             });
+        }
+
+        case actionTypes.UPDATE_USER_INFO_FORM_UNIQUE_GUID: { 
+            return {
+                ...state, 
+                userInfoFormUniqueGuid: action.payload
+            }
         }
 
         default:

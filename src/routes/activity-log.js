@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 var express = require('express');
 var activityLogRouter = express.Router();
 var useragent = require('express-useragent');
@@ -16,24 +18,17 @@ var Store = require('../redux/store');
 var ActivityLogPage = require('../views/activity-log/index').ActivityLogComponent;
 
 var authenticated = require('../scripts/shared/authenticated');
-var authorizedUser = require('../scripts/shared/authorized-user');
 var authorizedMerchant = require('../scripts/shared/authorized-merchant');
 var onboardedMerchant = require('../scripts/shared/onboarded-merchant');
 
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../scripts/shared/user-permissions');
+var handlers = [authenticated, validateUserAccess];
 
-var handlers = [authenticated, authorizedUser];
-var merchantHandlers = [authenticated, authorizedMerchant, onboardedMerchant];
-
-const setListPagePermissionCode = (accessType) => {
-    return (req, res, next) => {
-        const pageType = res.locals.isMerchantRoute ? 'merchant' : 'consumer';
-
-        res.locals.permissionCode = `${accessType}-${pageType}-activity-logs-api`;
-
-        next();
-    };
-}
+function validateUserAccess(req, res, next) {
+    if (req.user && (req.user.Roles.includes('Merchant') || req.user.Roles.includes('Submerchant'))) {
+        return onboardedMerchant(req, res, next);
+    }
+    next();
+};
 
 function getActivityCookie(req, res, loginActivityId, alternateId) {
     const cookieName = 'arcticktrack';
@@ -83,16 +78,15 @@ activityLogRouter.post('/logPageActivity', authenticated, function (req, res) {
         Promise.all([promiseActivityLog]).then((responses) => {
             return res.send();
         });
-    } else {
-        res.send();
     }
+
+    res.send();
 });
 
-activityLogRouter.get('/', ...handlers, setListPagePermissionCode('view'), isAuthorizedToAccessViewPage({ renderSidebar: true }), function (req, res) {
-    const user = req.user;
-    const isMerchantAccess = res.locals.isMerchantRoute;
-    const pageType = isMerchantAccess ? 'Merchant' : 'Consumer';
+activityLogRouter.get('/', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
+    const user = req.user;
     const options = {
         userId: user.ID,
         pageSize: 20,
@@ -107,33 +101,28 @@ activityLogRouter.get('/', ...handlers, setListPagePermissionCode('view'), isAut
         const messages = responses[0];
         const appString = 'activity-log';
         const context = {};
-
-        getUserPermissionsOnPage(user, 'Activity Logs', pageType, (pagePermissions) => {
-            const s = Store.createActivityLogStore({
-                userReducer: {
-                    user: user,
-                    pagePermissions: pagePermissions
-                },
-                activityLogReducer: {
-                    messages: messages,
-                    logName: 'activity-logs',
-                    isMerchantAccess: isMerchantAccess
-                }
-            });
-            const reduxState = s.getState();
-
-            let seoTitle = 'Activity Log';
-            if (req.SeoTitle) {
-                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        const s = Store.createActivityLogStore({
+            userReducer: { user: user },
+            activityLogReducer: {
+                messages: messages,
+                logName: 'activity-logs'
             }
-
-            const LogPage = reactDom.renderToString(<ActivityLogPage context={context} user={user} pagePermissions={pagePermissions} isMerchantAccess={isMerchantAccess} />);
-            res.send(template('page-seller auto-activity-page page-sidebar', seoTitle, LogPage, appString, reduxState));
         });
+        const reduxState = s.getState();
+
+        let seoTitle = 'Activity Log';
+        if (req.SeoTitle) {
+            seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+        }
+
+        const LogPage = reactDom.renderToString(<ActivityLogPage context={context} currentUser={req.user} />);
+        res.send(template('page-seller auto-activity-page page-sidebar', seoTitle, LogPage, appString, reduxState));
     });
 });
 
-activityLogRouter.get('/search', ...handlers, setListPagePermissionCode('view'), isAuthorizedToPerformAction(), function (req, res) {
+activityLogRouter.get('/search', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
 
     const options = {
@@ -153,7 +142,9 @@ activityLogRouter.get('/search', ...handlers, setListPagePermissionCode('view'),
     });
 });
 
-activityLogRouter.get('/paging', ...handlers, setListPagePermissionCode('view'), isAuthorizedToPerformAction(), function (req, res) {
+activityLogRouter.get('/paging', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const options = {
         userId: user.ID,
@@ -185,7 +176,9 @@ activityLogRouter.get('/paging', ...handlers, setListPagePermissionCode('view'),
     }
 });
 
-activityLogRouter.get('/export', ...handlers, setListPagePermissionCode('view'), isAuthorizedToPerformAction(), function (req, res) {
+activityLogRouter.get('/export', ...handlers, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const options = {
         userId: user.ID,
@@ -202,102 +195,6 @@ activityLogRouter.get('/export', ...handlers, setListPagePermissionCode('view'),
     Promise.all([promiseActivityLog]).then((responses) => {
         const messages = responses[0];
         res.send(messages);
-    });
-});
-
-activityLogRouter.post('/createItemActivityLog', ...merchantHandlers, function (req, res) {
-    const user = req.user;
-
-    let userId = user.ID;
-    if (req.user.SubmerchantID && typeof req.user.SubmerchantID != 'undefined') {
-        userId = req.user.SubmerchantID;
-    }
-
-    var promiseActivityLog = new Promise((resolve, reject) => {
-        const options = {
-            merchantId: userId,
-            itemId: req.body.itemId,
-            type: req.body.type,
-            alternateId: req.body.alternateId
-        };
-
-        client.ActivityLog.createItemActivityLog(options, function (err, result) {
-            resolve(result);
-        });
-    });
-
-    Promise.all([promiseActivityLog]).then((responses) => {
-        res.send(responses[0]);
-    });
-});
-
-activityLogRouter.get('/getCookie', ...merchantHandlers, function (req, res) {
-    const cookieName = 'arcticktrack';
-    var cookie = req.cookies[cookieName];
-
-    if (cookie) {
-        return res.send(cookie);
-    }
-
-    res.send(null);
-});
-
-activityLogRouter.get('/setCookie', ...merchantHandlers, function (req, res) {
-    const cookieName = 'arcticktrack';
-    var cookie = req.cookies[cookieName];
-
-    var value = {
-        loginActivityId: req.query.loginActivityId || 0,
-        alternateId: req.query.alternateId || Math.random().toString(36).substr(2, 10)
-    };
-
-    if (cookie) {
-        res.clearCookie(cookieName);
-    }
-
-    res.cookie(cookieName, value, {
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        httpOnly: true
-    });
-
-    res.send(value);
-});
-
-activityLogRouter.post('/addPageAnaylytics', ...merchantHandlers, function (req, res) {
-    const user = req.user;
-
-    var promiseActivityLog = new Promise((resolve, reject) => {
-        const options = {
-            userId: user.ID,
-            data: req.body
-        };
-
-        client.ActivityLog.addPageAnaylytics(options, function (err, result) {
-            resolve(result);
-        });
-    });
-
-    Promise.all([promiseActivityLog]).then((responses) => {
-        res.send(responses[0]);
-    });
-});
-
-activityLogRouter.post('/hasPageAnaylytics', ...merchantHandlers, function (req, res) {
-    const user = req.user;
-
-    var promiseActivityLog = new Promise((resolve, reject) => {
-        const options = {
-            userId: user.ID,
-            key: req.body.key
-        };
-
-        client.ActivityLog.hasPageAnaylytics(options, function (err, result) {
-            resolve(result);
-        });
-    });
-
-    Promise.all([promiseActivityLog]).then((responses) => {
-        res.send(responses[0]);
     });
 });
 

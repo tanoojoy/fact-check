@@ -1,5 +1,7 @@
 ﻿'use strict';
 
+import { redirectUnauthorizedUser } from '../../utils';
+
 var express = require('express');
 var merchantDashboardRouter = express.Router();
 var React = require('react');
@@ -16,57 +18,50 @@ var DashboardPageComponent = require('../../views/merchant/dashboard/main').Dash
 
 var handlers = [authenticated, authorizedMerchant, onboardedMerchant];
 
-const { isAuthorizedToAccessViewPage } = require('../../scripts/shared/user-permissions');
+merchantDashboardRouter.get('/', ...handlers, function (req, res) {
+    console.log('merchant items access: ', Date.now());
 
-const viewDashboardPage = {
-    code: 'view-merchant-dashboard-api',
-    seoTitle: 'Dashboard',
-    renderSidebar: true
-};
-
-merchantDashboardRouter.get('/', ...handlers, isAuthorizedToAccessViewPage(viewDashboardPage), function (req, res) {
-    let pageSize = 100
     let user = req.user;
     var transactionKeyword = process.env.CHECKOUT_FLOW_TYPE == 'b2b' ? 'b2bTransactions' : 'transactions';
     var promiseTransaction = new Promise((resolve, reject) => {
-        client.Transactions.getTransactions(pageSize, 1, '', moment(new Date()), moment(new Date()).add(1, 'days'), '- id', function (err, transaction) {
+        client.Transactions.getTransactions(10000000, 1, '', moment(new Date()), moment(new Date()).add(1, 'days'), '- id', function (err, transaction) {
             resolve(transaction);
         });
     });
 
     var headerTransactionPromise = new Promise((resolve, reject) => {
-        client.Transactions.getReports(user.ID, transactionKeyword, moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', pageSize, 1, function (err, reports) {
+        client.Transactions.getReports(user.ID, transactionKeyword, moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', 10000000, 1, function (err, reports) {
             resolve(reports);
         });
     });
 
     //best product sellers
     var footerTransactionPromise = new Promise((resolve, reject) => {
-        client.Transactions.getReports(user.ID, 'items', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', pageSize, 1, function (err, reports) {
+        client.Transactions.getReports(user.ID, 'items', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', 10000000, 1, function (err, reports) {
             resolve(reports);
         });
     });
 
     var salesGraphTransactionPromise = new Promise((resolve, reject) => {
-        client.Transactions.getReports(user.ID, transactionKeyword, moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', pageSize, 1, function (err, reports) {
+        client.Transactions.getReports(user.ID, transactionKeyword, moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', 10000000, 1, function (err, reports) {
             resolve(reports);
         });
     });
 
     var topViewedTransactionPromise = new Promise((resolve, reject) => {
-        client.Transactions.getReports(user.ID, 'topViewed', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', pageSize, 1, function (err, reports) {
+        client.Transactions.getReports(user.ID, 'topViewed', moment(new Date()).add(-1, 'days').unix(), moment(new Date()).unix(), 'day', 10000000, 1, function (err, reports) {
             resolve(reports);
         });
     });
 
     var headerTransactionGrowthRatePromise = new Promise((resolve, reject) => {
-        client.Transactions.getReports(user.ID, transactionKeyword, moment(new Date()).add(-2, 'days').unix(), moment(new Date()).add(-1, 'days').unix(), 'day', pageSize, 1, function (err, reports) {
+        client.Transactions.getReports(user.ID, transactionKeyword, moment(new Date()).add(-2, 'days').unix(), moment(new Date()).add(-1, 'days').unix(), 'day', 10000000, 1, function (err, reports) {
             resolve(reports);
         });
     });
 
     var headerTotalVisitsPromise = new Promise((resolve, reject) => {
-        client.Transactions.getReports(user.ID, 'headerTotalVisits', moment(new Date()).add(-2, 'days').unix(), moment(new Date()).add(-1, 'days').unix(), 'day', pageSize, 1, function (err, reports) {
+        client.Transactions.getReports(user.ID, 'headerTotalVisits', moment(new Date()).add(-2, 'days').unix(), moment(new Date()).add(-1, 'days').unix(), 'day', 10000000, 1, function (err, reports) {
             resolve(reports);
         });
     });
@@ -130,7 +125,8 @@ merchantDashboardRouter.get('/', ...handlers, isAuthorizedToAccessViewPage(viewD
 
 });
 
-merchantDashboardRouter.get('/getTransactions', ...handlers, isAuthorizedToAccessViewPage(viewDashboardPage), function (req, res) {
+merchantDashboardRouter.get('/getTransactions', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
     var promiseGetTransactions = new Promise((resolve, reject) => {
         client.Transactions.getTransactions(req.query.pageSize, req.query.pageNumber, req.query.keyWords, req.query.startDate, req.query.endDate, req.query.sort, function (err, transaction) {
@@ -144,7 +140,9 @@ merchantDashboardRouter.get('/getTransactions', ...handlers, isAuthorizedToAcces
     });
 });
 
-merchantDashboardRouter.get('/getReports', ...handlers, isAuthorizedToAccessViewPage(viewDashboardPage), function (req, res) {
+merchantDashboardRouter.get('/getReports', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     var type = req.query.type == 'transactions' && process.env.CHECKOUT_FLOW_TYPE == 'b2b' ? 'b2bTransactions' : req.query.type;
     var promiseGetTransactions = new Promise((resolve, reject) => {
         client.Transactions.getReports(req.query.merchantId, type, req.query.startDate, req.query.endDate, req.query.report_by, req.query.pageSize, req.query.pageNumber, function (err, transaction) {

@@ -12,7 +12,7 @@ class HeaderLayoutBottomComponent extends React.Component {
                         <li className="h-more" key={index1} onClick={(e) => self.props.showBannerMenu(e)} >
                             <span>More</span>
                             <i className="fa fa-angle-down"></i>
-                            <ul className="h-dd-menu hide-me" style={{ overflow: 'hidden', outline: 'currentcolor none medium', cursor: 'grab', display: 'none' }} tabIndex="1">
+                            <ul className="h-dd-menu hide-me" style={{ overflow: 'hidden', outline: 'currentcolor none medium', display: 'none' }} tabIndex="1">
                                 {panel.Details.map(function (detail, index2) {
                                     return (<li key={index2}><a href={detail.Url}>{detail.Title}</a></li>)
                                 })}
@@ -29,7 +29,7 @@ class HeaderLayoutBottomComponent extends React.Component {
     renderHomepageUrl() {
         if (this.props.homepageUrl) {
             if (this.props.homepageUrl.startsWith('http')) {
-                
+
                 return this.props.homepageUrl;
             }
 

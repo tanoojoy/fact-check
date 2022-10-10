@@ -4,7 +4,7 @@ var ReactRedux = require('react-redux');
 var BaseComponent = require('../../../shared/base');
 var EnumCoreModule = require('../../../../public/js/enum-core');
 var AccountActions = require('../../../../redux/accountAction');
-var CommonModule = require('../../../../../src/public/js/common.js');
+var CommonModule = require('../../../../public/js/common.js');
 
 class BuyerSignUpComponent extends BaseComponent {
 
@@ -82,7 +82,7 @@ class BuyerSignUpComponent extends BaseComponent {
 
         e.preventDefault();
         return false;
-        
+
     }
 
     componentDidMount() {
@@ -109,7 +109,7 @@ class BuyerSignUpComponent extends BaseComponent {
                         <div className="icon-logo"> <img src={this.props.marketplaceLogoUrl} /> </div>
                         <div className="login-box">
                             <div className="lb-head full-width head-buyer">
-                                <a href="/"><img src="/assets/images/back.svg" /></a>
+                                <a href="/"><img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"} /></a>
                                 <span>Login as a Buyer</span>
                             </div>
                             <div className="lb-body full-width">

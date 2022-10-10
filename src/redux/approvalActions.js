@@ -1,5 +1,6 @@
 'use strict';
 const actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -15,7 +16,7 @@ function ajaxApprovalSearch(filters, callback) {
         tableName = "Workflows"
     } = filters;
     $.ajax({
-        url: '/approval/search',
+        url: prefix+'/approval/search',
         type: 'GET',
         data: {
             ...filters,
@@ -33,7 +34,7 @@ function createApprovalWorkflow(options, callback) {
     return function (dispatch) {
         const { Reason, Workflows } = options
         $.ajax({
-            url: '/approval/create-workflow',
+            url: prefix+'/approval/create-workflow',
             type: 'POST',
             data: {
                 Reason,
@@ -96,7 +97,7 @@ function deleteApprovalWorkflow(rowID, callback) {
             pageSize = approvalState.workflows.PageSize;
         }
         $.ajax({
-            url: `/approval/workflows/${rowID}`,
+            url: prefix+`/approval/workflows/${rowID}`,
             type: 'PUT',
             success: function (result) {
                 const approvalState = getState().approvalReducer;
@@ -128,7 +129,7 @@ function deleteApprovalWorkflow(rowID, callback) {
 function updateApprovalSettings(newSettings, callback) {
     return function (dispatch) {
         $.ajax({
-            url: '/approval/settings',
+            url: prefix+'/approval/settings',
             type: 'PUT',
             data: newSettings,
             success: function (result) {
@@ -150,7 +151,7 @@ function updateApprovalSettings(newSettings, callback) {
 function getApprovalSettings() {
     return function (dispatch) {
         $.ajax({
-            url: '/approval/getApprovalSettings',
+            url: prefix+'/approval/getApprovalSettings',
             type: 'GET',
             success: function (result) {
                 return dispatch({
@@ -169,7 +170,7 @@ function createApprovalDepartment(options, callback) {
     return function (dispatch) {
         const { Name, WorkflowID, WorkflowCount } = options;
         $.ajax({
-            url: '/approval/create-department',
+            url: prefix+'/approval/create-department',
             type: 'POST',
             data: {
                 Name,
@@ -193,7 +194,7 @@ function updateApprovalDepartment(rowID, options, callback) {
     return function (dispatch) {
         const { Name, WorkflowID, WorkflowCount } = options;
         $.ajax({
-            url: `/approval/departments/${rowID}`,
+            url: prefix+`/approval/departments/${rowID}`,
             type: 'PUT',
             data: {
                 Name,
@@ -224,7 +225,7 @@ function deleteApprovalDepartment(rowID, callback) {
             pageSize = approvalState.departments.PageSize;
         }
         $.ajax({
-            url: `/approval/departments/${rowID}`,
+            url: prefix+`/approval/departments/${rowID}`,
             type: 'DELETE',
             success: function (result) {
                 const approvalState = getState().approvalReducer;

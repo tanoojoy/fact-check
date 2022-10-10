@@ -11,7 +11,7 @@ class BuyerLoginComponent extends BaseComponent {
         if (typeof window !== 'undefined') {
             var $ = window.$;
         }
-      
+
         if (this.props.error && this.props.error === '2') {
             this.showMessage(EnumCoreModule.GetToastStr().Error.INVALID_TOKEN);
         } else if (this.props.error) {
@@ -208,11 +208,10 @@ class BuyerLoginComponent extends BaseComponent {
                 }
             }
         }
-    } 
+    }
 
     render() {
         const self = this;
-
         return (
             <React.Fragment>
                 <div className="login-container" >
@@ -222,7 +221,7 @@ class BuyerLoginComponent extends BaseComponent {
                     <div className="login-box">
                         <div className="lb-head full-width head-buyer">
                             <a href="/">
-                                <img src="/assets/images/back.svg"></img>
+                                <img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"}></img>
                             </a>
                             <span>Login as a Buyer</span>
                         </div>

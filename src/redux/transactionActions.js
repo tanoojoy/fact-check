@@ -1,5 +1,6 @@
 ﻿'use strict';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -7,7 +8,7 @@ if (typeof window !== 'undefined') {
 function getReports(merchantId, type, startDate, endDate, report_by, pageSize, pageNumber, source) {
     return function (dispatch) {
         $.ajax({
-            url: "/dashboard/getReports",
+            url: prefix+"/dashboard/getReports",
             type: "GET",
             data: {
                 merchantId: merchantId,
@@ -40,7 +41,7 @@ function getTransactions(pageSize, pageNumber, keyWords, startDate, endDate, sor
     return function (dispatch) {
 
         $.ajax({
-            url: "/dashboard/getTransactions",
+            url: prefix+"/dashboard/getTransactions",
             type: "GET",
             data: {
                 pageSize: pageSize,

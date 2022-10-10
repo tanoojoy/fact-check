@@ -79,43 +79,34 @@ Items.prototype.getItemDetails = function (options, callback) {
     }, callback);
 };
 
-Items.prototype.createItem = function (token, options, callback) {
-    //This code is to fix ARC-9766 but reverted/commented for ARC-9065 (need to investigate the missing webapitoken)
+Items.prototype.createItem = function(options, callback) {
+    const self = this;
     this._enforce(options, ['merchantId']);
-    this.setAccessToken(token);
-    this._makeRequest({
-        method: 'POST',
-        contentType: 'application/json',
-        accept: 'application/json',
-        path: '/api/v2/merchants/' + options.merchantId + '/items',
-        data: options.data
-    }, callback);
-    //const self = this;
-    //this._enforce(options, ['merchantId']);
-    //this._acquireAdminAccessToken(function () {
-    //    self._makeRequest({
-    //        method: 'POST',
-    //        contentType: 'application/json',
-    //        accept: 'application/json',
-    //        path: '/api/v2/merchants/' + options.merchantId + '/items',
-    //        data: options.data
-    //    }, callback);
-    //});
+    this._acquireAdminAccessToken(function() {
+        self._makeRequest({
+            method: 'POST',
+            contentType: 'application/json',
+            accept: 'application/json',
+            path: '/api/v2/merchants/' + options.merchantId + '/items',
+            data: options.data
+        }, callback);
+    });
 };
 
-Items.prototype.editItem = function (token, options, callback) {
+Items.prototype.EditNewItem = function (options, callback) {
     const self = this;
     this._enforce(options, ['merchantId']);
     const itemId = options.itemId;
 
-    self.setAccessToken(token);
-    self._makeRequest({
-        method: 'PUT',
-        contentType: 'application/json',
-        accept: 'application/json',
-        path: '/api/v2/merchants/' + options.merchantId + '/items/' + itemId,
-        data: options.data
-    }, callback);
+    this._acquireAdminAccessToken(function () {
+        self._makeRequest({
+            method: 'PUT',
+            contentType: 'application/json',
+            accept: 'application/json',
+            path: '/api/v2/merchants/' + options.merchantId + '/items/' + itemId,
+            data: options.data
+        }, callback);
+    });
 };
 
 Items.prototype.searchItems = function (options, callback) {
@@ -132,35 +123,40 @@ Items.prototype.searchItems = function (options, callback) {
             minPrice: options.minimumPrice,
             maxPrice: options.maximumPrice,
             categories: options.categories,
+            customFields: options.customfields,
             customValues: options.customValues,
             sellerId: options.sellerId,
             variantGroupId: options.variantGroupId,
-            variantId: options.variantId,
-            latitude: options.latitude,
-            longitude: options.longitude,
-            radius: options.radius,
-            location: options.location,
-            startDate: options.startDate,
-            endDate: options.endDate,
-            minimumQuantity: options.minimumQuantity
+            variantId: options.variantId
         }
     }, callback);
 };
 
-Items.prototype.deleteItem = function(token, options, callback) {
+Items.prototype.editItem = function(options, callback) {
+    const self = this;
+
+    const merchantId = options.merchantId;
+    const itemId = options.itemId;
+    const isAvailable = options.isAvailable;
+
+    self._acquireAdminAccessToken(function() {
+        self._makeRequest({
+            method: 'PUT',
+            path: '/api/v2/merchants/' + merchantId + '/items/' + itemId,
+            data: {
+                IsAvailable: isAvailable
+            }
+        }, callback);
+    });
+};
+
+Items.prototype.deleteItem = function(options, callback) {
     const self = this;
 
     const merchantId = options.merchantId;
     const itemId = options.itemId;
 
-    //This code is to fix ARC-9766 but reverted/commented for ARC-9065 (need to investigate the missing webapitoken)
-    //self.setAccessToken(token);
-    //self._makeRequest({
-    //    method: 'DELETE',
-    //    path: '/api/v2/merchants/' + merchantId + '/items/' + itemId
-    //}, callback);
-
-    self._acquireAdminAccessToken(function () {
+    self._acquireAdminAccessToken(function() {
         self._makeRequest({
             method: 'DELETE',
             path: '/api/v2/merchants/' + merchantId + '/items/' + itemId
@@ -191,8 +187,7 @@ Items.prototype.getMerchantFeedback = function (options, callback) {
             params: {
                 keyword: keyword,
                 pageNo: options.pageNo,
-                pageSize: options.pageSize,
-                getFirstItemInOrder: options.getFirstItemInOrder
+                pageSize: options.pageSize
             }
         }, callback);
     });
@@ -237,34 +232,6 @@ Items.prototype.getAdminVariantsByGroupId = function (options, callback) {
             params: {}
         }, callback);
     });
-};
-
-Items.prototype.getItemBookings = function (options, callback) {
-    const self = this;
-    const itemId = options.itemId;
-    const startDate = options.startDate || null;
-    const endDate = options.endDate || null;
-    this._makeRequest({
-        method: 'GET',
-        path: `/api/v2/items/${itemId}/booked-slots`,
-        params: {
-            startDate: startDate,
-            endDate: endDate,
-        }
-    }, callback);
-
-};
-
-Items.prototype.getImplementationsBookings = function (options, callback) {
-    const self = this;
-    self._acquireAdminAccessToken(function () {
-        self._makeRequest({
-            method: 'GET',
-            path: '/api/v2/implementationbookings'
-
-        }, callback);
-    });
-
 };
 
 module.exports = Items;

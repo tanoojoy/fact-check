@@ -6,14 +6,12 @@ var EnumCoreModule = require('../../../../../src/public/js/enum-core');
 let toastr = require('toastr');
 let Moment = require('moment');
 
-const PermissionTooltip = require('../../../common/permission-tooltip');
-
 class CustomFieldComponent extends React.Component {
     componentDidUpdate() {
         this.destroyCKEditors();
         this.initializeCKEditor();
         this.handleDateTime();
-        this.initializePdf();
+        
     }
 
     destroyCKEditors() {
@@ -53,11 +51,8 @@ class CustomFieldComponent extends React.Component {
     }
 
     componentDidMount() {
-        const self = this;
-
         this.initializeCKEditor();
         this.handleDateTime();
-        this.initializePdf();
     }
 
     renderValues(property, values, valCtr) {
@@ -155,23 +150,6 @@ class CustomFieldComponent extends React.Component {
                 }
             });
         } 
-    }
-
-    initializePdf() {
-        const self = this;
-
-        $('.pdf-upload').on('click', function (e, isValidated) {
-            e.stopPropagation();
-
-            //ARC10803
-            if (isValidated === false) {
-                e.preventDefault();
-                self.validatePdfPermissionOnClick($(this).data('code'));
-                return;
-            }
-
-            return true;
-        });
     }
 
     renderFormattedText(data, asterisk, value, i) {
@@ -491,14 +469,12 @@ class CustomFieldComponent extends React.Component {
                 <label>
                     {data.Name}{asterisk}
                 </label>
-                <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                    <div id={"pdf-btn" + data.Code} className={"btn-upload btn " + isRequired}>
-                        <input id={"pdf-" + data.Code} type="file" data-code={data.Code} className={isRequired + ' pdf-upload'}
-                            accept="application/pdf" onChange={(e) => this.onFileChange(e, data.Code)} />
-                        <img src="https://bootstrap.arcadier.com/marketplace/images/image_add_white.svg" alt="" />
-                        <img src="https://bootstrap.arcadier.com/marketplace/images/pdf.svg" alt="" />
-                    </div>
-                </PermissionTooltip>
+                <div id={"pdf-btn" + data.Code} className={"btn-upload btn " + isRequired} onClick={(e) => this.browseFile(data.Code)}>
+                    <input id={"pdf-" + data.Code} type="file" data-code={data.Code} className={isRequired}
+                        accept="application/pdf" onChange={(e) => { this.onFileChange(e, data.Code) }} />
+                    <img src="https://bootstrap.arcadier.com/marketplace/images/image_add_white.svg" alt="" />
+                    <img src="https://bootstrap.arcadier.com/marketplace/images/pdf.svg" alt="" />
+                </div>
                 <span className="file-name">
                     {value}
                 </span>
@@ -508,15 +484,14 @@ class CustomFieldComponent extends React.Component {
         );
     }
 
-    validatePdfPermissionOnClick(code) {
-        this.props.validatePermissionToPerformAction("add-merchant-create-item-api", () => {
-            $('#pdf-' + code).trigger('click', true);
-        });
+    browseFile(id) {
+        $('#pdf-btn' + id  + '[type="file"]').click();
     }
 
     onFileChange(e, code) {
         const self = this;
         const file = e.target.files[0];
+        const fileReader = new FileReader();
 
         const getMimetype = (signature) => {
             switch (signature) {
@@ -537,34 +512,31 @@ class CustomFieldComponent extends React.Component {
             }
         };
 
-        this.props.validatePermissionToPerformAction("add-merchant-create-item-api", () => {
-            const fileReader = new FileReader();
-            fileReader.onloadend = function (evt) {
-                if (evt.target.readyState === FileReader.DONE) {
-                    const uint = new Uint8Array(evt.target.result);
-                    let bytes = [];
-                    uint.forEach((byte) => {
-                        bytes.push(byte.toString(16));
-                    });
-                    const hex = bytes.join('').toUpperCase();
+        fileReader.onloadend = function (evt) {
+            if (evt.target.readyState === FileReader.DONE) {
+                const uint = new Uint8Array(evt.target.result);
+                let bytes = [];
+                uint.forEach((byte) => {
+                    bytes.push(byte.toString(16));
+                });
+                const hex = bytes.join('').toUpperCase();
 
-                    if (EnumCoreModule.GetOrderDiaryValidFileTypes().includes(getMimetype(hex))) {
-                        var data = {
-                            "Code": code,
-                            "Filename": file.name
-                        }
-                        self.props.setPDFFile(data);
-                    } else {
-                        toastr.error("Invalid File");
+                if (EnumCoreModule.GetOrderDiaryValidFileTypes().includes(getMimetype(hex))) {
+                    var data = {
+                        "Code": code,
+                        "Filename": file.name
                     }
+                    self.props.setPDFFile(data);
+                } else {
+                    toastr.error("Invalid File");
                 }
-            };
-
-            if (file != undefined && file != null) {
-                const blob = file.slice(0, 4);
-                fileReader.readAsArrayBuffer(blob);
             }
-        });
+        };
+
+        if (file != undefined && file != null) {
+            const blob = file.slice(0, 4);
+            fileReader.readAsArrayBuffer(blob);
+        }
     }
 
     renderCustomField(customField, i) {

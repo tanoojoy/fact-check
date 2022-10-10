@@ -4,8 +4,8 @@ const React = require('react');
 var BaseComponent = require('../../shared/base');
 class QuotationComponent extends BaseComponent {
     redirectQuotationDetail(id) {
-        const extraPath = this.props.isMerchantAccess == 'true' || this.props.isMerchant ? '/merchants' : '';
-        window.location = `${extraPath}/quotation/detail?id=${id}`;
+        const buyerdocs = this.props.buyerdocs == 'true' ? true : false;
+        window.location = `/quotation/detail?id=${id}&buyer=${buyerdocs}`;
     }
 
     getStatus(quotation) {
@@ -50,7 +50,7 @@ class QuotationComponent extends BaseComponent {
                             quotations.map(function (quotation, index) {
                                 return (
                                     <tr key={quotation.ID} className="account-row " data-key="item" data-id={quotation.ID} onClick={(e) => self.redirectQuotationDetail(quotation.ID)}>
-                                        <td data-th="Quotation No.">{quotation.CosmeticNo != null && quotation.CosmeticNo != "" ? quotation.CosmeticNo : quotation.QuoteNo}</td>
+                                        <td data-th="Quotation No.">{quotation.QuoteNo}</td>
                                         <td data-th="Item Name">{self.getItemName(quotation)}</td>
                                         <td data-th="Quantity">{quotation.Quantity}</td>
                                         <td data-th="Buyer Name">{isMerchant ? quotation.ToUserName : quotation.FromUserName}</td>

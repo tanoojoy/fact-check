@@ -1,138 +1,140 @@
-'use strict';
-var express = require('express');
-var homePageRouter = express.Router();
-var reactDom = require('react-dom/server');
-var Store = require('../redux/store');
-var template = require('../views/layouts/template');
-var Homepage = require('../views/home/index');
+import express from 'express';
+import React from 'react';
+import reactDom from 'react-dom/server';
+import Store from '../redux/store';
+import passport from 'passport';
+import client from '../../sdk/client';
+import authenticated from '../scripts/shared/authenticated';
+import template from '../views/layouts/template';
+import { getAppPrefix } from '../public/js/common';
+import { HomepageComponent } from '../views/home';
+import { Search } from '../consts/search-categories';
+import { homePage as homePagePPs } from '../consts/page-params';
+import { homepageAuthTemplate } from '../views/home/home-page-initial-login-page';
+import { clearSessionCookies } from '../utils';
 
-var passport = require('passport');
-var client = require('../../sdk/client');
-var authenticated = require('../scripts/shared/authenticated');
+const homePageRouter = express.Router();
 
-const { isAuthorizedToAccessViewPage } = require('../scripts/shared/user-permissions');
-
-var React = require('react');
-
-function setApiToken(res, token, expiry) {
-    var maxAge = expiry * 1000;
-    res.cookie('webapitoken', token, { maxAge: maxAge, httpOnly: false });
-}
-
-const viewHomePage = {
-    code: 'view-consumer-home-api',
-}
 /* GET home page. */
-homePageRouter.get('/', authenticated, isAuthorizedToAccessViewPage(viewHomePage), function (req, res) {
-    const user = req.user;
+homePageRouter.get('/', authenticated, async(req, res) => {
+    let { user } = req;
+
+    if (!user) {
+        clearSessionCookies(res);
+        res.send(homepageAuthTemplate);
+    }
+
+    if (user && !user.userInfo) {
+        user = {};
+        clearSessionCookies(res);
+        res.redirect(`${getAppPrefix()}/`);
+        return;
+    }
+
     const { PRICING_TYPE } = process.env;
 
     const promiseMarketplaceInfo = new Promise((resolve, reject) => {
-        client.Marketplaces.getMarketplaceInfo(null, function (err, result) {
+        client.Marketplaces.getMarketplaceInfo(null, function(err, result) {
             if (!err) {
                 resolve(result);
             }
         });
     });
 
-    Promise.all([promiseMarketplaceInfo]).then((responses) => {
-        const marketplaceInfo = responses[0];
-
-        const locationVariantGroupId = req.LocationVariantGroupId;
-        const userPreferredLocationId = req.UserPreferredLocationId;
-
-        const isGuest = user == null || typeof user == 'undefined';
-        const isPrivateAndSellerRestricted = req.isPrivateEnabled && req.isSellerVisibilityRestricted;
-        const sellerId = !isGuest && isPrivateAndSellerRestricted && (req.user.Roles.includes('Merchant') || req.user.Roles.includes('Submerchant')) ? req.user.ID : null;
-
-        var promiseItems = new Promise((resolve, reject) => {
-            const options = {
-                pageSize: 12,
-                pageNumber: 1,
-                tags: [],
-                withChildItems: true,
-                sort: 'created_desc',
-                sellerId: sellerId,
-                variantGroupId: locationVariantGroupId,
-                variantId: userPreferredLocationId
-            };
-            client.Items.getItems(options, function (err, items) {
-                if (!err) {
-                    resolve(items);
-                }
-            });
+    const promiseCategories = new Promise((resolve, reject) => {
+        client.Categories.getCategories(null, function(err, categories) {
+            if (!err) {
+                resolve(categories);
+            }
         });
+    });
 
-        var promiseCategories = new Promise((resolve, reject) => {
-            client.Categories.getCategories(null, function (err, categories) {
-                if (!err) {
-                    resolve(categories);
-                }
-            });
+    const promisePanels = new Promise((resolve, reject) => {
+        const options = {
+            type: 'all',
+            pageSize: 24,
+            pageNumber: 1
+        };
+
+        client.Panels.getPanels(options, function(err, panels) {
+            if (!err) {
+                resolve(panels);
+            }
         });
-        var promisePanels = new Promise((resolve, reject) => {
-            const options = {
-                type: 'all',
-                pageSize: 24,
-                pageNumber: 1
-            };
+    });
 
-            client.Panels.getPanels(options, function (err, panels) {
-                if (!err) {
-                    resolve(panels);
-                }
-            });
-        });
-
-        Promise.all([promiseItems, promiseCategories, promisePanels]).then((responses) => {
-            const appString = 'homepage';
-            const context = {};
-
-            const items = responses[0];
+    Promise.all([promiseMarketplaceInfo, promiseCategories, promisePanels])
+        .then((responses) => {
+            const marketplaceInfo = responses[0];
             const categories = responses[1];
             const panels = responses[2];
-            const settingsTemp = marketplaceInfo.Settings != null ? marketplaceInfo.Settings['home-page-settings']['home-page-settings-area'] : null;
-            const layoutItemCount = settingsTemp != null ? parseInt(settingsTemp['latest_item_count']) : 10;
-            const collapsableCategories = settingsTemp != null ? settingsTemp["category_collapsable_onoff"] : true;
-            const categoryCount = collapsableCategories === 'false' ? categories.length : 4;
-            const isBespoke = PRICING_TYPE === "variants_level" ? true : false;
+
+            let locationVariantGroupId = null;
+            let userPreferredLocationId = null;
+            if (PRICING_TYPE == 'country_level') {
+                if (marketplaceInfo.CustomFields) {
+                    const locationCustomField = marketplaceInfo.CustomFields.find(c => c.Code.startsWith('locationid'));
+
+                    if (locationCustomField && locationCustomField.Values.length > 0) {
+                        locationVariantGroupId = locationCustomField.Values[0];
+                    }
+                }
+
+                if (user) {
+                    if (user.CustomFields && user.CustomFields.length > 0) {
+                        const customField = user.CustomFields.find(c => c.Code.startsWith('user_preferred_location'));
+
+                        if (customField) {
+                            userPreferredLocationId = customField.Values[0];
+                        }
+                    }
+                }
+            }
+
+            const appString = homePagePPs.appString;
+            const context = {};
+            
+            const { SEARCH_BY } = Search;
+
             const s = Store.createHomepageStore({
-                itemsReducer: { items: items.Records },
-                categoryReducer: { categories: categories, numberOfCategories: categoryCount },
-                userReducer: { user: user, userPreferredLocationId: userPreferredLocationId },
+                categoryReducer: { categories: categories },
                 panelsReducer: { panels: panels.Records },
-                settingsReducer: { layoutItemCount: layoutItemCount, isBespoke: isBespoke, collapsableCategories: collapsableCategories }
+                userReducer: { user: user },
+                searchReducer: { searchCategory: SEARCH_BY.DEFAULT_CATEGORY, searchResults: '', hideSearchBar: true }
+
             });
 
             const seoTitle = marketplaceInfo.SeoTitle ? marketplaceInfo.SeoTitle : marketplaceInfo.Name;
 
             const reduxState = s.getState();
-            const homepageApp = reactDom.renderToString(<Homepage context={context} userPreferredLocationId={userPreferredLocationId} collapsableCategories={collapsableCategories} layoutItemCount={layoutItemCount} items={items.Records} categories={categories} user={user} panels={panels.Records} numberOfCategories={categoryCount} />);
-            res.send(template('page-home', seoTitle, homepageApp, appString, reduxState));
-        });
-    });
+            const homepageApp = reactDom.renderToString(
+                <HomepageComponent
+                    context={context}
+                    categories={categories}
+                    panels={panels.Records}
+                    user={user}
+                    searchCategory={SEARCH_BY.DEFAULT_CATEGORY}
+                    hideSearchBar
+                />);
+            res.send(template(homePagePPs.bodyClass, seoTitle, homepageApp, appString, reduxState));
+        })
+        .catch(e => console.log('Home route promiseMarketplaceInfo, promiseCategories, promisePanels,  error:', e));
 });
 
-homePageRouter.get('/admin', function (req, res) {
+homePageRouter.get('/admin', function(req, res) {
     res.redirect(process.env.PROTOCOL + '://' + process.env.BASE_URL + '/admin');
-    return;
 });
 
-homePageRouter.all('/admin/*', function (req, res) {
+homePageRouter.all('/admin/*', function(req, res) {
     res.redirect(process.env.PROTOCOL + '://' + process.env.BASE_URL + '/admin');
-    return;
 });
 
-homePageRouter.get('/account/signintodomain', passport.authenticate('user_impersonation_code', { failureRedirect: '/accounts/buyer/sign-in?error=invalid-login' }), function (req, res) {
-    if (req.token) {
-        setApiToken(res, req.token.access_token, req.token.expires_in);
-    }
-
+homePageRouter.get('/account/signintodomain', passport.authenticate('user_impersonation_code', { failureRedirect: getAppPrefix() + '/accounts/buyer/sign-in?error=invalid-login' }), function(req, res) {
     if (req.user) {
-        let parse = req.query;
-        let returnUrl = "/";
-        if (typeof parse.returnUrl !== "string") {
-            parse.returnUrl.forEach(function (ru) {
+        const parse = req.query;
+        let returnUrl = getAppPrefix() + '/';
+        if (typeof parse.returnUrl !== 'string') {
+            parse.returnUrl.forEach(function(ru) {
                 if (ru.length > 1) {
                     returnUrl = ru;
                 }
@@ -145,11 +147,11 @@ homePageRouter.get('/account/signintodomain', passport.authenticate('user_impers
     }
 });
 
-homePageRouter.get('/user/item/detail/:slug/:id', function (req, res) {
-    res.redirect('/items/' + req.params.slug + '/' + req.params.id);
+homePageRouter.get('/user/item/detail/:slug/:id', function(req, res) {
+    res.redirect(getAppPrefix() + '/items/' + req.params.slug + '/' + req.params.id);
 });
 
-homePageRouter.post('/events', function (req, res) {
+homePageRouter.post('/events', function(req, res) {
     res.status(200).send('Not found');
 });
 

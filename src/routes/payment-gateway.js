@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 const React = require('react');
 const reactDom = require('react-dom/server');
 const express = require('express');
@@ -9,6 +11,8 @@ const authenticated = require('../scripts/shared/authenticated');
 const PaymentGatewayCancelComponent = require('../views/payment-gateway/cancel').PaymentGatewayCancelComponent;
 
 paymentGatewayRouter.get('/cancel', authenticated, (req, res) => {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
 
     const reduxState = store.createEmptyStore({

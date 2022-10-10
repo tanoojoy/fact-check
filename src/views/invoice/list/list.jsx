@@ -34,11 +34,10 @@ class ListComponent extends BaseComponent {
                             invoiceList.map((inv, index) => {
                                 return (
                                     <ListItemComponent key={`invoice-${index}`}
-                                        invoice={inv}
+                                        invoice={inv} 
                                         isUserMerchant={isUserMerchant}
                                         statuses={this.props.statuses}
                                         updateInvoiceStatus={this.props.updateInvoiceStatus}
-                                        pagePermissions={this.props.pagePermissions}
                                     />
                                 )
                             })

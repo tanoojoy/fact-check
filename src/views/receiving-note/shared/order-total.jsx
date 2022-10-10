@@ -13,7 +13,7 @@ class OrderTotalComponent extends BaseComponent {
         let subTotal = 0;
         if (this.props.orderDetail && this.props.orderDetail.CartItemDetails && this.props.orderDetail.CartItemDetails.length > 0) {
             const { CartItemDetails } = this.props.orderDetail;
-            CartItemDetails.map(cart => subTotal += parseFloat(cart.ItemDetail.Price * cart.Quantity) - parseFloat(cart.DiscountAmountNotRoundOff || 0));
+            CartItemDetails.map(cart => subTotal += parseFloat(cart.ItemDetail.Price * cart.Quantity) - parseFloat(cart.DiscountAmount || 0));
         }   
         return subTotal;
     }
@@ -82,9 +82,7 @@ class OrderTotalComponent extends BaseComponent {
 
         if (CartItemDetails && CartItemDetails[0].AcceptedOffer) {
             link = "/quotation/detail?id=" + CartItemDetails[0].AcceptedOffer.ID;
-          //  quoteNo = CartItemDetails[0].AcceptedOffer.QuoteNo;
-            //ARC10131
-            quoteNo = CartItemDetails[0].AcceptedOffer.CosmeticNo != null && CartItemDetails[0].AcceptedOffer.CosmeticNo != "" ? CartItemDetails[0].AcceptedOffer.CosmeticNo : CartItemDetails[0].AcceptedOffer.QuoteNo;
+            quoteNo = CartItemDetails[0].AcceptedOffer.QuoteNo;
         }
 
         return (<a href={link}><span className="highlight-text">{quoteNo}</span></a>);
@@ -97,9 +95,7 @@ class OrderTotalComponent extends BaseComponent {
 
         if (RequisitionDetail) {
             link = "/requisition/detail?id=" + RequisitionDetail.ID;
-         //   requisitionOrderNo = RequisitionDetail.RequisitionOrderNo;
-            //ARC10131
-            requisitionOrderNo = RequisitionDetail.CosmeticNo != null && RequisitionDetail.CosmeticNo != "" ? RequisitionDetail.CosmeticNo : RequisitionDetail.RequisitionOrderNo
+            requisitionOrderNo = RequisitionDetail.RequisitionOrderNo;
         }
 
         return (<a href={link}><span className="highlight-text">{requisitionOrderNo}</span></a>);
@@ -108,9 +104,8 @@ class OrderTotalComponent extends BaseComponent {
     renderPurchaseOrderInfo() {
         const { orderDetail } = this.props;
         let link = "/purchase/detail/orderid/" + orderDetail.ID;
-      //  let purchaseOrderNo = orderDetail.PurchaseOrderNo;
-        //ARC10131
-       let purchaseOrderNo = orderDetail.CosmeticNo != null && orderDetail.CosmeticNo != "" ? orderDetail.CosmeticNo : orderDetail.PurchaseOrderNo; 
+        let purchaseOrderNo = orderDetail.PurchaseOrderNo;
+
         return (<a href={link}><span className="highlight-text">{purchaseOrderNo}</span></a>);
     }
 
@@ -121,7 +116,7 @@ class OrderTotalComponent extends BaseComponent {
         if (ReceivingNotes) {
             ReceivingNotes.map((note, index) => {
                 if (!note.Void) {
-                    elements.push(<a href={`/receiving-note/detail?id=${note.ID}`} key={index}><span className="highlight-text inv">{note.CosmeticNo != null && note.CosmeticNo != "" ? note.CosmeticNo : note.ReceivingNoteNo}</span></a>);
+                    elements.push(<a href={`/receiving-note/detail?id=${note.ID}`} key={index}><span className="highlight-text inv">{note.ReceivingNoteNo}</span></a>);
                     elements.push(<span key={'comma-' + index}> , </span>);
                 }
             });
@@ -143,22 +138,13 @@ class OrderTotalComponent extends BaseComponent {
         let elements = [];
 
         if (PaymentDetails) {
-            //let invoiceNos = PaymentDetails.map((payment) => payment.InvoiceNo);
-            //invoiceNos = [...new Set(invoiceNos)];
+            let invoiceNos = PaymentDetails.map((payment) => payment.InvoiceNo);
+            invoiceNos = [...new Set(invoiceNos)];
 
-            //invoiceNos.map((invoiceNo, index) => {
-            //    elements.push(<a href={`/invoice/detail/${invoiceNo}`} key={index}><span className="highlight-text">{invoiceNo}</span></a>);
-            //    elements.push(<span key={'comma-' + index}> , </span>);
-            //});
-
-            //ARC10131
-            let uniquePayments = this.getUnique(PaymentDetails, 'InvoiceNo');
-            if (uniquePayments) {
-                uniquePayments.forEach(function (payment, index) {
-                    elements.push(<a href={`/invoice/detail/${payment.InvoiceNo}`} key={index}><span className="highlight-text">{payment.CosmeticNo != null && payment.CosmeticNo != "" ? payment.CosmeticNo : payment.InvoiceNo}</span></a>);
-                    elements.push(<span key={'comma-' + index}> , </span>);
-                });
-            }
+            invoiceNos.map((invoiceNo, index) => {
+                elements.push(<a href={`/invoice/detail/${invoiceNo}`} key={index}><span className="highlight-text">{invoiceNo}</span></a>);
+                elements.push(<span key={'comma-' + index}> , </span>);
+            });
 
             elements.pop();
 

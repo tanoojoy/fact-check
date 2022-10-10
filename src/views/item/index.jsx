@@ -1,129 +1,151 @@
 ﻿'use strict';
-var React = require('react');
-var ReactRedux = require('react-redux');
+import React from 'react';
+import { connect } from 'react-redux';
 
-var HeaderLayoutComponent = require('../../views/layouts/header').HeaderLayoutComponent;
-var FooterLayout = require('../../views/layouts/footer').FooterLayoutComponent;
-var BaseComponent = require('../../views/shared/base');
+import { Search } from '../../consts/search-categories';
+import { productCompanyTypes } from '../../consts/company-products';
+import { getSearchResultsPageRedirectUrl } from '../../utils';
+import UpgradeToPremiumTopBanner from '../common/upgrade-to-premium-top-banner';
+import { HeaderLayoutComponent } from '../../views/layouts/header/index';
+import { FooterLayoutComponent } from '../../views/layouts/footer';
+import BreadcrumbsComponent from '../common/breadcrumbs';
+import ItemDetailContainer from './item-detail-container';
+import VerificationStatusModal from '../company/add-edit-product/modals/verification-status';
 
-var { ItemDetailMainComponent, mapStateToProps, mapDispatchToProps } = require('../features/pricing_type/' + process.env.PRICING_TYPE + '/item-details/index');
+import BaseComponent from '../../views/shared/base';
+
+const { SEARCH_BY } = Search;
+
+import { 
+    getUpgradeToPremiumPaymentLink,
+    sendInviteColleaguesEmail,
+    shareProductProfile
+} from '../../redux/userActions';
+
+import { 
+    gotoSearchResultsPage,
+    setSearchCategory,
+    setSearchString,
+} from '../../redux/searchActions';
 
 class ItemDetailComponent extends BaseComponent {
-    getUserMedia(user) {
-        if (user.Media && user.Media.length > 0) return user.Media[user.Media.length - 1].MediaUrl;
-        return '';
+    constructor(props) {
+        super(props);
+        this.state = {
+            showVerificationModal: false,
+        }
+    }
+    getMerchantProfileUrl() {
+        if (this.props.itemDetails && this.props.itemDetails.MerchantDetail) {
+            return `/company/${this.props.itemDetails.MerchantDetail.ID}`;
+        }
+        return null;
     }
 
-    addReplyClick(feedbackId) {
-        this.itemDetail.props.addReplyFeedBack(feedbackId);
-        $('#replyModal').modal('hide');
-    }
-
-    renderPopUp() {
-        let self = this;
-        if (this.props.feedback) {
-            let review = {};
-            this.props.feedback.ItemReviews.map(function (data) {
-                if (data.isSelected && data.isSelected === true) {
-                    review = data;
-                }
-            });
-            if (JSON.stringify(review) !== '{}') {
-                return (
-                    <div id="replyModal" className="modal fade" role="dialog">
-                        <div className="modal-dialog">
-                            {/* Modal content*/}
-                            <div className="modal-content">
-                                <div className="modal-header">
-                                    <button type="button" className="close" data-dismiss="modal">×</button>
-                                    <h4 className="modal-title">REPLY TO: </h4>
-                                </div>
-                                <div className="modal-body">
-                                    <div className="review-box">
-                                        <div className="user-avtar"> <a href="#"><img src={self.getUserMedia(review.User)} alt="" /></a> </div>
-                                        <div className="review-detail">
-                                            <div className="review-head">
-                                                <h6><b>{`${review.User.FirstName} ${review.User.LastName}`}</b></h6>
-                                                <div className="item-rating text-right pull-right">
-                                                    <span className="stars">
-                                                        <span style={{ width: `${review.ItemRating * 20}%` }} />
-                                                    </span>
-                                                </div>
-                                                {/* <div class="item-rating text-right"><img align="absmiddle" src="images/star_positive.svg"> <img align="absmiddle" src="images/star_positive.svg"> <img align="absmiddle" src="images/star_positive.svg"> <img align="absmiddle" src="images/star_positive.svg"> <img align="absmiddle" src="images/star_negative.svg"></div> */}
-                                                <p>{self.formatDateTime(review.CreatedDateTime, 'DD/MM/YYYY, hh:mm')}</p>
-                                            </div>
-                                            <div className="review-body">{review.Message}</div>
-                                        </div>
-                                    </div>
-                                    <div className="comment-area">
-                                        <textarea rows={8} className="form-control" onChange={(e) => this.itemDetail.props.updateMessage(e.target.value)} placeholder="Leave a comment..." defaultValue={this.itemDetail.props.message} />
-                                    </div>
-                                </div>
-                                <div className="modal-footer text-center">
-                                    <button type="button" onClick={(e) => this.addReplyClick(review.FeedbackID)} className="btn btn-default">Reply</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )
-            } else {
-                return (
-                    <div id="replyModal" className="modal fade" role="dialog">
-                        <div className="modal-dialog">
-                            {/* Modal content*/}
-                            <div className="modal-content">
-                                <div className="modal-header">
-                                    <button type="button" className="close" data-dismiss="modal">×</button>
-                                    <h4 className="modal-title">REPLY TO: </h4>
-                                </div>
-                                <div className="modal-body">
-                                    <div className="review-box">
-                                        <div className="user-avtar"> <a href="#"><img src="images/place_user.jpg" alt="images" /></a> </div>
-                                        <div className="review-detail">
-                                            <div className="review-head">
-                                                <h6><b>Buyer1</b></h6>
-                                                <div className="item-rating text-right pull-right"><span className="stars"><span style={{ width: '99px' }} /></span></div>
-                                                {/* <div class="item-rating text-right"><img align="absmiddle" src="images/star_positive.svg"> <img align="absmiddle" src="images/star_positive.svg"> <img align="absmiddle" src="images/star_positive.svg"> <img align="absmiddle" src="images/star_positive.svg"> <img align="absmiddle" src="images/star_negative.svg"></div> */}
-                                                <p>DD/MM/YYYY, HH:MM</p>
-                                            </div>
-                                            <div className="review-body">This seller is great, really recommended to buy from him, 10/10 will buy again.</div>
-                                        </div>
-                                    </div>
-                                    <div className="comment-area">
-                                        <textarea rows={8} className="form-control" placeholder="Leave a comment..." defaultValue={""} />
-                                    </div>
-                                </div>
-                                <div className="modal-footer text-center">
-                                    <button type="button" className="btn btn-default">Reply</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )
+    getBreadCrumbValues() {
+        if (this.props.itemDetails && this.props.itemDetails.ID) {
+            const { Name, MerchantDetail } = this.props.itemDetails;
+            const { PRODUCT_COMPANY_MANUFACTURER, PRODUCT_COMPANY_MARKETER } = productCompanyTypes;
+            
+            let searchBy = SEARCH_BY.PRODUCTS;
+            if ([PRODUCT_COMPANY_MANUFACTURER, PRODUCT_COMPANY_MARKETER].some(str => str === this.props.itemViewType)) {
+                searchBy = SEARCH_BY.DOSE_FORMS;
             }
-        } 
+
+            return [
+                {
+                    name: 'Search Results',
+                    redirectUrl: getSearchResultsPageRedirectUrl(Name, searchBy)
+                },
+                {
+                    name: MerchantDetail?.DisplayName || '',
+                    redirectUrl: this.getMerchantProfileUrl()
+                },
+                {
+                    name: Name
+                }
+            ];
+        }
+    }
+
+    setVerificationModalVisible(value) {
+        this.setState({ showVerificationModal: value }, () => {
+            if (value) {
+                $('#root').parent().addClass('modal-open');
+            } else {
+                $('#root').parent().removeClass('modal-open');
+            }
+        });
     }
 
     render() {
+        const { showVerificationModal } = this.state;
         return (
-            <React.Fragment>
+            <>
+                <UpgradeToPremiumTopBanner 
+                    user={this.props.user}
+                    getUpgradeToPremiumPaymentLink={this.props.getUpgradeToPremiumPaymentLink}
+                />
                 <div className="header mod" id="header-section">
-                    <HeaderLayoutComponent categories={this.props.categories} user={this.props.user} ControlFlags={this.props.controlFlags}/>
+                    <HeaderLayoutComponent 
+                        user={this.props.user}
+                        sendInviteColleaguesEmail={this.props.sendInviteColleaguesEmail}
+                    />
                 </div>
                 <div className="main">
-                    <ItemDetailMainComponent {...this.props}
-                        ref={(ref) => this.itemDetail = ref} />
+                    <BreadcrumbsComponent
+                        trails={this.getBreadCrumbValues()}
+                    />
+                    <ItemDetailContainer 
+                        itemDetails={this.props.itemDetails}
+                        user={this.props.user}
+                        getUpgradeToPremiumPaymentLink={this.props.getUpgradeToPremiumPaymentLink}
+                        itemViewType={this.props.itemViewType}
+                        handleVerifyClick={() => this.setVerificationModalVisible(true)}
+                        shareProductProfile={this.props.shareProductProfile}
+                        searchCategory={this.props.searchCategory}
+                        searchResults={this.props.searchResults}
+                        searchString={this.props.searchString}
+                        setSearchCategory={this.props.setSearchCategory}
+                        gotoSearchResultsPage={this.props.gotoSearchResultsPage}
+                        setSearchString={this.props.setSearchString}
+                    />
                 </div>
-                <div className="footer" id="footer-section">
-                    <FooterLayout panels={this.props.panels} />
+                <div className="footer grey" id="footer-section">
+                    <FooterLayoutComponent user={this.props.user} />
                 </div>
-                {this.renderPopUp()}
-            </React.Fragment>
+                <VerificationStatusModal 
+                    showModal={showVerificationModal}
+                    setShowModal={(value) => this.setVerificationModalVisible(value)}
+                />
+            </>
         );
     }
 }
 
-const ItemDetailsHome = ReactRedux.connect(
+const mapStateToProps = (state, ownProps) => {
+    return {
+        user: state.userReducer.user,
+        itemDetails: state.itemsReducer.itemDetail,
+        itemViewType: state.itemsReducer.itemViewType,
+        searchResults: state.searchReducer.searchResults,
+        searchString: state.searchReducer.searchString,
+        searchCategory: state.searchReducer.searchCategory,
+    };
+};
+
+const mapDispatchToProps = dispatch => ({
+    getUpgradeToPremiumPaymentLink: (callback) => dispatch(getUpgradeToPremiumPaymentLink(callback)),
+    sendInviteColleaguesEmail: (data, callback) => dispatch(sendInviteColleaguesEmail(data, callback)),
+    shareProductProfile: (data, callback) => dispatch(shareProductProfile(data, callback)),
+    setSearchString: (searchString, searchBy, productType, stringCountToTriggerSearch = 3) => dispatch(setSearchString(searchString, searchBy, productType, stringCountToTriggerSearch)),
+    setSearchCategory: (category) => dispatch(setSearchCategory(category)),
+    gotoSearchResultsPage: (searchString, searchBy, ids) => dispatch(gotoSearchResultsPage(searchString, searchBy, ids)),
+
+});
+
+
+const ItemDetailsHome = connect(
     mapStateToProps,
     mapDispatchToProps
 )(ItemDetailComponent)

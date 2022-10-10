@@ -1,4 +1,6 @@
 ﻿'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 var express = require('express');
 var storeFrontRouter = express.Router();
 var StoreFrontPage = require('../views/storefront/main').StoreFrontPageComponent;
@@ -8,9 +10,10 @@ var template = require('../views/layouts/template');
 var client = require('../../sdk/client');
 var Store = require('../redux/store');
 var authenticated = require('../scripts/shared/authenticated');
-var moment = require('moment');
 
 storeFrontRouter.get('/:sellerid', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     let currentUser = req.user;
     let keyword = req.query.keyword || '';
     let pageNo = req.query.pageNo || '1';
@@ -19,9 +22,7 @@ storeFrontRouter.get('/:sellerid', authenticated, function (req, res) {
         const options = {
             token: null,
             userId: req.params.sellerid,
-            includes: 'MerchantTotalSuccesfulOrders',
-            includeUserCustomFields: true,
-            excludeToken: true
+            includes: ''
         };
 
         client.Users.getUserDetails(options, function (err, details) {
@@ -38,8 +39,7 @@ storeFrontRouter.get('/:sellerid', authenticated, function (req, res) {
             merchantId: req.params.sellerid,
             keyword: '',
             pageNo: 1,
-            pageSize: 15,
-            getFirstItemInOrder: true
+            pageSize: 15
         };
 
         client.Items.getMerchantFeedback(options, function (err, details) {
@@ -52,8 +52,7 @@ storeFrontRouter.get('/:sellerid', authenticated, function (req, res) {
             merchantId: req.params.sellerid,
             keyword: '',
             pageNo: 1,
-            pageSize: 100,
-            getFirstItemInOrder: true
+            pageSize: 1000000
         };
 
         client.Items.getMerchantFeedback(options, function (err, details) {
@@ -71,57 +70,45 @@ storeFrontRouter.get('/:sellerid', authenticated, function (req, res) {
         });
     });
 
-    const promiseCustomFieldDefinitions = new Promise((resolve, reject) => {
-        client.CustomFields.getDefinitions("Users", function (err, details) {
-            resolve(details);
-        });
-    });
-
-    var merchantTotalVisitsPromise = new Promise((resolve, reject) => {
-        client.Transactions.getReports(req.params.sellerid, 'headerTotalVisitsStoreFront', moment(new Date()).add(-2, 'days').unix(), moment(new Date()).add(-1, 'days').unix(), 'day', 10, 1, function (err, reports) {
-            resolve(reports);
-        });
-    });
-
-    const promiseAnalyticsApiAccess = new Promise((resolve, reject) => {
-        client.Users.getAnalyticsApiAccess({ merchantId: req.params.sellerid }, function (err, reports) {
-            resolve(reports);
-        });
-    });
-
-
-    Promise.all([promiseMerchantDetail, promiseMerchantFeedback, promiseAllMerchantFeedback, promiseMarketplace, promiseCustomFieldDefinitions, merchantTotalVisitsPromise, promiseAnalyticsApiAccess]).then((responses) => {
+    Promise.all([promiseMerchantDetail, promiseMerchantFeedback, promiseAllMerchantFeedback, promiseMarketplace]).then((responses) => {
         const appString = 'merchant-storefront';
 
         let merchantUser = responses[0];
         let merchantFeedback = responses[1];
         let allMerchantFeedback = responses[2];
         let marketplaceInfo = responses[3];
-        let customFieldDefinitions = responses[4];
-        let merchantTotalVisits = responses[5];
-        let analyticsApiAccess = responses[6];
-
         let ReviewAndRating = marketplaceInfo.ControlFlags.ReviewAndRating;
 
         let sellerCountry = "";
         if (merchantUser) {
             if (merchantUser.CustomFields) {
-                const sellerLocation = merchantUser.CustomFields.find(p => p.Name === 'user_seller_location');
-                if (sellerLocation && sellerLocation.Values) {
-                    sellerCountry = sellerLocation.Values[0];
-                }
-                else {
-                    //merchantUser.CustomFields.forEach(function (mu) {
-                    //    sellerCountry = mu.Values[0];
-                    //});
-                    //Fix for 10539
-
-                }
+                merchantUser.CustomFields.forEach(function (mu) {
+                    sellerCountry = mu.Values[0];
+                })
             }
         }
 
-        const locationVariantGroupId = req.LocationVariantGroupId;
-        const userPreferredLocationId = req.UserPreferredLocationId;
+        let locationVariantGroupId = null;
+        let userPreferredLocationId = null;
+        if (process.env.PRICING_TYPE == 'country_level') {
+            if (marketplaceInfo.CustomFields) {
+                const locationCustomField = marketplaceInfo.CustomFields.find(c => c.Code.startsWith('locationid'));
+
+                if (locationCustomField && locationCustomField.Values.length > 0) {
+                    locationVariantGroupId = locationCustomField.Values[0];
+                }
+            }
+
+            if (currentUser) {
+                if (currentUser.CustomFields && currentUser.CustomFields.length > 0) {
+                    const customField = currentUser.CustomFields.find(c => c.Code.startsWith('user_preferred_location'));
+
+                    if (customField) {
+                        userPreferredLocationId = customField.Values[0];
+                    }
+                }
+            }
+        }
 
         let promiseItems = new Promise((resolve, reject) => {
             const options = {
@@ -147,15 +134,14 @@ storeFrontRouter.get('/:sellerid', authenticated, function (req, res) {
         Promise.all([promiseItems]).then((responses) => {
             let items = responses[0];
             const s = Store.createStoreFrontStore({
-                itemsReducer: { items: items, keyword: keyword, customFieldDefinitions: customFieldDefinitions, merchantTotalVisits },
+                itemsReducer: { items: items, keyword: keyword },
                 userReducer: { user: currentUser, userPreferredLocationId: userPreferredLocationId },
                 merchantReducer: {
                     user: merchantUser,
                     sellerCountry: sellerCountry,
                     merchantFeedback: merchantFeedback,
                     ReviewAndRating: ReviewAndRating,
-                    allMerchantFeedback: allMerchantFeedback,
-                    analyticsApiAccess: analyticsApiAccess
+                    allMerchantFeedback: allMerchantFeedback
                 },
 
             });
@@ -167,11 +153,7 @@ storeFrontRouter.get('/:sellerid', authenticated, function (req, res) {
                 userPreferredLocationId={userPreferredLocationId}
                 merchantFeedback={merchantFeedback}
                 allMerchantFeedback={allMerchantFeedback}
-                customFieldDefinitions={customFieldDefinitions}
-                merchantTotalVisits={merchantTotalVisits}
-                categories={[]}
-                analyticsApiAccess={analyticsApiAccess}
-            />);
+                categories={[]} />);
 
             let seoTitle = 'StoreFront Page';
             if (req.SeoTitle) {
@@ -182,16 +164,17 @@ storeFrontRouter.get('/:sellerid', authenticated, function (req, res) {
         });
 
     })
-        .catch(function (err) {
-            if (err == "USER_DETAILS_NOT_FOUND") {
-                if (req.query.redirectUrl && req.query.redirectUrl.length > 0) {
-                    res.redirect(req.query.redirectUrl + '?&error=merchant-not-found');
-                }
-                res.redirect("/?error=merchant-not-found");
+    .catch(function (err) {
+        if (err == "USER_DETAILS_NOT_FOUND") {
+            if (req.query.redirectUrl && req.query.redirectUrl.length > 0) {
+                res.redirect(req.query.redirectUrl + '?&error=merchant-not-found');
             }
-        })
+            res.redirect("/?error=merchant-not-found");
+        }
+    })
 
 });
+
 
 storeFrontRouter.post('/getMerchantFeedback', function (req, res) {
     let currentUser = req.user;
@@ -219,39 +202,47 @@ storeFrontRouter.post('/getMerchantFeedback', function (req, res) {
     });
 });
 
-storeFrontRouter.get('/:sellerid/storefrontsearch', authenticated, function (req, res) {
+
+storeFrontRouter.get('/:sellerid/storefrontsearch', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
+    let currentUser = req.user;
     var keyword = req.query['keyword'];
     var pageNo = req.query['pageNo'];
 
-    const locationVariantGroupId = req.LocationVariantGroupId;
-    const userPreferredLocationId = req.UserPreferredLocationId;
-
-    let promiseItems = new Promise((resolve, reject) => {
-        if (typeof pageNo === 'undefined') {
-            pageNo = 1;
-        }
-        const options = {
-            sellerId: req.params.sellerid,
-            pageSize: 20,
-            pageNumber: pageNo,
-            tags: [],
-            withChildItems: true,
-            sort: 'created_desc',
-            keyword: keyword,
-            filterAvailable: true,
-            filterVisible: true,
-            locationVariantGroupId: locationVariantGroupId,
-            userPreferredLocationId: userPreferredLocationId
-        };
-        client.Items.getMerchantItems(options, function (err, details) {
-            resolve(details);
+    var promiseCurrentUserAddresses = new Promise((resolve, reject) => {
+        if (!currentUser || process.env.PRICING_TYPE === 'variants_level') resolve(null);
+        client.Addresses.getUserAddresses(currentUser.ID, function (err, addresses) {
+            resolve(addresses);
+        });
+    });
+    Promise.all([promiseCurrentUserAddresses]).then((responses) => {
+        let currentUserAddress = responses[0];
+        let promiseItems = new Promise((resolve, reject) => {
+            if (typeof pageNo === 'undefined') {
+                pageNo = 1;
+            }
+            const options = {
+                sellerId: req.params.sellerid,
+                pageSize: 20,
+                pageNumber: pageNo,
+                tags: currentUserAddress ? currentUserAddress.Records[0].CountryCode : null,
+                withChildItems: true,
+                sort: 'created_desc',
+                keyword: keyword,
+                filterAvailable: true,
+                filterVisible: true
+            };
+            client.Items.getMerchantItems(options, function (err, details) {
+                resolve(details);
+            });
+        });
+        Promise.all([promiseItems]).then((responses) => {
+            let items = responses[0];
+            res.send(items);
         });
     });
 
-    Promise.all([promiseItems]).then((responses) => {
-        let items = responses[0];
-        res.send(items);
-    });
 });
 
 module.exports = storeFrontRouter;

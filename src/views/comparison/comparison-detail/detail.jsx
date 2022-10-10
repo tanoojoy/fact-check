@@ -1,8 +1,6 @@
 'use strict';
 var React = require('react');
 var Entities = require('html-entities').XmlEntities;
-const isServiceLevel = process.env.PRICING_TYPE === 'service_level';
-const PermissionTooltip = require('../../common/permission-tooltip');
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -216,50 +214,17 @@ class ComparisonTableComponent extends React.Component {
         if (item && item.Offer) {
             total = item.Offer.Total;
         }
-
-        let duration = 0;
-        if (isServiceLevel) {            
-            if (item.CartItem && item.CartItem.BookingSlot && item.CartItem.ItemDetail) {
-                let addOnPrice = 0;
-                if (item.CartItem.AddOns && item.CartItem.AddOns.length > 0) {
-                    item.CartItem.AddOns.forEach(function (addOn) {
-                        addOnPrice += addOn.PriceChange;
-                    });
-                }
-                
-                total = item.CartItem.SubTotal + addOnPrice;
-            }
-        }
-
         //remove discount from Comparison Table
         //1255 - When Item have a Bulk Pricing , Price of item in the Comparison table should be the discounted Price
-        total = isServiceLevel ? this.props.formatMoney(item.CartItem.CurrencyCode, total) : this.props.formatMoney(item.CartItem.CurrencyCode, total - discount);
-        let mediaUrl = item.CartItem.ItemDetail.Media ? item.CartItem.ItemDetail.Media[0].MediaUrl : '';
-        let qty = '';
-        if (isServiceLevel) {
-            if (!item.CartItem.ItemDetail.DurationUnit || item.CartItem.ItemDetail.PriceUnit === item.CartItem.ItemDetail.DurationUnit) {
-                qty = `No of ${item.CartItem.BookingSlot.DurationUnit}: ${item.CartItem.BookingSlot.Duration}`;
-            }
-            else if (item.CartItem.ItemDetail.PriceUnit === item.CartItem.ItemDetail.BookingUnit) {
-                qty = `No of ${item.CartItem.ItemDetail.BookingUnit}: ${item.CartItem.Quantity}`;
-            }
-            else {
-                qty = `No of ${item.CartItem.ItemDetail.PriceUnit}: ${item.CartItem.Quantity}`;
-            }
-        }
-        else {
-            qty = `Qty: ${this.formatNumber(item.CartItem.Quantity)} `;
-        }
-        //let qty = isServiceLevel ? `No of ${item.CartItem.BookingSlot.DurationUnit}: ${item.CartItem.BookingSlot.Duration}` : 
+        total = this.props.formatMoney(item.CartItem.CurrencyCode, total - discount);
         return (
-           
             <div>
                 <span className="cmparpg-title  text-center">{item.CartItem.ItemDetail.MerchantDetail.DisplayName}</span>
                 <span />
                 <div className="cmparpg-list-tr tr1 text-center" style={{ "height": "278px" }}>
                     <div className="cmparpg-list-td text-center">
                         <div className="cmparpg-prdct-img">
-                            <img src={mediaUrl} />
+                            <img src={item.CartItem.ItemDetail.Media[0].MediaUrl} />
                         </div>
                         <h4 className="cmparpg-prdct-title">{item.CartItem.ItemDetail.Name}</h4>
                         <div className="divider-sort" />
@@ -267,22 +232,17 @@ class ComparisonTableComponent extends React.Component {
                             <span />
                             <span>{total}</span>
                         </div>
-                        <div className="cmparg-qty">{qty} </div>
-                        {this.props.permissions.isAuthorizedToDelete ?
-                            (<a className="btn-remove-prdct openModalRemove top" tabIndex="0">
-                                <i className="fa fa-trash" onClick={() => this.showDeleteModal(item.ID)} />
-                            </a>) :
-                            (<a href="javascript:void(0);" class="btn-remove-prdct openModalRemove top" tabindex="0" data-toggle="tooltip" data-placement="top" title="" data-original-title="You need permission to perform this action">
-                                <i class="fa fa-trash"></i>
-                            </a>)
-                        }
+                        <div className="cmparg-qty">Qty: {this.formatNumber(item.CartItem.Quantity)} </div>
+                        <a className="btn-remove-prdct openModalRemove top" tabIndex="0">
+                            <i className="fa fa-trash" onClick={() => this.showDeleteModal(item.ID)} />
+                        </a>
                     </div>
                 </div>
             </div>
         );
     }
 
-    renderComparisonFieldValues(fields, currencyCode, originalPrice, durationUnit) {
+    renderComparisonFieldValues(fields, currencyCode, originalPrice) {
         let self = this;
         let comparableCustomFields = self.props.comparableCustomFields;
         const entities = new Entities();
@@ -291,7 +251,7 @@ class ComparisonTableComponent extends React.Component {
 
         el.push(
             <div key="OriginalPrice" className="cmparpg-list-tr tr2 text-center">
-                <div className="cmparpg-list-td">{self.props.formatMoney(currencyCode, originalPrice)}{isServiceLevel && `/${durationUnit}` }</div>
+                <div className="cmparpg-list-td">{self.props.formatMoney(currencyCode, originalPrice)}</div>
             </div>
         );
 
@@ -353,15 +313,10 @@ class ComparisonTableComponent extends React.Component {
         const comparison = self.props.comparison;
         var el = comparison.ComparisonDetails.map(function (item) {
             let originalPrice = item.CartItem.ItemDetail.Price;
-            let priceUnit = null;
-            if (item.CartItem.ItemDetail.DurationUnit) {
-                priceUnit = item.CartItem.ItemDetail.PriceUnit
-                //durationUnit = item.CartItem.ItemDetail.DurationUnit;
-            }
             return (
                 <div key={item.ID} className="col-sm-4 ">
                     {self.renderItem(item)}
-                    {self.renderComparisonFieldValues(item.ComparisonFields, item.CartItem.CurrencyCode, originalPrice, priceUnit)}
+                    {self.renderComparisonFieldValues(item.ComparisonFields, item.CartItem.CurrencyCode, originalPrice)}
                     <div className="cmparpg-list-tr cmparpg-list-btntr cmparpg-list-btnextr">
                         <div className="cmparpg-list-td cmparpg-list-tdname"></div>
                         <div className="cmparpg-list-td"></div>

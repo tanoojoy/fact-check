@@ -12,7 +12,7 @@ class BuyerLoginComponent extends BaseComponent {
             var $ = window.$;
             CommonModule.changeFavicon(self.props.favIconData);
         }
-      
+
         if (this.props.error) {
             this.showMessage(EnumCoreModule.GetToastStr().Error.INVALID_LOGIN_CREDENTIALS);
         }
@@ -206,7 +206,7 @@ class BuyerLoginComponent extends BaseComponent {
                 }
             }
         }
-    } 
+    }
 
     render() {
         const self = this;
@@ -223,7 +223,7 @@ class BuyerLoginComponent extends BaseComponent {
                     <div className="login-box">
                         <div className="lb-head full-width head-buyer">
                             <a href={hrefLink}>
-                                <img src="/assets/images/back.svg"></img>
+                                <img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"}></img>
                             </a>
                             <span>Login as a Buyer</span>
                         </div>

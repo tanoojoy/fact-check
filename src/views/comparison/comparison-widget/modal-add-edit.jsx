@@ -4,8 +4,6 @@ if (typeof window !== 'undefined') {
     var $ = window.$;
 }
 
-const PermissionTooltip = require('../../common/permission-tooltip');
-
 class ModalAddEditComponent extends React.Component {
     componentDidUpdate() {
         if (typeof window !== 'undefined') {
@@ -18,33 +16,23 @@ class ModalAddEditComponent extends React.Component {
     }
 
     onSaveClick() {
-        const permissionCode = typeof this.props.comparisonToUpdate.ID === 'undefined' ? 'add-consumer-comparison-widget-api' : 'edit-consumer-comparison-widget-api';
+        let input = $('input[name="listname"]');
+        let name = input.val().trim();
 
-        this.props.validatePermissionToPerformAction(permissionCode, () => {
-            let input = $('input[name="listname"]');
-            let name = input.val().trim();
-
-            if (name === '') {
-                input.addClass('error-con');
+        if (name === '') {
+            input.addClass('error-con');
+        } else {
+            if($.isEmptyObject(this.props.comparisonToUpdate)) {
+                this.props.createComparison(name);
             } else {
-                if ($.isEmptyObject(this.props.comparisonToUpdate)) {
-                    this.props.createComparison(name);
-                } else {
-                    this.props.editComparison(name);
-                }
-
-                $('.bs-example-modal-sm').modal('hide');
+                this.props.editComparison(name);
             }
-        });        
+
+            $('.bs-example-modal-sm').modal('hide');
+        }
     }
 
     render() {
-        let isAuthorized = this.props.isAuthorizedToAdd;
-
-        if (this.props.comparisonToUpdate && typeof this.props.comparisonToUpdate.ID !== 'undefined') {
-            isAuthorized = this.props.isAuthorizedToEdit;
-        }
-
         return (
             <div className="modal list-pop fade bs-example-modal-sm" tabIndex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
                 <div className="modal-dialog modal-sm" role="document">
@@ -62,9 +50,7 @@ class ModalAddEditComponent extends React.Component {
                                     <button className="close-list-btn " data-dismiss="modal" aria-label="Close" type="button">Cancel</button>
                                 </div>
                                 <div className="col-sm-6 col-xs-6">
-                                    <PermissionTooltip isAuthorized={isAuthorized} >
-                                        <button className={isAuthorized ? "list-save-btn" : "list-save-btn disabled"} data-dismiss="" type="button" onClick={(e) => this.onSaveClick()}>Save</button>
-                                    </PermissionTooltip>
+                                    <button className="list-save-btn " data-dismiss="" type="button" onClick={(e) => this.onSaveClick()}>Save</button>
                                 </div>
                             </div>
                         </div>

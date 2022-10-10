@@ -2,7 +2,7 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 const BaseComponent = require('../../shared/base');
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 const AddEditComponent = require('../../../views/features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/invoice/add-edit/index');
 const InvoiceActions = require('../../../redux/invoiceActions');
@@ -10,8 +10,6 @@ const InvoiceActions = require('../../../redux/invoiceActions');
 const OrderDiary = require('../../order-diary/index');
 const OrderDiaryWithBorder = require('../../order-diary/index-with-border');
 const OrderDiaryActions = require('../../../redux/orderDiaryActions');
-
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
 
 const sections = [
     { key: 'Comment', value: 'Comment' },
@@ -26,7 +24,20 @@ class AddEditInvoiceComponent extends BaseComponent {
         return (this.props.events || []).concat((this.props.otherEvents || []));
     }
 
+    isUserMerchant() {
+        const { user } = this.props;
+
+        if (user) {
+            if (user.Roles && (user.Roles.includes('Merchant') || user.Roles.includes('Submerchant'))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     render() {
+        const OrderDiaryComponent = this.isUserMerchant() ? OrderDiaryWithBorder : OrderDiary;
         return (
             <React.Fragment>
                 <div className="header mod" id="header-section">
@@ -43,11 +54,8 @@ class AddEditInvoiceComponent extends BaseComponent {
                                     invoiceDetail={this.props.invoiceDetail}
                                     renderFormatMoney={this.renderFormatMoney}
                                     createInvoice={this.props.createInvoice}
-                                    locationVariantGroupId={this.props.locationVariantGroupId}
-                                    pagePermissions={this.props.pagePermissions}
-                                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
                                 />
-                                <OrderDiaryWithBorder
+                                <OrderDiaryComponent
                                     sections={sections}
                                     eventCustomField={this.props.eventCustomField}
                                     events={this.getAllEvents()}
@@ -63,9 +71,6 @@ class AddEditInvoiceComponent extends BaseComponent {
                                     setUploadFile={this.props.setUploadFile}
                                     createEvent={this.props.createEvent}
                                     showDropdownPlaceholder={false}
-                                    isAuthorizedToAdd={this.props.pagePermissions.isAuthorizedToAdd}
-                                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                                    permissionCode={'add-merchant-create-invoice-api'}
                                 />
                             </div>
                         </div>
@@ -79,9 +84,7 @@ class AddEditInvoiceComponent extends BaseComponent {
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
-        pagePermissions: state.userReducer.pagePermissions,
         invoiceDetail: state.invoiceReducer.invoiceDetail,
-        locationVariantGroupId: state.marketplaceReducer.locationVariantGroupId,
         // Order Diary
         eventCustomField: state.orderDiaryReducer.eventCustomField,
         events: state.orderDiaryReducer.events,
@@ -96,10 +99,9 @@ function mapStateToProps(state, ownProps) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
         createInvoice: (options, callback) => dispatch(InvoiceActions.createInvoice(options, callback)),
         // Order Diary
-        fetchEvents: (page, selectedSection) => dispatch(OrderDiaryActions.fetchEvents(page, selectedSection)),
+        fetchEvents: (page) => dispatch(OrderDiaryActions.fetchEvents(page)),
         updateSelectedSection: (section) => dispatch(OrderDiaryActions.updateSelectedSection(section)),
         updateSelectedTabSection: (section) => dispatch(OrderDiaryActions.updateSelectedTabSection(section)),
         setUploadFile: (file, isValid) => dispatch(OrderDiaryActions.setUploadFile(file, isValid)),

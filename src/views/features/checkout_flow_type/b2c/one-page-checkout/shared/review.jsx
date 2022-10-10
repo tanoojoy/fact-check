@@ -68,11 +68,9 @@ class ReviewComponent extends BaseComponent {
     }
 
     renderAdditionalAttr(variants) {
-        const { locationVariantGroupId = null } = this.props;
-
         return (
             <div className="item-field">
-                {variants.filter(v => v.GroupID != locationVariantGroupId).map(v =>
+                {variants.map(v =>
                     <span key={v.ID} className="if-txt">
                         <span>{`${v.GroupName}: `}</span>
                         <span>{v.Name}</span>
@@ -216,13 +214,11 @@ class ReviewComponent extends BaseComponent {
     }
 
     renderDeliveryOptions(order, merchantShippingOptions, merchantPickupOptions) {
-        //delivery method is not showing in dropdown ARC-10148
-        var correctShippingMethod = merchantShippingOptions && merchantShippingOptions.shippingOptions && merchantShippingOptions.shippingOptions.filter(so => so.ShouldShow && so.ShouldShow === true);
         return (
             <React.Fragment>
                 <option data-surcharge="-" data-time="-" data-cost="0.00" value="">Select your shipping method.</option>
                 {
-                    correctShippingMethod && correctShippingMethod.map(del =>
+                    merchantShippingOptions && merchantShippingOptions.shippingOptions.map(del =>
                         <option
                             key={`${order.ID}|||${del.ShippingData.ID}`}
                             data-surcharge={`${del.CurrencyCode} ${Currency(del.CurrencyCode)}${parseFloat(del.ShippingCost || 0).toFixed(2)}`}
@@ -231,7 +227,7 @@ class ReviewComponent extends BaseComponent {
                             value={del.ShippingData.ID}
                         >
                             {del.ShippingData.Description}
-                            ({`${del.CurrencyCode} ${Currency(del.CurrencyCode)}${parseFloat(del.ShippingCost || 0).toFixed(2)}`})
+                            ({this.renderFormatMoney(del.CurrencyCode, del.ShippingCost)})
 						</option>
                     )
                 }
@@ -248,11 +244,11 @@ class ReviewComponent extends BaseComponent {
     }
 
     renderDeliveryReview(order) {
-        var merchantID = order.MerchantDetail.ID;
-        var { pickupOptions, shippingOptions, orderSelectedDelivery } = this.props;
-        var merchantShippingOptions = shippingOptions && shippingOptions.length > 0 ? shippingOptions.find(x => x.Merchant.ID === merchantID) : null;
-        var merchantPickupOptions = pickupOptions && pickupOptions.length > 0 ? pickupOptions.find(x => x.Merchant.ID === merchantID) : null;
-        if ((typeof merchantShippingOptions == 'undefined' || (merchantShippingOptions && merchantShippingOptions.shippingOptions && merchantShippingOptions.shippingOptions.length === 0))
+        const merchantID = order.MerchantDetail.ID;
+        const { pickupOptions, shippingOptions, orderSelectedDelivery } = this.props;
+        const merchantShippingOptions = shippingOptions.find(x => x.Merchant.ID === merchantID);
+        const merchantPickupOptions = pickupOptions.find(x => x.Merchant.ID === merchantID);
+        if ((typeof merchantShippingOptions == 'undefined' || (merchantShippingOptions && merchantShippingOptions.shippingOptions.length === 0))
             && (typeof merchantPickupOptions == 'undefined' || (merchantPickupOptions && merchantPickupOptions.pickupOptions.length === 0))
         ) return this.renderNoAvailableDelivery();
 

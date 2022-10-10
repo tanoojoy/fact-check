@@ -9,7 +9,7 @@ function Purchases() {
 
 util.inherits(Purchases, ArctickClient);
 
-Purchases.prototype.getHistory = function (options, callback) {
+Purchases.prototype.getHistory = function(options, callback) {
     const self = this;
     const userId = options.userId;
     const keyword = options.keyword;
@@ -19,14 +19,11 @@ Purchases.prototype.getHistory = function (options, callback) {
     const merchantIds = options.supplier;
     const startDate = options.startDate;
     const endDate = options.endDate;
-    const isPurchaseOrder = options.isPurchaseOrder ? options.isPurchaseOrder : false;
     const paymentDues = options.paymentDues && options.paymentDues.length > 0 ? options.paymentDues : undefined;
     const paymentGateways = options.paymentGateways && options.paymentGateways.length > 0 ? options.paymentGateways : undefined;
     const status = options.invoiceStatus && options.invoiceStatus.length > 0 ? options.invoiceStatus : undefined;
     const pStatus = options.pStatus;
-    const cartItemFulfilmentStatuses = options.cartItemFulfilmentStatuses;
     //ARC8930
-
     self._acquireAdminAccessToken(function() {
         self._makeRequest({
             method: 'GET',
@@ -41,9 +38,7 @@ Purchases.prototype.getHistory = function (options, callback) {
                 endDate: endDate,
                 paymentDues: paymentDues,
                 paymentGateways: paymentGateways,
-                status: pStatus,
-                cartItemFulfilmentStatuses: cartItemFulfilmentStatuses,
-                isPurchaseOrder: isPurchaseOrder
+                status: pStatus
             }
         }, callback);
     });

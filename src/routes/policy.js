@@ -1,4 +1,6 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 var express = require('express');
 var policyRouter = express.Router();
 var React = require('react');
@@ -7,12 +9,12 @@ var template = require('../views/layouts/template');
 var client = require('../../sdk/client');
 var Store = require('../redux/store');
 var EnumCore = require('../public/js/enum-core');
-const authenticated = require('../scripts/shared/authenticated');
 
 var PolicyComponent = require('../views/policy/index').PolicyComponent;
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction, UNIQUE_CODE_LOGIC_CONSTANT } = require('../scripts/shared/user-permissions');
 
 policyRouter.get('/getPages', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const excludes = req.query['isContentExclude'] == 'true' ? 'Content' : '';
 
     const promisePages = new Promise((resolve, reject) => {
@@ -30,11 +32,11 @@ policyRouter.get('/getPages', function (req, res) {
     });
 });
 
-policyRouter.get('/:policyName', authenticated, isAuthorizedToAccessViewPage({ code: UNIQUE_CODE_LOGIC_CONSTANT.POLICY_INFO_PAGE }), function (req, res, next) {
+policyRouter.get('/:policyName', function (req, res, next) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     const user = req.user;
     const urls = EnumCore.GetValidPolicyUrls();
-
-    
 
     if (!urls.includes(req.params.policyName)) {
         next();
@@ -85,14 +87,14 @@ policyRouter.get('/:policyName', authenticated, isAuthorizedToAccessViewPage({ c
         const context = {};
 
         const s = Store.createPolicyStore({
-            userReducer: { user: user },
+            userReducer: {user: user},
             policyReducer: { policy: policy, pages: pages.Records }
         });
         const reduxState = s.getState();
 
-        const app = reactDom.renderToString(<PolicyComponent context={context} user={user} policy={policy} pages={pages.Records} />);
-        // res.send(template('page-info', mapping.name, app, appString, reduxState));
-        //UN431 also for policy
+        const app = reactDom.renderToString(<PolicyComponent context={context} user={user} policy={policy} pages={pages.Records}/>);
+       // res.send(template('page-info', mapping.name, app, appString, reduxState));
+         //UN431 also for policy
         let seoTitle = info.SeoTitle ? info.SeoTitle : info.Name;
         res.send(template('page-info', seoTitle, app, appString, reduxState));
     });

@@ -1,10 +1,14 @@
 'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 var express = require('express');
 var panelRouter = express.Router();
 
 var client = require('../../sdk/client');
 
 panelRouter.get('/getPanels', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
+
     var promisePanels = new Promise((resolve, reject) => {
         const options = {
             type: req.query['type'],

@@ -4,7 +4,7 @@ var ReactRedux = require('react-redux');
 var BaseComponent = require('../../../shared/base');
 var EnumCoreModule = require('../../../../public/js/enum-core');
 var AccountActions = require('../../../../redux/accountAction');
-var CommonModule = require('../../../../../src/public/js/common.js');
+var CommonModule = require('../../../../public/js/common.js');
 
 class SellerSignUpComponent extends BaseComponent {
     constructor(props) {
@@ -82,7 +82,7 @@ class SellerSignUpComponent extends BaseComponent {
         return false;
 
     }
-    
+
     getSortedLogins() {
         let sortedLogins = [];
 
@@ -145,7 +145,7 @@ class SellerSignUpComponent extends BaseComponent {
     }
     renderGoogle() {
         return (
-            <div key="google" className="btn-google"> 
+            <div key="google" className="btn-google">
                 <a href={this.props.googleLoginUrl}>
                 <i className="fa fa-google"></i> <span>Google Login</span> </a>
             </div>
@@ -154,7 +154,7 @@ class SellerSignUpComponent extends BaseComponent {
 
     renderFacebook() {
         return (
-            <div key="facebook" className="btn-fb"> 
+            <div key="facebook" className="btn-fb">
                 <a href={this.props.facebookLoginUrl}>
                 <i className="fa fa-facebook-square"></i> <span>Facebook Login</span> </a>
             </div>
@@ -229,7 +229,7 @@ class SellerSignUpComponent extends BaseComponent {
                         <div className="icon-logo"> <img src={this.props.marketplaceLogoUrl} /> </div>
                         <div className="login-box">
                             <div className="lb-head full-width head-seller">
-                                <a href="/"><img src="/assets/images/back.svg" /></a>
+                                <a href="/"><img src={CommonModule.getAppPrefix() + "/assets/images/back.svg"} /></a>
                                 <span>Login as a Seller</span>
                             </div>
                             <div className="lb-body full-width">

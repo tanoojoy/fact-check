@@ -2,16 +2,15 @@
 const React = require('react');
 const ReactRedux = require('react-redux');
 const BaseComponent = require('../../shared/base');
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayout = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 const PaginationComponent = require('../../common/pagination');
 const FilterComponent = require('./filter');
 const ItemsPerPageComponent = require('./items-per-page');
 const ListComponent = require('./list');
 const ModalCreateComponent = require('./modal-create');
-const PermissionTooltip = require('../../common/permission-tooltip');
 const ReceivingNoteActions = require('../../../redux/recevingNoteActions');
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
+const CommonModule = require('../../../public/js/common');
 
 class ReceivingNoteListComponent extends BaseComponent {
     constructor(props) {
@@ -34,16 +33,8 @@ class ReceivingNoteListComponent extends BaseComponent {
         this.props.filterReceivingNotes(options);
     }
 
-    onCreateBtnClick() {
-        if (!this.props.isAuthorizedToAdd) return;
-        this.props.validatePermissionToPerformAction("add-consumer-receiving-notes-api", () => {
-            $('.po-exist').hide();
-            $("#modalHavePO").modal("show");
-        });
-    }
-
     render() {
-        const { user, receivingNotes, suppliers, orders, filters, isAuthorizedToAdd } = this.props;
+        const { user, receivingNotes, suppliers, orders, filters } = this.props;
 
         return (
             <React.Fragment>
@@ -59,12 +50,8 @@ class ReceivingNoteListComponent extends BaseComponent {
                             <div className="container-fluid">
                                 <div className="sc-upper">
                                     <div className="sc-u title-sc-u sc-u-mid full-width m-change">
-                                        <span className="sc-text-big ">Receiving Notes List <a href="https://support.arcadier.com/hc/en-us?_ga=2.30517176.604704954.1584322281-1532453158.1572448843"><img src="/assets/images/Info.svg" /></a></span>
-                                        <PermissionTooltip isAuthorized={isAuthorizedToAdd} extraClassOnUnauthorized={"icon-grey"}>
-                                            <a className="top-title mobile-only createReceipt" href="#" id="createReceipt" onClick={() => this.onCreateBtnClick()}>
-                                                <i className="fas fa-plus fa-fw" /> Create new Receiving Note
-                                            </a>
-                                        </PermissionTooltip>
+                                        <span className="sc-text-big ">Receiving Notes List <a href="https://support.arcadier.com/hc/en-us?_ga=2.30517176.604704954.1584322281-1532453158.1572448843"><img src={CommonModule.getAppPrefix() + "/assets/images/Info.svg"} /></a></span>
+                                        <a className="top-title mobile-only createReceipt" href="#" id="createReceipt"><i className="fas fa-plus fa-fw" /> Create new Receiving Note</a>
                                         <small>{receivingNotes.TotalRecords} entries</small>
                                         <div className="mobile-only">
                                             <div className="sassy-r">
@@ -75,11 +62,7 @@ class ReceivingNoteListComponent extends BaseComponent {
                                         </div>
                                     </div>
                                     <div className="sc-tops desktop-only">
-                                        <PermissionTooltip isAuthorized={isAuthorizedToAdd} extraClassOnUnauthorized={"icon-grey"}>
-                                            <a className="top-title createReceipt" href="#" id="createReceipt" onClick={() => this.onCreateBtnClick()}>
-                                                <i className="fas fa-plus fa-fw" /> Create new Receiving Note
-                                            </a>
-                                        </PermissionTooltip>
+                                        <a className="top-title createReceipt" href="#" id="createReceipt"><i className="fas fa-plus fa-fw" /> Create new Receiving Note</a>
                                     </div>
                                 </div>
                                 <div className="sassy-filter lg-filter">
@@ -124,15 +107,13 @@ function mapStateToProps(state, ownProps) {
         receivingNotes: state.receivingNoteReducer.receivingNotes,
         suppliers: state.receivingNoteReducer.suppliers,
         orders: state.receivingNoteReducer.orders,
-        filters: state.receivingNoteReducer.filters,
-        isAuthorizedToAdd: state.userReducer.pagePermissions.isAuthorizedToAdd
+        filters: state.receivingNoteReducer.filters
     };
 }
 
 function mapDispatchToProps(dispatch) {
     return {
         filterReceivingNotes: (options, callback) => dispatch(ReceivingNoteActions.filterReceivingNotes(options, callback)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
     };
 }
 

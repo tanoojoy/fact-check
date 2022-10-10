@@ -6,10 +6,6 @@ let PricingStockComponent = require('../add-edit/pricing-stock');
 let MerchantItemActions = require('../../../../../redux/merchantItemActions');
 const DeliveryComponent = require('../..../../../../../merchant/item/upload-edit/delivery');
 
-const PermissionTooltip = require('../../../../common/permission-tooltip');
-
-const { validatePermissionToPerformAction } = require('../../../../../redux/accountPermissionActions');
-
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -19,8 +15,6 @@ class PricingFeatureComponent extends BaseComponent {
         return (
             <React.Fragment>
                 <PricingStockComponent
-                    pagePermissions={this.props.pagePermissions}
-                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
                     itemModel={this.props.itemModel}
                     addVariant={this.props.addVariant}
                     deleteVariant={this.props.deleteVariant}
@@ -37,13 +31,15 @@ class PricingFeatureComponent extends BaseComponent {
                 <DeliveryComponent
                     shippingModel={this.props.itemModel.shippingModel}
                     searchShippings={this.props.searchShippings}
-                    shippingSelectedChanged={this.props.shippingSelectedChanged} />
+                    shippingSelectedChanged={this.props.shippingSelectedChanged}
+                    uploadOrEditData={this.props.uploadOrEditData} />
                 <div className="clearfix" />
                 <div className="col-md-12">
                     <div className="item-upload-btn">
-                        <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToAdd} extraClassOnUnauthorized={'icon-grey'}>
-                            <div className="btn-upload" id="btnItemUpload"onClick={() => this.props.uploadOrEditItem()}>Add Item</div>
-                        </PermissionTooltip>
+                        <div className="btn-upload" id="btnItemUpload"
+                            onClick={() => this.props.uploadOrEditData()}>
+                            Add Item
+                        </div>
                     </div>
                 </div>
             </React.Fragment>
@@ -61,7 +57,6 @@ function mapStateToProps(state, ownProps) {
 
     return {
         user: state.userReducer.user,
-        pagePermissions: state.userReducer.pagePermissions,
         itemModel: state.uploadEditItemReducer.itemModel,
         pricingItem: state.uploadEditItemReducer.pricingItem,
         modalStatus: state.uploadEditItemReducer.modalStatus
@@ -70,8 +65,6 @@ function mapStateToProps(state, ownProps) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
-
         addVariant: (groupId, variantName) => dispatch(MerchantItemActions.addVariant(groupId, variantName)),
         deleteVariant: (variantId) => dispatch(MerchantItemActions.deleteVariant(variantId)),
         updateVariantGroupName: (groupId, name) => dispatch(MerchantItemActions.updateVariantGroupName(groupId, name)),

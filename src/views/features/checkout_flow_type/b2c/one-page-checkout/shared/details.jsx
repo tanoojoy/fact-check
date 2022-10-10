@@ -1,6 +1,6 @@
 'use strict';
 var React = require('react');
-const PermissionTooltip = require('../../../../../common/permission-tooltip');
+var CommonModule = require('../../../../../../public/js/common.js');
 
 class CheckoutDetailsComponent extends React.Component {
 
@@ -8,12 +8,9 @@ class CheckoutDetailsComponent extends React.Component {
         let self = this;
         //Jquery from Bootstrap
         $(".openModalRemove").on("click", function () {
-            if (!self.props.permissions.isAuthorizedToDelete) return;
             var $parent = $(this).parents(".parent-r-b");
-            self.props.validatePermissionToPerformAction('delete-consumer-checkout-api', () => {
-                $parent.addClass("modal-delete-open");
-                $("#modalRemove").modal("show");
-            });
+            $parent.addClass("modal-delete-open");
+            $("#modalRemove").modal("show");
         });
         $("#modalRemove .btn-gray").on("click", function (e) {
             $(".parent-r-b").removeClass("modal-delete-open");
@@ -26,19 +23,9 @@ class CheckoutDetailsComponent extends React.Component {
     }
 
     showDeliveryModal() {
-        this.props.validatePermissionToPerformAction("add-consumer-checkout-api", () => {
-            this.props.clearAddAddressModal();
-            $("#addDeliveryAddress .required").removeClass('error-con');
-            $('#addDeliveryAddress').modal('show');
-        });        
-    }
-
-    deleteAddress(id) {
-        let self = this;
-
-        if (self.props.permissions.isAuthorizedToDelete) {
-            self.props.addressToDelete(id)
-        }
+        this.props.clearAddAddressModal();
+        $("#addDeliveryAddress .required").removeClass('error-con');
+        $('#addDeliveryAddress').modal('show');
     }
 
     renderUserAddresses(isBillingAddress) {
@@ -70,13 +57,7 @@ class CheckoutDetailsComponent extends React.Component {
                             <a key={index} onClick={() => self.props.updateSelectedAddress(address.ID, isBillingAddress)}
                                 className={classNameToUse} href="#">
                                 {address.Name + ", " + address.Line1 + ", " + address.Country + ", " + address.City + ", " + address.State + ", " + address.PostCode}
-                                {self.props.permissions.isAuthorizedToDelete ?
-                                    (<span id={address.ID} className="icon-delete openModalRemove">
-                                        <i onClick={(e) => self.deleteAddress(address.ID)} className="fa fa-trash" />
-                                    </span>):
-                                    (<span id={address.ID} className="icon-delete openModalRemove" tabindex="0" data-toggle="tooltip" data-placement="left" title="" data-original-title="You need permission to perform this action">
-                                        <i className="fa fa-trash"></i>
-                                    </span>)}                                
+                                <span id={address.ID} className="icon-delete openModalRemove"><i onClick={(e) => self.props.addressToDelete(address.ID)} className="fa fa-trash" /></span>
                             </a>
                         </li>
                     );
@@ -100,8 +81,6 @@ class CheckoutDetailsComponent extends React.Component {
             $(".uncheck-listner  .btn-add-address").css("color", "#3c7d99");
         }
         this.props.updateIsSameBilingAndDelivery(e.target.checked)
-        const selectedAddress = this.props.buyerBillingAddresses.find(b => b.Selected == true);
-        this.props.updateSelectedAddress(selectedAddress.ID, false);
     }
 
     render() {
@@ -109,7 +88,7 @@ class CheckoutDetailsComponent extends React.Component {
         let selectedAddress = "Firstname Lastname, Address, Country, City, State, Postcode";
         let selectedBillingAddress = "Firstname Lastname, Address, Country, City, State, Postcode";
         const isSameAsBilling = this.props.isSameBillingAndDelivery || false;
-       
+
         if (this.props.buyerAddresses) {
             this.props.buyerAddresses.forEach(function (address) {
                 if (address.Selected === true) {
@@ -150,7 +129,7 @@ class CheckoutDetailsComponent extends React.Component {
                         <div className={"sc-upper clearfix mb-30 " + signIn}>
                             <div className="pcc-left pull-left pdc-inputs left-requisition d-flex">
                                 <p><b>Already Registered with us?</b></p>
-                                <a href="/accounts/non-private/sign-in" className="bl_btn">sign in now</a>
+                                <a href={CommonModule.getAppPrefix()+"/accounts/non-private/sign-in"} className="bl_btn">sign in now</a>
                             </div>
                         </div>
                         <div className="bl_dark">
@@ -191,9 +170,7 @@ class CheckoutDetailsComponent extends React.Component {
                                         {this.renderUserAddresses(true)}
                                     </ul>
                                 </div>
-                                <PermissionTooltip isAuthorized={self.props.permissions.isAuthorizedToAdd} extraClassOnUnauthorized="icon-grey">
-                                    <a className="top-title btn-add-address" onClick={(e) => this.showDeliveryModal()} data-toggle="modal" data-target="#editProject" href="#"><i className="fas fa-plus fa-fw" /> Add new address</a>
-                                </PermissionTooltip>
+                                <a className="top-title btn-add-address" onClick={(e) => this.showDeliveryModal()} data-toggle="modal" data-target="#editProject" href="#"><i className="fas fa-plus fa-fw" /> Add new address</a>
                             </div>
                         </div>
                         <div className="delivery-address-subtitle pull-left">Delivery Address</div>
@@ -213,9 +190,7 @@ class CheckoutDetailsComponent extends React.Component {
                                             {this.renderUserAddresses()}
                                         </ul>
                                     </div>
-                                    <PermissionTooltip isAuthorized={self.props.permissions.isAuthorizedToAdd} extraClassOnUnauthorized="icon-grey">
-                                        <a className="top-title btn-add-address" onClick={(e) => isSameAsBilling ? null : this.showDeliveryModal()} data-toggle="modal" data-target="#editProject" href="#"><i className="fas fa-plus fa-fw" /> Add new address</a>
-                                    </PermissionTooltip>
+                                    <a className="top-title btn-add-address" onClick={(e) => isSameAsBilling ? null : this.showDeliveryModal()} data-toggle="modal" data-target="#editProject" href="#"><i className="fas fa-plus fa-fw" /> Add new address</a>
                                 </div>
                             </div>
                         </div>

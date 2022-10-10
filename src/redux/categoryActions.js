@@ -1,5 +1,6 @@
 ﻿'use strict';
 var actionTypes = require('./actionTypes');
+const prefix  = require('../public/js/common.js').getAppPrefix();
 if (typeof window !== 'undefined') {
     var $ = window.$;
 }
@@ -7,7 +8,7 @@ if (typeof window !== 'undefined') {
 function asyncLoadingCategories() {
     return function (dispatch) {
         $.ajax({
-            url: '/category/getCategories',
+            url: prefix+'/category/getCategories',
             type: 'GET',
             data: {},
             success: function (result) {

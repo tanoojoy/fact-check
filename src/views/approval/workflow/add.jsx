@@ -3,12 +3,10 @@ const React = require('react');
 const ReactRedux = require('react-redux');
 const Currency = require('currency-symbol-map');
 const Numeral = require('numeral');
-const HeaderLayoutComponent = require('../../../views/layouts/header').HeaderLayoutComponent;
+const HeaderLayoutComponent = require('../../../views/layouts/header/index').HeaderLayoutComponent;
 const SidebarLayoutComponent = require('../../../views/layouts/sidebar').SidebarLayoutComponent;
 const BaseComponent = require('../../shared/base');
-const PermissionTooltip = require('../../common/permission-tooltip');
 const { createApprovalWorkflow } = require('../../../redux/approvalActions');
-const { validatePermissionToPerformAction } = require('../../../redux/accountPermissionActions');
 
 if (typeof window !== 'undefined') { var $ = window.$; }
 
@@ -89,29 +87,21 @@ class CreateApprovalWorkflowComponent extends BaseComponent {
             const $this = $(this);
             const name = $this.data('merchant');
             const ID = $this.data('id');
-            //TODO use react components for rendering approvers
-            const deleteIcon = '<a href="#" class="delete_item" data-id="' + randomId + '"><i class="icon icon-delete"></i></a>';
-            const delButton = self.props.isAuthorizedToDelete ? deleteIcon : (`<span class="tool-tip inline icon-grey" data-toggle="tooltip" 
-                data-placement="top" data-original-title="You need permission to perform this action"> ${deleteIcon} </span>`);
             const template = 
             	`<tr class="item-approver-` + randomId + `">
                     <td data-th="Name" data-user-id=${ID}>` + name + `</td>
                     <td data-th="Compulsary">
                         <label for="item-` + randomId + `" class="sassy-checkbox"><input type="checkbox" id="item-` + randomId + `"><span></span></label>
                     </td>
-                    <td data-th="">` + delButton + `</td>
+                    <td data-th="">
+                        <a href="#" class="delete_item" data-id="` + randomId + `"><i class="icon icon-delete"></i></a>
+                    </td>
                 </tr>`;
             $('.tbl-approver tbody').append(template);
-            $('[data-toggle="tooltip"]').tooltip();
-
         });
 
        	$('.tbl-approver .delete_item').on('click', function() {
-            const $this = $(this);
-            if (!self.props.isAuthorizedToDelete) return;
-            self.props.validatePermissionToPerformAction('delete-consumer-create-approval-workflow-api', () => {
-                self.showConfirm($(this).attr('data-id').toString(), "approver");
-            });
+       		self.showConfirm($(this).attr('data-id').toString(), "approver")
         });
     }
 
@@ -316,106 +306,95 @@ class CreateApprovalWorkflowComponent extends BaseComponent {
 	handleAddWorkflow() {
 		let error = false;
 		const self = this;
-        if (!this.props.isAuthorizedToEdit) return;
-        this.props.validatePermissionToPerformAction('edit-consumer-create-approval-workflow-api', () => {
-            if ($('.unlimited-row').length) {
-                return false;
-            } else {
-                $("#approver_dropdown").removeClass("error-con");
-                $('.add-workflow .required').each(function() {
-                    const $this = $(this);
-                    $this.removeClass('error-con');
-                    if (!$.trim($this.val())) {
-                        $this.addClass('error-con');
-                        if ($this.attr('name') == "minimum_approver") {
-                            $("#approver_dropdown").addClass("error-con");
-                        }
-                        error = true;
+        if ($('.unlimited-row').length) {
+            return false;
+        } else {
+            $("#approver_dropdown").removeClass("error-con");
+            $('.add-workflow .required').each(function() {
+                const $this = $(this);
+                $this.removeClass('error-con');
+                if (!$.trim($this.val())) {
+                    $this.addClass('error-con');
+                    if ($this.attr('name') == "minimum_approver") {
+                        $("#approver_dropdown").addClass("error-con");
                     }
-                });
-                
-                const minimum_approver = parseInt($('input[name=minimum_approver]').val());
-                const arryApprover = [];
-
-                $('.tbl-approver tbody tr').each(function() {
-                    const checked = $(this).find('input[type=checkbox]').is(":checked");
-                    const name = $(this).children('td').eq(0).text();
-                    const userID = $(this).children('td').eq(0).data('user-id');
-                    if (checked) {
-                        arryApprover.push(`<span class="highlightted-user" data-user-id=${userID}>` + name + `</span>`);
-                    } else {
-                        arryApprover.push(`<span data-user-id=${userID}>` + name + `</span>`);
-                    }
-                });
-
-                if (arryApprover.length < minimum_approver) {
-                    $("#approver_dropdown").addClass("error-con");
                     error = true;
                 }
+            });
+            
+            const minimum_approver = parseInt($('input[name=minimum_approver]').val());
+            const arryApprover = [];
 
-                if (!error) {
-                    let price_from = parseFloat($('input[name=range_from]').val()).toFixed(2);
-                    const approver = '-';
-
-                    const itemId = Math.floor(Math.random() * Math.floor(9999));
-
-                    let currencyCode = self.props.currencyCode || 'USD';
-
-                    let unlimited = '';
-
-                    if ($('.is-unlimited').is(":checked")) {
-                        price_from = 'Unlimited';
-                        currencyCode = '';
-                        unlimited = 'unlimited-row';
-                    }
-                    
-                    const purchaseRange = price_from !== 'Unlimited' ?`
-                        <span class="currencyCode">${currencyCode}</span>
-                        <span class="currencySymbol"> ${Currency(currencyCode)}</span>
-                        <span class="priceAmount"> ${self.formatAmountWithCommaSeparator(price_from)}</span>
-                    ` : 'Unlimited' ;
-                    var sortedApprover =  arryApprover.sort((a,b) => b.includes("highlightted-user") - a.includes("highlightted-user"));
-                    //TODO use react components for rendering added flow
-                    const deleteIcon = '<a href="#" class="delete_item" data-id="' + itemId + '"><i class="icon icon-delete"></i></a>';
-                    const delButton = self.props.isAuthorizedToDelete ? deleteIcon : (`<span class="tool-tip inline icon-grey" data-toggle="tooltip" 
-                        data-placement="top" data-original-title="You need permission to perform this action"> ${deleteIcon} </span>`);
-                    var template = `
-                        <tr class="item-approver-` + itemId + ` ` + unlimited + `" data-amount=${price_from}>
-                            <td data-th="Purchase Range" data-price=${price_from}>  ${purchaseRange} </td>
-                            <td data-th="Minimum Approver">` + minimum_approver + `</td>
-                            <td data-th="Approver">
-                                ` + sortedApprover.join(", ") + `
-                            </td>
-                            <td data-th="">`
-                                + delButton + 
-                            `</td>
-                        </tr>`;
-
-                    $('.approver-table tbody').append(template);
-                    $('[data-toggle="tooltip"]').tooltip();
-                    var $wrapper = $('.approver-table tbody');
-                    $wrapper.find('tr').sort(function(a, b) {
-                        return +parseFloat(a.getAttribute('data-amount')) - + parseFloat(b.getAttribute('data-amount'));
-                    }).appendTo($wrapper);
-                    $(`.item-approver-${itemId} a.delete_item`).on('click', function() {
-                        const $this = $(this);
-                        if (!self.props.isAuthorizedToDelete) return;
-                        self.props.validatePermissionToPerformAction('delete-consumer-create-approval-workflow-api', () => {
-                            self.showConfirm($this.attr('data-id').toString(), "approver");
-                        });
-                    });
-                    
-                    if ($('.is-unlimited').is(":checked")) {
-                        $('.workflow-overlay').removeClass('_m');
-                    }
-                    
-                    self.clearSelected();
-                    $('.add-workflow .required').val('');
-                    $('.is-unlimited').prop('checked', false);
-                    self.onMaxAmountChange();
+            $('.tbl-approver tbody tr').each(function() {
+                const checked = $(this).find('input[type=checkbox]').is(":checked");
+                const name = $(this).children('td').eq(0).text();
+                const userID = $(this).children('td').eq(0).data('user-id');
+                if (checked) {
+                    arryApprover.push(`<span class="highlightted-user" data-user-id=${userID}>` + name + `</span>`);
+                } else {
+                    arryApprover.push(`<span data-user-id=${userID}>` + name + `</span>`);
                 }
+            });
+
+            if (arryApprover.length < minimum_approver) {
+                $("#approver_dropdown").addClass("error-con");
+                error = true;
             }
-        });
+
+            if (!error) {
+                let price_from = parseFloat($('input[name=range_from]').val()).toFixed(2);
+                const approver = '-';
+
+                const itemId = Math.floor(Math.random() * Math.floor(9999));
+
+                let currencyCode = this.props.currencyCode || 'USD';
+
+                let unlimited = '';
+
+                if ($('.is-unlimited').is(":checked")) {
+                    price_from = 'Unlimited';
+                    currencyCode = '';
+                    unlimited = 'unlimited-row';
+                }
+                
+                const purchaseRange = price_from !== 'Unlimited' ?`
+                    <span class="currencyCode">${currencyCode}</span>
+                    <span class="currencySymbol"> ${Currency(currencyCode)}</span>
+                    <span class="priceAmount"> ${this.formatAmountWithCommaSeparator(price_from)}</span>
+                ` : 'Unlimited' ;
+                var sortedApprover =  arryApprover.sort((a,b) => b.includes("highlightted-user") - a.includes("highlightted-user"));
+                var template = `
+	                <tr class="item-approver-` + itemId + ` ` + unlimited + `" data-amount=${price_from}>
+	                    <td data-th="Purchase Range" data-price=${price_from}>  ${purchaseRange} </td>
+	                    <td data-th="Minimum Approver">` + minimum_approver + `</td>
+	                    <td data-th="Approver">
+	                        ` + sortedApprover.join(", ") + `
+	                    </td>
+	                    <td data-th="">
+	                        <a href="#" class="delete_item" data-id="` + itemId + `"><i class="icon icon-delete"></i></a>
+	                    </td>
+	                </tr>
+                `;
+
+                $('.approver-table tbody').append(template);
+                var $wrapper = $('.approver-table tbody');
+                $wrapper.find('tr').sort(function(a, b) {
+                    return +parseFloat(a.getAttribute('data-amount')) - +parseFloat(b.getAttribute('data-amount'));
+                }).appendTo($wrapper);
+                $(`.item-approver-${itemId} a.delete_item`).on('click', function() {
+		       		self.showConfirm($(this).attr('data-id').toString(), "approver")
+		       	});
+		       	
+                if ($('.is-unlimited').is(":checked")) {
+                    $('.workflow-overlay').removeClass('_m');
+                }
+                
+                this.clearSelected();
+                $('.add-workflow .required').val('');
+                $('.is-unlimited').prop('checked', false);
+                this.onMaxAmountChange();
+            }
+        }
 	}
 
 	onCancelRemove() {
@@ -560,6 +539,7 @@ class CreateApprovalWorkflowComponent extends BaseComponent {
         }, function(result) {
             if (result.success) window.location.href = "/approval/workflows";
             else {
+                console.log('Something went wrong.');
                 self.setState({ isSaving: false });
             }
         })
@@ -567,31 +547,23 @@ class CreateApprovalWorkflowComponent extends BaseComponent {
     }
 
     handleSave() {
-        const self = this;
-        if (!this.props.isAuthorizedToAdd) return;
-        this.props.validatePermissionToPerformAction('add-consumer-create-approval-workflow-api', () => {
-            const $workflow_name = $('input[name=workflow_name]');
-            let hasError = false;
-            $workflow_name.removeClass('error-con');
-            if (!$.trim($workflow_name.val())) {
-                $workflow_name.addClass('error-con');
-                hasError = true;
-            }
+        const $workflow_name = $('input[name=workflow_name]');
+        let hasError = false;
+        $workflow_name.removeClass('error-con');
+        if (!$.trim($workflow_name.val())) {
+            $workflow_name.addClass('error-con');
+            hasError = true;
+        }
 
-            if (!hasError) {
-                self.showSavePopup();
-            }
-        });
+        if (!hasError) {
+            this.showSavePopup();
+        }
     }
-
     componentDidMount() {
         this.configSelectForm();
     }
 
 	render() {
-        const { isAuthorizedToAdd, isAuthorizedToEdit } = this.props;
-        const saveBtnClass = `action-btn action-save ${isAuthorizedToAdd ? '' : 'disabled'}`;
-        const addNewWorkflowBtnClass = `sassy-btn sassy-btn-bg btn-save-workflow ${isAuthorizedToEdit ? '' : 'disabled'}`;
 		return (
 			<React.Fragment>
 				<div className="header mod" id="header-section">
@@ -645,10 +617,8 @@ class CreateApprovalWorkflowComponent extends BaseComponent {
 				                            		<div className="add-workflow">
 				                            			{this.renderAddWorkflowForm()}
 				                            			<div className="btn-area mt-25">
-                                                            <PermissionTooltip isAuthorized={isAuthorizedToEdit}>
-		                                                      <button href="#" className={addNewWorkflowBtnClass} onClick={() => this.handleAddWorkflow()}>Add New Flow</button>
-                                                            </PermissionTooltip>
-                                                        </div>
+		                                                    <button href="#" className="sassy-btn sassy-btn-bg btn-save-workflow" onClick={() => this.handleAddWorkflow()}>Add New Flow</button>
+		                                                </div>
 				                            			<div className="workflow-overlay _m" />
 				                            		</div>
 				                            	</div>
@@ -659,10 +629,8 @@ class CreateApprovalWorkflowComponent extends BaseComponent {
 			                            <div className="col-sm-12">
 			                                <div className="save-actions">
 			                                    <button type="button" className="action-btn action-cancel"><a href="/approval/workflows">Cancel</a></button>
-			                                    <PermissionTooltip isAuthorized={isAuthorizedToAdd}>
-                                                    <button type="button" className={saveBtnClass} onClick={() => this.handleSave()}>Save</button>
-                                                </PermissionTooltip>
-                                            </div>
+			                                    <button type="button" className="action-btn action-save" onClick={() => this.handleSave()}>Save</button>
+			                                </div>
 			                            </div>
 			                        </div>
 			                    </div>
@@ -683,17 +651,13 @@ function mapStateToProps(state, ownProps) {
 	return {
 		user: state.userReducer.user,
         subAccounts: state.userReducer.subAccounts,
-        currencyCode: state.approvalReducer.currencyCode,
-        isAuthorizedToAdd: state.userReducer.pagePermissions.isAuthorizedToAdd,
-        isAuthorizedToEdit: state.userReducer.pagePermissions.isAuthorizedToEdit,
-        isAuthorizedToDelete: state.userReducer.pagePermissions.isAuthorizedToDelete        
+        currencyCode: state.approvalReducer.currencyCode
 	}
 }
 
 function mapDispatchToProps(dispatch) {
 	return {
         createApprovalWorkflow: (workflow, callback) => dispatch(createApprovalWorkflow(workflow, callback)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
 	}
 }
 

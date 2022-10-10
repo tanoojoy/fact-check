@@ -1,22 +1,20 @@
 ﻿'use strict';
-var React = require('react');
-var ReactRedux = require('react-redux');
+import React from 'react';
+import { typeOfSearchBlock } from '../../consts/search-categories';
+import { PanelType } from '../../consts/panel-type';
+import SearchPanel from '../common/search-panel/index';
+import Categories from './categories';
+import BaseComponent from '../shared/base';
+import EnumCoreModule from '../../public/js/enum-core';
 
-var ItemsHome = require('../../views/home/items');
-var CategoriesHome = require('../../views/home/categories').CategoriesHomeComponent;
-var BannersHome = require('../../views/home/banners');
-var TitlePanelsHome = require('../../views/home/title-panels');
-var CallToActionPanelsHome = require('../../views/home/call-to-action-panels');
-var ValuePropositionPanelsHome = require('../../views/home/value-proposition-panels');
-var BaseComponent = require('../shared/base');
-var EnumCoreModule = require('../../public/js/enum-core');
-
-var categoryActions = require('../../redux/categoryActions');
-
-class HomepageWithPanelCompenent extends BaseComponent {
+class HomepageWithPanel extends BaseComponent {
+    constructor(props) {
+        super(props);
+        this.mainHeader = 'Source and Supply pharmaceutical ingredients, products or services globally';
+    }
 
     componentDidMount() {
-        let self = this;
+        const self = this;
 
         const urlParams = new URLSearchParams(window.location.search);
         const error = urlParams.get('error');
@@ -26,97 +24,51 @@ class HomepageWithPanelCompenent extends BaseComponent {
                 self.showMessage(EnumCoreModule.GetToastStr().Error.INVALID_TOKEN);
             }
             if (error == 'merchant-not-found') {
-                self.showMessage({ 
-                    type: "error",
-                    body: "This page is no longer accessible.",
-                    header: "Sorry!"
+                self.showMessage({
+                    type: 'error',
+                    body: 'This page is no longer accessible.',
+                    header: 'Sorry!'
                 });
             }
         }
     }
 
-    getBannerPanel() {
-        if (this.props.panels != null) {
-            const bannerPanel = this.props.panels.filter(p => p.Type.toLowerCase() === 'slider');
-            if (bannerPanel && bannerPanel.length > 0) {
-                return bannerPanel[0];
-            }
-        }
-        return null;
+    getSliderPanel() {
+        return this.props.panels.find(panel => panel.Type === PanelType.SLIDER);
     }
 
-    renderDefault() {
-        return (
-            <React.Fragment>
-                <CategoriesHome categories={this.props.categories} numberOfCategories={this.props.numberOfCategories} collapsableCategories={this.props.collapsableCategories} />
-                <ItemsHome items={this.props.items} itemLayoutCount={this.props.itemLayoutCount} user={this.props.user} userPreferredLocationId={this.props.userPreferredLocationId} />
-            </React.Fragment>
-        )
-    }
-
-    renderPanels() {
-        var self = this;
-        var panelViews = this.props.panels.map(function (panel, index) {
-            if (panel.Type == 'Categories') {
-                if (panel.IsVisible)
-                    return (<CategoriesHome categories={self.props.categories} numberOfCategories={self.props.numberOfCategories} loadMore={self.props.loadMore} collapsableCategories={self.props.collapsableCategories}  loadLess={self.props.loadLess} key={index} />)
-            } else if (panel.Type == 'LatestItems') {
-                if (panel.IsVisible)
-                    return (<ItemsHome items={self.props.items} key={index} layoutItemCount={self.props.layoutItemCount} userPreferredLocationId={self.props.userPreferredLocationId} isBespoke={self.props.isBespoke} user={self.props.user} />)
-            } else if (panel.Type == 'Title') {
-                return (<TitlePanelsHome panel={panel} key={index} />)
-            } else if (panel.Type == 'CalltoAction') {
-                return (<CallToActionPanelsHome panel={panel} key={index} />)
-            } else if (panel.Type == 'ValueProposition') {
-                return (<ValuePropositionPanelsHome panel={panel} key={index} />)
-            }
-        });
-        return panelViews;
+    getHeader() {
+        return this.getSliderPanel()?.Details[0].Title || this.mainHeader;
     }
 
     render() {
         return (
-            <div className="home-pg-container">
-                <BannersHome panel={this.getBannerPanel()} />
+            <div className='home-pg-container'>
+                <div className="clarivate-search">
+                    <div className="container">
+                        <h1>{this.getHeader()}</h1>
+                        <SearchPanel
+                            type={typeOfSearchBlock.BANNER}
+                            searchCategory={this.props.searchCategory}
+                            searchResults={this.props.searchResults}
+                            searchString={this.props.searchString}
+                            setSearchCategory={this.props.setSearchCategory}
+                            gotoSearchResultsPage={this.props.gotoSearchResultsPage}
+                            setSearchString={this.props.setSearchString}
+                        />
+                    </div>
+                </div>
                 <div className="category-list-outer">
                     <div className="container-fluid">
                         <div className="row">
-                            {this.props.panels != null ? this.renderPanels() : this.renderDefault()}
+                            <Categories categories={this.props.categories} />
                         </div>
                     </div>
                 </div>
+                
             </div>
         );
     }
 }
 
-function mapStateToProps(state, ownProps) {
-    return {
-        user: state.userReducer.user,
-        userPreferredLocationId: state.userReducer.userPreferredLocationId,
-        categories: state.categoryReducer.categories,
-        numberOfCategories: state.categoryReducer.numberOfCategories,
-        panels: state.panelsReducer.panels,
-        items: state.itemsReducer.items,
-        layoutItemCount: state.settingsReducer.layoutItemCount,
-        collapsableCategories: state.settingsReducer.collapsableCategories,
-        isBespoke: state.settingsReducer.isBespoke
-    }
-}
-
-function mapDispatchToProps(dispatch) {
-    return {
-        loadMore: () => dispatch(categoryActions.loadMore()),
-        loadLess: () => dispatch(categoryActions.loadLess())
-    }
-}
-
-const HomepageWithPanelHome = ReactRedux.connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(HomepageWithPanelCompenent)
-
-module.exports = {
-    HomepageWithPanelHome,
-    HomepageWithPanelCompenent
-}
+export default HomepageWithPanel;

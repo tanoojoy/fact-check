@@ -1,40 +1,21 @@
 'use strict';
 var React = require('react');
 var ReactRedux = require('react-redux');
-
 var OrderDiaryActions = require('../../../../redux/orderDiaryActions');
 var OrderActions = require('../../../../redux/orderActions');
-var Moment = require('moment');
-var HeaderLayoutComponent = require('../../../../views/layouts/header').HeaderLayoutComponent;
+
+var HeaderLayoutComponent = require('../../../../views/layouts/header/index').HeaderLayoutComponent;
 var SidebarLayoutComponent = require('../../../../views/layouts/sidebar').SidebarLayoutComponent;
 var FooterLayout = require('../../../../views/layouts/footer').FooterLayoutComponent;
 var BaseComponent = require('../../../../views/shared/base');
 
-let TableHeaderComponent = require('../../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/merchant/order_history_detail/' + process.env.PRICING_TYPE + '/headeritem.jsx');
-let TableItemsComponent = require('../../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/merchant/order_history_detail/' + process.env.PRICING_TYPE + '/table-items.jsx');
-let TransactionSummaryComponent = require('../../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/merchant/order_history_detail/' + process.env.PRICING_TYPE + '/transaction_summary.jsx');
+let TableItemsComponent = require('../../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/merchant/' + process.env.PRICING_TYPE + '/order_detail/table-items.jsx');
+let TransactionSummaryComponent = require('../../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/merchant/transaction_summary.jsx');
 let ModalSuccessChangeComponent = require('../../../features/checkout_flow_type/modal-success-change.jsx');
-let OrderDiaryComponent = require('../../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/merchant/order_history_detail/order-diary/index-with-border');
+let OrderDiaryComponent = require('../../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/order-diary');
 let ShippingPaymentDetailComponent = require('../../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/merchant/shipping_payment_detail');
-let servicelevel = process.env.PRICING_TYPE === 'service_level' ? true : false;
-let ModalEditBooking = require('../../../features/checkout_flow_type/b2c/purchase_order/merchant/order_history_detail/modal-edit-booking');
-let ModalConfirmCancel = require('../../../features/checkout_flow_type/b2c/purchase_order/merchant/order_history_detail/modal_confirm_cancel');
-
-const PermissionTooltip = require('../../../common/permission-tooltip');
-const { validatePermissionToPerformAction } = require('../../../../redux/accountPermissionActions');
-
 class OrderDetailComponent extends BaseComponent {
-    constructor(props) {
-        super(props);
-        this.state = {
-            displayStyle: 'none',
-            orderStatus:''
-        }
 
-        this.renderStatusDropdown = this.renderStatusDropdown.bind(this);
-        this.onCheckboxChange = this.onCheckboxChange.bind(this);
-    }
-    
     componentDidUpdate() {
         if (this.props.isShowSuccessMessage === true) {
             $(".order-itemstatus-popup").modal("show");
@@ -44,52 +25,8 @@ class OrderDetailComponent extends BaseComponent {
     }
 
     componentDidMount() {
-        $("#cover").hide();
-        $('.edit-booking-modal').modal('hide');
-        this.handleDatepicker();
-        if ($("#changeStatus").val() === 'Cancelled')
-        {
-            
-            $(".order-item-status-popup").attr("disabled", true);
-            $(".order-item-status-popup").val('Cancelled');
-            $("#cancelOrder").attr("disabled", true);
-            $("#cancelOrder").addClass('lightgray');
-            $('#cancelOrder').contents().filter(function () {
-                return this.nodeType == 3
-            }).each(function () {
-                this.textContent = this.textContent.replace(' Cancel Order', ' Order Cancelled');
-            });
-
-        }
     }
-    
-    formatDateTime(timestamp, format) {
-        if (typeof format === 'undefined') {
-            format = process.env.DATETIME_FORMAT;
-        }
 
-        if (typeof timestamp === 'number') {
-            return Moment.unix(timestamp).utc().local().format(format);
-        } else {
-            return Moment.utc(timestamp).local().format(format);
-        }
-    }
-    handleDatepicker() {
-        if (servicelevel) {
-            $('#booking_date').datetimepicker({
-                format: 'MM/DD/YYYY',
-            }).keypress(function (event) { 
-                // event.preventDefault(); 
-            });
-
-            $('#booking_time').timepicker({
-                'step': 15,
-                'timeFormat': 'h:i A'
-            }).keypress(function (event) { 
-                // event.preventDefault(); 
-            });
-        }
-    }
     getAllEvents() {
         return (this.props.events || []).concat((this.props.otherEvents || []));
     }
@@ -97,37 +34,23 @@ class OrderDetailComponent extends BaseComponent {
     renderSupplierAddress() {
         let shippingAddress = null;
         let supplierDisplayName = null;
-        let detail = process.env.CHECKOUT_FLOW_TYPE === 'b2b' ? this.props.detail : this.props.detail.Orders[0]
 
-        if (detail) {
-            shippingAddress = detail.DeliveryFromAddress;
-            supplierDisplayName = detail.MerchantDetail ? detail.MerchantDetail.DisplayName : '';
-        }
-        let email = "";
-        let number = "";
-
-        if (this.props.detail.Orders && detail.MerchantDetail.Email) {
-            email = detail.MerchantDetail.Email;
+        if (this.props.detail.Orders) {
+            shippingAddress = this.props.detail.Orders[0].DeliveryFromAddress;
+            supplierDisplayName = this.props.detail.Orders[0].MerchantDetail.DisplayName;
         } else {
-            email = detail.MerchantDetail.Email;
-        }
-
-        if (detail.Orders && detail.MerchantDetail.PhoneNumber) {
-            number = detail.MerchantDetail.PhoneNumber;
-        } else {
-            number = detail.MerchantDetail.PhoneNumber;
+              //For B2b unxpected change of Model
+            shippingAddress = this.props.detail.DeliveryFromAddress;
+            supplierDisplayName = this.props.detail.MerchantDetail.DisplayName;
+            
         }
         const supplierName = shippingAddress.Name && shippingAddress.Name.split('|').length > 1 ? shippingAddress.Name.replace('|', ' ') : shippingAddress.Name;
-        const addressLine1 = shippingAddress.Line1 ? [shippingAddress.Line1, <br />] : '';
-        const addressLine2 = shippingAddress.Line2 ? [shippingAddress.Line2, <br />] : '';
-        const state = shippingAddress.State ? [shippingAddress.State, <br />] : '';
-        const city = shippingAddress.City ? [shippingAddress.City, <br />] : '';
-        const country = shippingAddress.Country ? [shippingAddress.Country, <br />] : ''; 
-        const postCode = shippingAddress.PostCode ? [shippingAddress.PostCode, <br />] : '';
+        const line2 = shippingAddress.Line2 ? shippingAddress.Line2 : "";
+
         if (shippingAddress && shippingAddress.Name) {
             return (
                 <div className="col-md-4">
-                    <table className="canon-table purchase-address-sec">
+                    <table className="canon-table">
                         <tbody><tr>
                             <th>Supplier :</th>
                         </tr>
@@ -143,31 +66,14 @@ class OrderDetailComponent extends BaseComponent {
                             </tr>
                             <tr>
                                 <td>
-                                    {addressLine1}
-                                    {addressLine2}
-                                    {city}
-                                    {state}
-                                    {country}
-                                    {postCode}
+                                    {shippingAddress.Line1},<br />
+                                    {line2}<br />
+                                    {shippingAddress.City}<br />
+                                    {shippingAddress.State}<br />
+                                    {shippingAddress.Country}<br />
+                                    {shippingAddress.PostCode}<br />
                                 </td>
                             </tr>
-                            {
-                                servicelevel && 
-                                (
-                                    <React.Fragment>
-                                        <tr>
-                                            <td>
-                                                <a href={"tel:+" + number}>+{number}</a><span className="text-spacer" />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <a href={"mailto:" + email}>{email}</a>
-                                            </td>
-                                        </tr>
-                                    </React.Fragment>
-                                )
-                            }                            
                         </tbody>
                     </table>
                 </div>
@@ -179,22 +85,18 @@ class OrderDetailComponent extends BaseComponent {
     }
     renderShippingAddress() {
         let shippingAddress = null;
-        let detail = process.env.CHECKOUT_FLOW_TYPE === 'b2b' ? this.props.detail : this.props.detail.Orders[0]
-        if (detail) {
-            shippingAddress = detail.DeliveryToAddress;
-        } 
+        if (this.props.detail.Orders) {
+            shippingAddress = this.props.detail.Orders[0].DeliveryToAddress;
+        } else {
+            shippingAddress = this.props.detail.DeliveryToAddress;
+        }
 
         const buyerName = shippingAddress.Name && shippingAddress.Name.split('|').length > 1 ? shippingAddress.Name.replace('|', ' ') : shippingAddress.Name;
-        const addressLine1 = shippingAddress.Line1 ? [shippingAddress.Line1, <br />] : '';
-        const addressLine2 = shippingAddress.Line2 ? [shippingAddress.Line2, <br />] : '';
-        const state = shippingAddress.State ? [shippingAddress.State, <br />] : '';
-        const city = shippingAddress.City ? [shippingAddress.City, <br />] : '';
-        const country = shippingAddress.Country ? [shippingAddress.Country, <br />] : ''; 
-        const postCode = shippingAddress.PostCode ? [shippingAddress.PostCode, <br />] : '';
+        const line2 = shippingAddress.Line2 ? shippingAddress.Line2 : "";
         if (shippingAddress && shippingAddress.Name) {
             return (
                 <div className="col-md-4">
-                    <table className="canon-table purchase-address-sec">
+                    <table className="canon-table">
                         <tbody><tr>
                             <th>Shipping Address :</th>
                         </tr>
@@ -205,12 +107,12 @@ class OrderDetailComponent extends BaseComponent {
                             </tr>
                             <tr>
                                 <td>
-                                    {addressLine1}
-                                    {addressLine2}
-                                    {city}
-                                    {state}
-                                    {country}
-                                    {postCode}
+                                    {shippingAddress.Line1},<br />
+                                    {line2}<br />
+                                    {shippingAddress.City}<br />
+                                    {shippingAddress.State}<br />
+                                    {shippingAddress.Country}<br />
+                                    {shippingAddress.PostCode}<br />
                                 </td>
                             </tr>
                         </tbody>
@@ -231,15 +133,11 @@ class OrderDetailComponent extends BaseComponent {
         }
 
         const buyerName = shippingAddress.Name && shippingAddress.Name.split('|').length > 1 ? shippingAddress.Name.replace('|', ' ') : shippingAddress.Name;
-        const addressLine1 = shippingAddress.Line1? [shippingAddress.Line1, <br />]:'';
-        const addressLine2 = shippingAddress.Line2? [shippingAddress.Line2, <br />]:'';
-        const state = shippingAddress.State ? [shippingAddress.State, <br />] : ''; 
-        const city = shippingAddress.City ? [shippingAddress.City, <br />] : '';
-        const country = shippingAddress.Country ? [shippingAddress.Country, <br />] : ''; 
+        const buyerDisplayName = this.props.user.DisplayName;
+        const line2 = shippingAddress.Line2 ? shippingAddress.Line2 : "";
 
         let email = "";
         let number = "";
-        let buyerDisplayName = "";
 
         if (this.props.detail.Orders && this.props.detail.Orders[0].ConsumerDetail.Email) {
             email = this.props.detail.Orders[0].ConsumerDetail.Email;
@@ -253,51 +151,46 @@ class OrderDetailComponent extends BaseComponent {
             number = this.props.detail.ConsumerDetail.PhoneNumber;
         }
 
-        if (this.props.detail.Orders && this.props.detail.Orders[0].ConsumerDetail) {
-            buyerDisplayName =  this.props.detail.Orders[0].ConsumerDetail.DisplayName;
-        } else {
-            buyerDisplayName = this.props.detail.ConsumerDetail.DisplayName;
-        }
-
-        return (
-            <div className="col-md-4">
-                <table className="canon-table purchase-address-sec">
-                    <tbody><tr>
-                        <th>Billing Address :</th>
-                        </tr>
+            return (
+                <div className="col-md-4">
+                    <table className="canon-table purchase-address-sec">
+                        <tbody><tr>
+                            <th>Billing Address :</th>
+                            </tr>
+                                <tr>
+                                    <td className="billing-address" data-th="Billing Address :">  
+                                        <span className="highlight-text">{buyerDisplayName}</span>
+                                    </td>
+                            </tr>
                             <tr>
-                                <td className="billing-address" data-th="Billing Address :">  
-                                    <span className="highlight-text">{buyerDisplayName}</span>
+                                <td>
+                                    <span className="highlight-text">{buyerName}</span>
                                 </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <span className="highlight-text">{buyerName?buyerName.trim():''}</span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                {addressLine1}
-                                {addressLine2} 
-                                {city}
-                                {state}
-                                {country}
-                                {shippingAddress.PostCode}<br />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <a href={"tel:+" + number}>+{number}</a><span className="text-spacer" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>    
-                                <a href={"mailto:" + email}>{email}</a>
-                            </td>
-                        </tr>
-                    </tbody></table>
-            </div>
-        );
+                            </tr>
+                            <tr>
+                                <td>
+                                    {shippingAddress.Line1},<br />
+                                    {line2}<br />
+                                    {shippingAddress.City}<br />
+                                    {shippingAddress.State}<br />
+                                    {shippingAddress.Country}<br />
+                                    {shippingAddress.PostCode}<br />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <a href={"tel:+" + number}>+{number}</a><span className="text-spacer" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>    
+                                    <a href={"mailto:" + email}>{email}</a>
+                                </td>
+                            </tr>
+                        </tbody></table>
+                </div>
+            );
+
     }
     
     getLatestFulfillmentStatus(cartItem) {
@@ -321,7 +214,6 @@ class OrderDetailComponent extends BaseComponent {
         }
 
         if (orderStatuses.length > 0) {
-            orderStatuses.sort((a, b) => (a.CreatedDateTime > b.CreatedDateTime) ? 1 : -1)
             status = orderStatuses[orderStatuses.length - 1].Name;
         } else if (orderStatuses.length === 0) {
              let fulfillmentStatuses = cartItem.Statuses.filter(s => s.Type === 'Fulfilment');
@@ -333,28 +225,17 @@ class OrderDetailComponent extends BaseComponent {
     }
 
     onDropdownChange(e) {
-        const self = this;
-        const value = e.target.value;
-
-        this.props.validatePermissionToPerformAction("edit-merchant-purchase-order-details-api", () => {
-            if (process.env.CHECKOUT_FLOW_TYPE === 'b2b') {
-                self.props.updateOrderStatusb2binDetails(value);
-            } else {
-                const status = value.toLowerCase() == 'shipped' ? 'Delivered' : value;
-                self.props.updateDetailOrder(status);
-            }
-        });        
+        if (process.env.CHECKOUT_FLOW_TYPE === 'b2b') {
+            this.updateOrderStatusb2binDetails(e.target.value);
+        } else {
+            this.updateDetailOrder(e.target.value);
+        }
+        
     }
-    renderStatusDropdown(order) {
-        let self = this;
 
+    renderStatusDropdown(order) {
         const cartItem = order.CartItemDetails[0];
         let orderStatus = this.getLatestOrderStatus(cartItem);
-        if (orderStatus === 'Delivered') {
-            if (cartItem.BookingSlot != 'undefined' && cartItem.BookingSlot != null) {
-                orderStatus = orderStatus === 'Delivered' ? 'Shipped' : orderStatus;
-            }
-        }
 
         if (order && order.CartItemDetails) {
             let statuses = [];
@@ -370,21 +251,15 @@ class OrderDetailComponent extends BaseComponent {
                         cartItemType = customFieldValue.DeliveryType;
                     }
                 }
-            } 
+            }
 
             if (process.env.CHECKOUT_FLOW_TYPE === 'b2c') {
                 if (cartItemType === "delivery") {
                     statuses = process.env.DELIVERY_FULFILLMENT_STATUSES.split(',');
                 } else if (cartItemType === "pickup") {
                     statuses = process.env.PICKUP_FULFILLMENT_STATUSES.split(',');
-                } else if (cartItemType === null) {
-                    statuses = process.env.DELIVERY_FULFILLMENT_STATUSES.split(',');
-                    statuses = statuses.filter(s => s !== 'Delivered');
                 }
-                else {
-                    statuses = process.env.DELIVERY_FULFILLMENT_STATUSES.split(',');
-                }
-
+                
                 var isInternalCodOrOfflinePayment = true;
                 if (order.PaymentDetails && order.PaymentDetails.length > 0) {
                     const paymentDetail = order.PaymentDetails[0];
@@ -410,34 +285,17 @@ class OrderDetailComponent extends BaseComponent {
               //  }
             }
 
-            const orderStatuses = [];
-            // if spacetime change Delivered to Shipped
-            if (cartItem.BookingSlot != 'undefined' && cartItem.BookingSlot != null) {
-                statuses.map(function (status, index)
-                {
-                    status = status === 'Delivered' ? 'Shipped' : status;
-                    status !== 'Cancelled' ? orderStatuses.push(status) : [];
-                })
-                statuses = orderStatuses;
-            }
 
             return (
-                <PermissionTooltip isAuthorized={this.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                    <select className="order-item-status-popup" id="changeStatus" defaultValue={orderStatus} onChange={(e) => this.onDropdownChange(e)}>
-                        {
-                            statuses.map(function (status, index) {
-                                return (
-                                    <option key={index} value={status}>
-                                        {status === 'Ready For Consumer Collection' ? 'Ready for Pick-up' : status}</option>
-                                )
-                            })
-                        }
-                        {
-                            orderStatus === 'Cancelled' && <option key={100} value={orderStatus}>
-                                {orderStatus}</option>
-                        }
-                    </select>
-                </PermissionTooltip>
+                <select className="order-item-status-popup" id="changeStatus" value={orderStatus} onChange={(e) => this.onDropdownChange(e)}>
+                    {
+                        statuses.map(function (status, index) {
+                            return (
+                                <option key={index} value={status}>{status === 'Ready For Consumer Collection' ? 'Ready for Pick-up' : status}</option>
+                            )
+                        })
+                    }
+                </select>
             )
 
         } else {
@@ -453,7 +311,7 @@ class OrderDetailComponent extends BaseComponent {
         } else {
             order = detail;
         }
-
+         
         return (
             <div className="main" style={{ paddingTop: '46px' }}>
                 <div className="orderlist-container">
@@ -475,9 +333,8 @@ class OrderDetailComponent extends BaseComponent {
                             <div className="sassy-box-content box-order-detail">
                                 <div className="row">
                                     {this.renderBillingAddress()}
-                                    <div className="col-md-4">{servicelevel ? this.renderShippingAddress() : ''} </div>
+                                    <div className="col-md-4" />
                                     <ShippingPaymentDetailComponent
-                                        serviceLevel={servicelevel}
                                         renderStatusDropdown={this.renderStatusDropdown}
                                         onDropdownChange={this.onDropdownChange}
                                         onCheckboxChange={this.onCheckboxChange}
@@ -488,7 +345,7 @@ class OrderDetailComponent extends BaseComponent {
                                     <div className="col-md-12">
                                         <div className="row">
                                             {this.renderSupplierAddress()}
-                                            {servicelevel ? '': this.renderShippingAddress()}
+                                            {this.renderShippingAddress()}
                                         </div>
                                     </div>
                                 </div>
@@ -496,12 +353,18 @@ class OrderDetailComponent extends BaseComponent {
                         </section>
                         <section className="sassy-box no-border box-order-items">
                             <table className="table order-data table-items">
-                                <TableHeaderComponent enableReviewAndRating={this.props.enableReviewAndRating} />
-                          
-                                <tbody><TableItemsComponent {...this.props} 
-                                    enableReviewAndRating={this.props.enableReviewAndRating} />
+                                <thead>
+                                    <tr>
+                                        <th className="text-left">Item Description</th>
+                                        {this.props.enableReviewAndRating === true ? <th>Review</th> : <th>&nbsp;</th>} 
+                                        <th>Quantity</th>
+                                        <th width="171px">Unit Price</th>
+                                        <th width="171px">Total Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <TableItemsComponent {...this.props} enableReviewAndRating={this.props.enableReviewAndRating}/>
                                 </tbody>
-                        
                             </table>
                         </section>
                         <TransactionSummaryComponent {...this.props} />
@@ -517,29 +380,18 @@ class OrderDetailComponent extends BaseComponent {
                             updateSelectedSection={this.props.updateSelectedSection}
                             updateSelectedTabSection={this.props.updateSelectedTabSection}
                             setUploadFile={this.props.setUploadFile}
-                            createEvent={this.props.createEvent}
-                            pagePermissions={this.props.pagePermissions}
-                            validatePermissionToPerformAction={this.props.validatePermissionToPerformAction} />
-
+                            createEvent={this.props.createEvent} />
                     </div>
                 </div>
-                <ModalEditBooking onUpdateBookingSlot={this.props.onUpdateBookingSlot}/>
-                <ModalConfirmCancel orderStatus={this.state.orderStatus} displayStyle={this.state.displayStyle} updateDetailOrder={this.props.updateDetailOrder}/>
                 <ModalSuccessChangeComponent showHideSuccessMessage={this.props.showHideSuccessMessage} />
-                <div id="cover" style={{ display: 'block' }} />
             </div>
         );
     }
 
     onCheckboxChange(e, cartItemID) {
-        const self = this;
-        const checked = e.target.checked;
-
-        this.props.validatePermissionToPerformAction("edit-merchant-purchase-order-details-api", () => {
-            self.props.revertPayment(checked, cartItemID);
-        });
+        this.revertPayment(e.target.checked, cartItemID);
     }
-    
+
     render() {
         return (
             <React.Fragment>
@@ -563,12 +415,9 @@ class OrderDetailComponent extends BaseComponent {
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
-        pagePermissions: state.userReducer.pagePermissions,
         detail: state.orderReducer.detail,
         isShowSuccessMessage: state.orderReducer.isShowSuccessMessage,
         enableReviewAndRating: state.orderReducer.enableReviewAndRating,
-        locationVariantGroupId: state.marketplaceReducer.locationVariantGroupId,
-        bookingDuration: state.orderReducer.bookings,
         //Order Diary
         eventCustomField: state.orderDiaryReducer.eventCustomField,
         events: state.orderDiaryReducer.events,
@@ -582,17 +431,11 @@ function mapStateToProps(state, ownProps) {
 }
 
 function mapDispatchToProps(dispatch) {
- 
     return {
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
-
         updateOrderStatusb2binDetails: (status) => dispatch(OrderActions.updateOrderStatusb2binDetails(status)),
         updateDetailOrder: (status) => dispatch(OrderActions.updateDetailOrder(status)),
-        showHideConfirmCancel: (isShow) => dispatch(OrderActions.showHideConfirmCancel(isShow)),
         showHideSuccessMessage: (isShow) => dispatch(OrderActions.showHideSuccessMessage(isShow)),
         revertPayment: (isRefund, cartItemID) => dispatch(OrderActions.revertPayment(isRefund, cartItemID)),
-        onUpdateBookingSlot: (bookDate, bookTime) => dispatch(OrderActions.onUpdateBookingSlot(bookDate, bookTime)),
-
         //Order Diary
         fetchEvents: () => dispatch(OrderDiaryActions.fetchEvents()),
         updateSelectedSection: (section) => dispatch(OrderDiaryActions.updateSelectedSection(section)),

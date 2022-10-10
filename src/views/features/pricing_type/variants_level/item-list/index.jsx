@@ -2,7 +2,7 @@
 var React = require('react');
 var EnumCoreModule = require('../../../../../public/js/enum-core');
 var BaseComponent = require('../../../../shared/base');
-const PermissionToolTip = require('../../../../common/permission-tooltip');
+const CommonModule = require('../../../../../public/js/common.js');
 
 class ItemListTableComponent extends BaseComponent {
     constructor(props) {
@@ -54,7 +54,7 @@ class ItemListTableComponent extends BaseComponent {
         let combinations = 1;
         if (item.HasChildItems && item.ChildItems) {
             combinations = item.ChildItems.length;
-        } 
+        }
 
         return (
             <td className="text-left" data-th="Variant">{combinations} combinations</td>
@@ -64,27 +64,27 @@ class ItemListTableComponent extends BaseComponent {
 
     updatePurchasable(item, event, id) {
         var self = this;
-        var checkedStatus = event.target.checked;
+        var checkedStatus = event.target.checked
 
-        this.props.validatePermissionToPerformAction('edit-merchant-inventory-api', () => {
-            if (self.props.controlFlags.AdminVetting === true && item.IsVisibleToCustomer === false && item.IsAvailable === false) {
-                self.showMessage(EnumCoreModule.GetToastStr().Error.FAILED_ITEM_VISIBILITY_UPDATE);
-            } else {
-                self.props.editItemPurchasable(item.ID, checkedStatus, function (result) {
-                    if (result == 'available') {
-                        const updated = new Map(self.state.itemVisibilityMap);
-                        updated.set(item.ID, checkedStatus);
-                        self.setState({ itemVisibilityMap: updated });
-                    }
-                });
-                self.props.createLogForItemVisibilityUpdate(item.ID, checkedStatus);
-            }
-        });
+        if (this.props.controlFlags.AdminVetting === true && item.IsVisibleToCustomer === false && item.IsAvailable === false) {
+            this.showMessage(EnumCoreModule.GetToastStr().Error.FAILED_ITEM_VISIBILITY_UPDATE);
+        } else {
+
+
+            this.props.editItemPurchasable(item.ID, event.target.checked, function (result) {
+
+                if (result == 'available') {
+                    const updated = new Map(self.state.itemVisibilityMap);
+                    updated.set(item.ID, checkedStatus);
+                    self.setState({ itemVisibilityMap: updated });
+                }
+            });
+            this.props.createLogForItemVisibilityUpdate(item.ID, event.target.checked);
+        }
     }
 
     render() {
         const self = this;
-
         return (
             <React.Fragment>
                 <table className="table order-data1 item-area">
@@ -102,7 +102,7 @@ class ItemListTableComponent extends BaseComponent {
                         {
                             this.props.items.map(function (item, index) {
                                 let itemLink = "edit/" + item.ID;
-                                let itemDetailsLink = "/items/" + self.generateSlug(item.Name) + "/" + item.ID;
+                                let itemDetailsLink = CommonModule.getAppPrefix()+"/items/" + self.generateSlug(item.Name) + "/" + item.ID;
                                 const itemAvailable = self.state.itemVisibilityMap.get(item.ID);
 
                                 let IsAvailable = itemAvailable !== null && typeof itemAvailable !== 'undefined' ? itemAvailable : item.IsAvailable;
@@ -110,7 +110,7 @@ class ItemListTableComponent extends BaseComponent {
                                 return (
                                     <tr className="item-row" key={item.ID} data-key="" data-id={item.ID}>
                                         <td data-th="ITEM">
-                                            {/* <span className="sku-title text-left">{self.renderSKU(item)}</span>*/}  
+                                            {/* <span className="sku-title text-left">{self.renderSKU(item)}</span>*/}
                                             <a><p className="sort-item-description text-left">{item.Name.substring(0, 300)}</p></a>
                                         </td>
                                         <td data-th="PRICE">
@@ -123,26 +123,16 @@ class ItemListTableComponent extends BaseComponent {
                                             {self.renderStock(item)}
                                         </td>
                                         <td data-th="Approved">
-                                            <PermissionToolTip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                                <div className="onoffswitch">
-                                                    <input type="checkbox" name="onoffswitch" className="onoffswitch-checkbox" id={index + '-purchaseable'} checked={IsAvailable} onChange={(e) => self.updatePurchasable(item, e, index + '-purchaseable')} />
-                                                    <label className="onoffswitch-label" htmlFor={index + '-purchaseable'}> <span className="onoffswitch-inner"></span> <span className="onoffswitch-switch"></span> </label>
-                                                </div>
-                                            </PermissionToolTip>
+                                            <div className="onoffswitch">
+                                                <input type="checkbox" name="onoffswitch" className="onoffswitch-checkbox" id={index + '-purchaseable'} checked={IsAvailable} onChange={(e) => self.updatePurchasable(item, e, index + '-purchaseable')} />
+                                                <label className="onoffswitch-label" htmlFor={index + '-purchaseable'}> <span className="onoffswitch-inner"></span> <span className="onoffswitch-switch"></span> </label>
+                                            </div>
                                         </td>
                                         <td data-th="">
                                             <div className="item-actions">
                                                 <ul>
-                                                    <li>
-                                                        <PermissionToolTip isAuthorized={self.props.pagePermissions.isAuthorizedToEdit} extraClassOnUnauthorized={'icon-grey'}>
-                                                            <a href='#' onClick={(e) => self.props.validatePermissionToPerformAction('edit-merchant-inventory-api', () => location.href = itemLink)}><i className="icon icon-edit"></i></a>
-                                                        </PermissionToolTip>
-                                                    </li>
-                                                    <li>
-                                                        <PermissionToolTip isAuthorized={self.props.pagePermissions.isAuthorizedToDelete} extraClassOnUnauthorized={'icon-grey'}>
-                                                            <a href='#' className="delete_item" data-id="1"><i className="icon icon-delete" onClick={(e) => self.props.confirmDelete(item.ID)}></i></a>
-                                                        </PermissionToolTip>
-                                                    </li>
+                                                    <li><a href={itemLink}><i className="icon icon-edit"></i></a></li>
+                                                    <li><a href={null} className="delete_item" data-id="1"><i className="icon icon-delete" onClick={(e) => self.props.confirmDelete(item.ID)}></i></a></li>
                                                 </ul>
                                             </div>
                                         </td>

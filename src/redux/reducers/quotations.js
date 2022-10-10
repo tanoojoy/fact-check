@@ -5,7 +5,7 @@ const initialState = {
     quotationList: [],
     filters: null,
     quotationDetail: null, 
-    isMerchantAccess: false,
+    buyerdocs: false
 };
 
 function quotationReducer(state = initialState, action) {

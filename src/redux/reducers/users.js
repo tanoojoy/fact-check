@@ -15,18 +15,18 @@ const initialState = {
     paymentTerms: null,
     keyword: null,
     userPreferredLocationId: null,
-    analyticsApiAccess: null,
-    isMerchantAccess: false,
-
-    pagePermissions: {
-        isAuthorizedToAdd: false,
-        isAuthorizedToEdit: false,
-        isAuthorizedToDelete: false,
-    }
+    userDetailsKey: '',
+    userDetails: null
 };
 
 function userReducer(state = initialState, action) {
     switch (action.type) {
+        case actionTypes.GET_USER_INFO: {
+            return {
+                ...state,
+                userInfo: action.userInfo
+            }
+        }
         case actionTypes.CURRENT_USER: {
             return { state };
         }
@@ -84,6 +84,13 @@ function userReducer(state = initialState, action) {
             return Object.assign({}, state, {
                 user: action.user
             });
+        }
+        case actionTypes.GET_USERCOMPANY_DETAILS: {
+            return {
+                ...state,
+                userDetails: action.payload,
+                userDetailsKey: action.userDetailsKey
+            }
         }
         default:
             return state;

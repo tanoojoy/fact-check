@@ -28,10 +28,7 @@ class OrderDiaryComponent extends React.Component {
                             isSuccessCreate={this.props.isSuccessCreate}
                             updateSelectedSection={this.props.updateSelectedSection}
                             setUploadFile={this.props.setUploadFile}
-                            createEvent={this.props.createEvent}
-                            isAuthorizedToAdd={this.props.isAuthorizedToAdd}
-                            validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
-                        />
+                            createEvent={this.props.createEvent} />
                     </div>
                 </section>
 

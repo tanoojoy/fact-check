@@ -1,6 +1,7 @@
 'use strict';
 var React = require('react');
 var BaseComponent = require('../../../../shared/base');
+const CommonModule = require('../../../../../public/js/common.js');
 
 class EmptySearchResultComponent extends BaseComponent {
     constructor(props) {
@@ -14,7 +15,7 @@ class EmptySearchResultComponent extends BaseComponent {
     componentDidMount() {
         const self = this;
         $.ajax({
-            url: "/search/items/ajax",
+            url: CommonModule.getAppPrefix()+"/search/items/ajax",
             type: "GET",
             data: {
                 pageSize: 8,
@@ -47,7 +48,7 @@ class EmptySearchResultComponent extends BaseComponent {
         return (
             <div className="item-no-result-msg">
                 <div className="no-result-red">Sorry!</div>
-                <img src="/assets/images/no_result.svg" />
+                <img src={CommonModule.getAppPrefix() + "/assets/images/no_result.svg"} />
                 <div className="no-result-text">
                     <span>We couldn't find anything that matches. <br />Would you like to review your search, and you can check out what others are looking at below.</span>
                 </div>
@@ -60,7 +61,7 @@ class EmptySearchResultComponent extends BaseComponent {
                                     const stars = averageRating ? averageRating * 20 : 0;
                                     return (
                                         <div className="col-md-3 col-sm-4 col-xs-6 xs-mb-15" key={item.ID}>
-                                            <a href={"/items/" + self.generateSlug(item.Name) + "/" + item.ID} className="item-box-small">
+                                            <a href={CommonModule.getAppPrefix()+"/items/" + self.generateSlug(item.Name) + "/" + item.ID} className="item-box-small">
                                                 <div className="item-image">
                                                     <img src={item.Media[0].MediaUrl} alt={item.Name} title={item.Name} className="img-responsive" />
                                                 </div>

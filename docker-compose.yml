@@ -1,0 +1,46 @@
+---
+version: '3'
+services:
+  app:
+    image: MANAGEDFULLIMAGENAMEDONOTTOUCH
+    ports:
+      - 8080:3000
+    network_mode: bridge
+    logging:
+      driver: fluentd
+      options:
+        tag: "sciences-npt-horizon-${CLOUD_ENVIRONMENT:-local}-{{.Name}}"
+    environment:
+      CLOUD_DATACENTER: "Amazon"
+      CLOUD_ENVIRONMENT: "${CLOUD_ENVIRONMENT}"
+      CLOUD_APP: "archorizonfrontend"
+    env_file:
+      - ./envs/.env.${CLOUD_DEV_PHASE:-local}
+  eureka-sidecar:
+    image: ls-docker.repo.clarivate.io/eureka-register-sidecar-java:stable
+    restart: on-failure
+    environment:
+      EXPOSE_PORT: 8080
+    volumes:
+      - /etc/reuters:/data
+    ports:
+      - 8077:8077
+    network_mode: bridge
+    dns:
+      - 10.236.2.126
+      - 10.236.2.254
+  fluentd:
+    image: fluentd:v1.6-debian-1
+    volumes:
+      - /opt/clarivate/apps/fluentd/conf/fluent.conf:/fluentd/etc/fluent.conf
+      - ./envs/fluentd.crt:/fluentd/etc/certs/fluentd.crt
+    environment:
+      CLOUD_DATACENTER: "Amazon"
+      CLOUD_ENVIRONMENT: "${CLOUD_ENVIRONMENT}"
+      CLOUD_APP: "archorizonfrontend"
+    env_file:
+      - ./envs/ssm.env
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    network_mode: bridge

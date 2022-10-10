@@ -1,14 +1,15 @@
 'use strict';
 var React = require('react');
+const CommonModule = require('../../public/js/common');
 
 class ExtraMenuComponent extends React.Component {
 
     constructor(props) {
         super(props);
-        this.skipCart = process.env.SKIP_CART == 'true' || false;
+
         this.renderComparisonList = this.renderComparisonList.bind(this);
     }
-    
+
     componentDidMount() {
         $(".h-cart > a").hover(function(event){
             $(".h-cart .h-cart-menu").slideDown();
@@ -44,7 +45,7 @@ class ExtraMenuComponent extends React.Component {
                             <b className="fas fa-square-full" />
                             <span>More</span>
                             <i className="fa fa-angle-down"></i>
-                            <ul className="h-dd-menu hide-me" style={{ overflow: 'hidden', outline: 'none', cursor: 'grab' }} tabIndex="2">
+                            <ul className="h-dd-menu hide-me" style={{ overflow: 'hidden', outline: 'none' }} tabIndex="2">
                                 {panel.Details.map(function (detail, index2) {
                                     return (<li key={index2}><a href={detail.Url}>{detail.Title}</a></li>)
                                 })}
@@ -62,24 +63,24 @@ class ExtraMenuComponent extends React.Component {
         if (this.props.user && typeof this.props.user.Roles !== 'undefined' && this.props.user.Roles != null && (this.props.user.Roles.includes('Merchant') || this.props.user.Roles.includes('Submerchant'))) {
             return true;
         }
-        return false;        
+        return false;
     }
 
     renderSettings() {
         if (this.isMerchant()) {
             return (
-                <li className="mobile-only"><a href="/merchants/settings">Settings</a></li>
+                <li className="mobile-only"><a href={CommonModule.getAppPrefix()+"/merchants/settings"}>Settings</a></li>
             )
         }
 
         return (
-            <li className="mobile-only"><a href="/users/settings">Settings</a></li>    
+            <li className="mobile-only"><a href={CommonModule.getAppPrefix()+"/users/settings"}>Settings</a></li>
         )
     }
 
     renderBeSeller() {
         const privateMerchantRestricted = this.props.isPrivateEnabled || this.props.isMerchantRestrictedOnly;
-        const redirectionLink = privateMerchantRestricted ? "/accounts/sign-in" : "/accounts/non-private/be-seller";
+        const redirectionLink = privateMerchantRestricted ? CommonModule.getAppPrefix()+"/accounts/sign-in" : CommonModule.getAppPrefix()+"/accounts/non-private/be-seller";
         if (!this.isMerchant() && privateMerchantRestricted === false) {
             if (process.env.PRICING_TYPE == 'variants_level' || this.props.isPrivateEnabled == false) {
                 return (
@@ -95,14 +96,14 @@ class ExtraMenuComponent extends React.Component {
     renderSubAccount() {
         if (typeof this.props.merchantSubAccountActive != 'undefined' && this.props.merchantSubAccountActive && this.props.merchantSubAccountActive == true) {
             return (
-                <li> <a href="/merchants/subaccount/list">Sub Account</a> </li>
+                <li> <a href={CommonModule.getAppPrefix()+"/subaccount/list"}>Sub Account</a> </li>
             )
         }
 
         return false
     }
     showMenu(event) {
-       event.stopPropagation(); 
+       event.stopPropagation();
         $(".h-user").find(".h-dd-menu").slideToggle();
         $(".h-st-menus").hide();
         $(".h-more .h-dd-menu").hide();
@@ -114,11 +115,11 @@ class ExtraMenuComponent extends React.Component {
         if (this.isMerchant()) {
             if ($("body").hasClass("page-sidebar")) {
                 return (<li className="h-seller">
-                  <a href="/merchants/dashboard"><i className="fas fa-store-alt"></i><span>Seller</span></a>
+                  <a href={CommonModule.getAppPrefix()+"/merchants/dashboard"}><i className="fas fa-store-alt"></i><span>Seller</span></a>
                 </li>)
             }
             return (
-                <li className="h-user" onClick={(e) => this.showMenu(e)}>              
+                <li className="h-user" onClick={(e) => this.showMenu(e)}>
                     <span className="h-user-container">
                         <a className="seller-menu" href="#">
                             <i className="fas fa-store-alt" ></i>
@@ -127,37 +128,36 @@ class ExtraMenuComponent extends React.Component {
                         <i className="fa fa-angle-down" />
                     </span>
                     <ul className="h-dd-menu hide-me">
-                        <li><a href="/merchants/dashboard">Dashboard</a></li>
-                        <li><a href="/merchants/items">Inventory</a></li>
-                        <li><a href="/merchants/upload">Add New Item</a></li>
-                        <li><a href="/merchants/order/history">Orders</a></li>
+                        <li><a href={CommonModule.getAppPrefix()+"/merchants/dashboard"}>Dashboard</a></li>
+                        <li><a href={CommonModule.getAppPrefix()+"/merchants/items"}>Inventory</a></li>
+                        <li><a href={CommonModule.getAppPrefix()+"/merchants/upload"}>Add New Item</a></li>
+                        <li><a href={CommonModule.getAppPrefix()+"/merchants/order/history"}>Orders</a></li>
                         {this.renderSubAccount()}
-                        <li><a href="/delivery/settings">Shipping</a></li>
+                        <li><a href={CommonModule.getAppPrefix()+"/delivery/settings"}>Shipping</a></li>
                     </ul>
                 </li>
             );
-        } 
+        }
 
         return null;
     }
 
     renderCart() {
-        if (this.skipCart == true) return;
         return (
             <li className="h-cart">
-                <a href="/cart" >
+                <a href={CommonModule.getAppPrefix()+"/cart"} >
                     <i className="fa fa-shopping-cart" />
-                    <span> 
-                        <span className="mobile-only">CART</span>&nbsp; 
+                    <span>
+                        <span className="mobile-only">CART</span>&nbsp;
                         (<span className="cart-count" id="latest-cart-count">0</span>)
                     </span>
                 </a>
-                <div className="h-dd-menu h-cart-menu hide-me" style={{ overflow: 'hidden', outline: 'none', cursor: 'grab' }} tabIndex="1">
-                    <div className="h-cart-mid"> 
+                <div className="h-dd-menu h-cart-menu hide-me" style={{ overflow: 'hidden', outline: 'none' }} tabIndex="1">
+                    <div className="h-cart-mid">
                         <ul />
                     </div>
                     <div className="h-cart-bot">
-                        <a href="/cart" className="btn-view-cart"> View Cart </a>
+                        <a href={CommonModule.getAppPrefix()+"/cart"} className="btn-view-cart"> View Cart </a>
                     </div>
                 </div>
                 <div className="h-dd-menu add-cart">
@@ -180,29 +180,29 @@ class ExtraMenuComponent extends React.Component {
                         </ul>
                     </div>
                     <div className="h-cart-bot">
-                        <a href="/cart" className="btn-view-cart"> View Cart </a>
+                        <a href={CommonModule.getAppPrefix()+"/cart"} className="btn-view-cart"> View Cart </a>
                     </div>
-                </div>                
+                </div>
             </li>
         )
     }
 
     renderChangePasswordMenu() {
         if (this.props.user && this.props.user.UserName && !(this.props.user.UserName.startsWith('Facebook') || this.props.user.UserName.startsWith('Google'))) {
-            return (<li className="mobile-only"><a href="/accounts/change-password">Change Password</a></li>);
+            return (<li className="mobile-only"><a href={CommonModule.getAppPrefix()+"/accounts/change-password"}>Change Password</a></li>);
         }
         return;
     }
-    
+
     renderGuestMenu() {
         let loc = (location.pathname + location.search).substr(1)
-        const loginUrl = `/accounts/non-private/sign-in?returnUrl=${loc}`;
+        const loginUrl = `${CommonModule.getAppPrefix()}/accounts/non-private/sign-in?returnUrl=${loc}`;
 
         return (
             <li className="h-extramenus hide-mobile">
                 <ul>
                     {this.renderBeSeller()}
-                    {this.renderComparisonList()}      
+                    {this.renderComparisonList()}
                     {this.renderCart()}
                     {this.renderHeaderPanel()}
                     <li className="mobile-only">
@@ -218,7 +218,7 @@ class ExtraMenuComponent extends React.Component {
         if (ComparisonEnabled) {
             return (
                 <li className="h-compare">
-                    <a href="/comparison/list">
+                    <a href={CommonModule.getAppPrefix()+"/comparison/list"}>
                         <i className="fa fa-th-list"/>
                         <span className="mobile-only">COMPARE</span>
                     </a>
@@ -232,14 +232,14 @@ class ExtraMenuComponent extends React.Component {
         if (typeof this.props.user.Roles !== 'undefined' && this.props.user.Roles != null && (this.props.user.Roles.includes('Merchant') || this.props.user.Roles.includes('Submerchant'))) {
             //if (process.env.CHECKOUT_FLOW_TYPE == 'b2c') return "/merchants/order/history";
             //return "/quotation/list";
-            return "/merchants/order/history";
+            return CommonModule.getAppPrefix()+"/merchants/order/history";
         }
         //if (process.env.CHECKOUT_FLOW_TYPE == 'b2c') return "/purchase/history";
         //return "/quotation/list";
-        return "/purchase/history";
+        return CommonModule.getAppPrefix()+"/purchase/history";
     }
 
-    render() {        
+    render() {
         if (!this.props.user || (this.props.user && this.props.user.Guest)) {
             return(
                 <React.Fragment>
@@ -253,20 +253,20 @@ class ExtraMenuComponent extends React.Component {
                     <ul>
                         {this.renderBeSeller()}
                         {this.renderSellerMenu()}
-                        <li className="h-mail"> 
-                            <a href="/chat/inbox">
-                                <i className="fa fa-envelope" /> 
+                        <li className="h-mail">
+                            <a href={CommonModule.getAppPrefix()+"/chat/inbox"}>
+                                <i className="fa fa-envelope" />
                                 <span className="mobile-only">MESSAGE</span>
-                            </a> 
+                            </a>
                         </li>
-                        {this.renderComparisonList()}                        
+                        {this.renderComparisonList()}
                         {this.renderCart()}
                         {this.renderHeaderPanel()}
                         <li className="mobile-only"><a href={this.getRedirectLink()}>Buyer Docs</a></li>
                         {this.renderSettings()}
                         {this.renderChangePasswordMenu()}
                         <li className="mobile-only">
-                            <form action="/accounts/sign-out" method="post" style={{ cursor: 'pointer'}}>
+                            <form action={CommonModule.getAppPrefix()+"/accounts/sign-out"} method="post" style={{ cursor: 'pointer'}}>
                                 <li><a id="signout-form" onClick={(e) => this.props.signOut(e)}>Logout</a></li>
                             </form>
                         </li>

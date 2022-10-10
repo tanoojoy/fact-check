@@ -1,4 +1,6 @@
 ﻿'use strict';
+import { redirectUnauthorizedUser } from '../utils';
+
 let express = require('express');
 let cartPageRouter = express.Router();
 let CartPage = require('../views/cart/main').CartPageComponent;
@@ -9,19 +11,15 @@ let client = require('../../sdk/client');
 let Store = require('../redux/store');
 let authenticated = require('../scripts/shared/authenticated');
 let CommonModule = require('../public/js/common');
-const { getUserPermissionsOnPage, isAuthorizedToAccessViewPage, isAuthorizedToPerformAction } = require('../scripts/shared/user-permissions');
 
-const viewCartPage = {
-    renderSidebar: true,
-    code: 'view-consumer-cart-api',
-}
+cartPageRouter.get('/', authenticated, function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
-cartPageRouter.get('/', authenticated, isAuthorizedToAccessViewPage(viewCartPage), function (req, res) {
     if (!req.user) {
         let guestID = '00000000-0000-0000-0000-000000000000';
 
         if (req.cookies && req.cookies.guestUserID) {
-            guestID = req.cookies.guestUserID;          
+            guestID = req.cookies.guestUserID;
         }
         req.user = {
             ID: guestID,
@@ -68,10 +66,6 @@ cartPageRouter.get('/', authenticated, isAuthorizedToAccessViewPage(viewCartPage
             //Add All VariantList
             const merchantIds = [];
             cartList.map(function (cart) {
-               //ARC10053 the discountamount should not be round off to have the correct value.
-                if (cart.DiscountAmount) {
-                    cart.DiscountAmount = parseFloat(cart.DiscountAmountNotRoundOff) || 0;
-                }
                 let promiseItems = new Promise((resolve, reject) => {
                     const options = {
                         itemId: cart.ItemDetail.ParentID,
@@ -91,8 +85,8 @@ cartPageRouter.get('/', authenticated, isAuthorizedToAccessViewPage(viewCartPage
                 if (!merchantIds.includes(cart.ItemDetail.MerchantDetail.ID)) merchantIds.push(cart.ItemDetail.MerchantDetail.ID);
             });
             if (merchantIds.length > 0) {
-                merchantPaymentTerms = Promise.all(merchantIds.map(merchantID => 
-                    new Promise((resolve, reject) => 
+                merchantPaymentTerms = Promise.all(merchantIds.map(merchantID =>
+                    new Promise((resolve, reject) =>
                         client.Payments.getPaymentTerms({ merchantId: merchantID }, function (err, paymentTerms) {
                             resolve({ merchantID, paymentTerms});
                         })
@@ -107,8 +101,6 @@ cartPageRouter.get('/', authenticated, isAuthorizedToAccessViewPage(viewCartPage
                 let quantityModel = {};
                 let variantModel = {};
                 cart.isChecked = "";
-                cart.isItemDisabled = !(cart.ItemDetail && cart.ItemDetail.Active && cart.ItemDetail.IsAvailable && cart.ItemDetail.IsVisibleToCustomer); 
-                cart.isMerchantDisabled = !(cart.ItemDetail && cart.ItemDetail.MerchantDetail && cart.ItemDetail.MerchantDetail.Visible && cart.ItemDetail.MerchantDetail.Active);
                 //For variants Only to get correct value
                 if (cart.ItemDetail.Variants) {
                    // cart.SubTotal = cart.Quantity * cart.ItemDetail.Price;
@@ -127,13 +119,13 @@ cartPageRouter.get('/', authenticated, isAuthorizedToAccessViewPage(viewCartPage
                 if (cart.ItemDetail && cart.ItemDetail.Variants) {
                     variantModel.variantsSelected = [];
                     let sameVariants = [];
-                    cart.ItemDetail.Variants.forEach(function (variant) {                        
+                    cart.ItemDetail.Variants.forEach(function (variant) {
                         if (responses && responses[0]) {
                             responses[0].forEach(function (data) {
                                 if (data && data.ID === cart.ItemDetail.ParentID) {
                                     variantModel.variantDataList = data.ChildItems;
                                     if (data.ChildItems) {
-                                        data.ChildItems.forEach(function (child) {                                            
+                                        data.ChildItems.forEach(function (child) {
                                             if (child.Variants) {
                                                 child.Variants.forEach(function (cVar) {
                                                     if (variant.ID === cVar.ID && variant.GroupID === cVar.GroupID) {
@@ -178,41 +170,32 @@ cartPageRouter.get('/', authenticated, isAuthorizedToAccessViewPage(viewCartPage
             cartPageModel.isArranged = false;
             cartPageModel.merchantPaymentTerms = paymentTerms;
 
-            getUserPermissionsOnPage(currentUser, "Cart", "Consumer", (pagePermissions) => {
-                const s = Store.createCartStore({
-                    userReducer: {
-                        user: currentUser,
-                        pagePermissions: pagePermissions
-                    },
-                    cartReducer: {
-                        cartPageModel: cartPageModel
+            const s = Store.createCartStore({
+                userReducer: { user: currentUser },
+                cartReducer: {
+                    cartPageModel: cartPageModel
 
-                    },
-                    marketplaceReducer: {
-                        ControlFlags: marketInfo.ControlFlags,
-                        locationVariantGroupId: req.LocationVariantGroupId
-                    }
-                });
-
-                const reduxState = s.getState();
-
-                const cart = reactDom.renderToString(
-                    <CartPage
-                        cartPageModel={cartPageModel}
-                        user={currentUser}
-                        ControlFlags={marketInfo.ControlFlags}
-                        locationVariantGroupId={req.LocationVariantGroupId}
-                        pagePermissions={pagePermissions}
-                    />
-                );
-                const appString = 'user-cart';
-                let seoTitle = 'Cart Page';
-                if (req.SeoTitle) {
-                    seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+                },
+                marketplaceReducer: {
+                    ControlFlags: marketInfo.ControlFlags
                 }
-                res.send(template('page-cart', seoTitle, cart, appString, reduxState));
             });
-            
+
+            const reduxState = s.getState();
+
+            const cart = reactDom.renderToString(
+                <CartPage
+                    cartPageModel={cartPageModel}
+                    user={currentUser}
+                    ControlFlags={marketInfo.ControlFlags} />
+            );
+            const appString = 'user-cart';
+            let seoTitle = 'Cart Page';
+            if (req.SeoTitle) {
+                seoTitle = req.SeoTitle ? req.SeoTitle : req.Name;
+            }
+            res.send(template('page-cart', seoTitle, cart, appString, reduxState));
+
         });
 
     });
@@ -224,8 +207,7 @@ cartPageRouter.put('/editCart', authenticated, function (req, res) {
         cartID: req.body.cartID,
         itemID: req.body.itemID,
         quantity: req.body.quantity,
-        discount: req.body.discountAmount,
-        updateCartAsPending: req.body.updateCartAsPending || false
+        discount: req.body.discountAmount
     };
     var promiseCarts = new Promise((resolve, reject) => {
         client.Carts.editCart(options, function (err, result) {
@@ -240,12 +222,10 @@ cartPageRouter.put('/editCart', authenticated, function (req, res) {
 
 cartPageRouter.delete('/deleteCart', authenticated, function (req, res) {
 
-    //Fix for ARC10600
     const options = {
-        userId: req.user ? req.user.ID : req.body.userId,
+        userId: req.user.ID,
         cartId: req.body.cartId
     };
-
     var promiseCarts = new Promise((resolve, reject) => {
         client.Carts.deleteCartItem(options, function (err, result) {
             resolve(result);
@@ -261,7 +241,7 @@ cartPageRouter.post('/generateInvoiceByCartIDs', authenticated, function (req, r
     let cartItemIds = req.body['cartId[]'];
     let userID = req.body['userId'];
     const defaultPaymentTerms = JSON.parse(req.body['defaultPaymentTerms']);
-    
+
     let promiseInvoiceNumber = new Promise((resolve, reject) => {
         let options = {
             userId: userID,
@@ -270,20 +250,14 @@ cartPageRouter.post('/generateInvoiceByCartIDs', authenticated, function (req, r
         };
 
         client.Payments.generateInvoiceNumber(options, function (err, invoiceNumber) {
-            if (err) {
-                if (err.toString().includes('Cannot book') && process.env.PRICING_TYPE == 'service_level') {
-                    resolve({ code: 'INSUFFICIENT_STOCKS'});
-                } else {
-                    resolve(null);
-                }
-            } else  resolve(invoiceNumber);
+            resolve(invoiceNumber);
         });
     });
 
     Promise.all([promiseInvoiceNumber]).then((responses) => {
         const invoiceDetails = responses[0];
         const orders = invoiceDetails.Orders && invoiceDetails.Orders.length > 0 ? invoiceDetails.Orders : null;
-        
+
         if (orders && defaultPaymentTerms && defaultPaymentTerms.length > 0) {
             let promiseOrderDetail = new Promise((resolve, reject) => {
                 let ordersList = [];
@@ -316,8 +290,6 @@ cartPageRouter.post('/generateInvoiceByCartIDs', authenticated, function (req, r
         } else {
             res.send(invoiceDetails);
         }
-    }, (err) => {
-        res.send(err);
     });
 
 });
@@ -376,6 +348,7 @@ cartPageRouter.post('/generateOrderByCartIDs', authenticated, function (req, res
 });
 
 cartPageRouter.get('/getUserCarts', function (req, res) {
+    if (redirectUnauthorizedUser(req, res)) return;
 
     if (!req.user) {
         //Guest Users
@@ -388,7 +361,7 @@ cartPageRouter.get('/getUserCarts', function (req, res) {
             ID: guestID,
             Guest: true
         }
-    } 
+    }
 
     const options = {
         userId: req.user.ID,
@@ -410,10 +383,9 @@ cartPageRouter.get('/getUserCarts', function (req, res) {
 
 cartPageRouter.post('/validateCart', function(req, res) {
     let arr = req.body['cartData'];
-    const isServiceLevel = process.env.PRICING_TYPE == 'service_level';
     if (arr) {
         arr = JSON.parse(arr);
-        const promiseItem = (cart) => 
+        const promiseItem = (cart) =>
             new Promise((resolve, reject) => {
                 const options = {
                     itemId: cart.ItemParentID? cart.ItemParentID : cart.ItemID,
@@ -427,11 +399,7 @@ cartPageRouter.post('/validateCart', function(req, res) {
                         ItemDetail.IsVisibleToCustomer = details.IsVisibleToCustomer;
                         ItemDetail.IsAvailable = details.IsAvailable;
                     }
-                    if (err) {
-                        resolve({...cart, error: err.toString() })
-                    } else {
-                        resolve({ ...cart, ItemDetail });
-                    }
+                    resolve({ ...cart, ItemDetail });
                 });
             });
         const promiseItemDetailArr = Promise.all(arr.map(cart => promiseItem(cart)));
@@ -440,32 +408,25 @@ cartPageRouter.post('/validateCart', function(req, res) {
             const cartItemDetailsArr = responses[0];
             if (cartItemDetailsArr && cartItemDetailsArr.length > 0) {
                 cartItemDetailsArr.map(cart => {
-                    if (cart.error) {
-                        if (cart.error.includes('Item is not found.')) {
-                            results.push({ merchantID: cart.MerchantID, ID: cart.ID, code: 'NOT_FOUND'});
-                        }
-                    } else {
-                        if (!cart.ItemDetail.IsVisibleToCustomer || !cart.ItemDetail.IsAvailable) {
-                            //not purchasable
-                            results.push({ ID: cart.ID, code: 'NOT_PURCHASABLE'});
-                        } else if (cart.ItemDetail.StockLimited && parseInt(cart.ItemDetail.StockQuantity) == 0) {
-                            results.push({ ID: cart.ID, code: 'SOLD_OUT' });
-                        } else if (cart.ItemDetail.StockLimited && process.env.PRICING_TYPE !== 'service_level') {
-                            const remainingStocks = parseInt(cart.ItemDetail.StockQuantity);
-                            // insufficient stocks
-                            if (remainingStocks < parseInt(cart.Quantity)) {
-                                results.push({
-                                    ID: cart.ID,
-                                    remainingStocks,
-                                    code: 'INSUFFICIENT_STOCKS'
-                                });
-                            }
+                    if (!cart.ItemDetail.IsVisibleToCustomer || !cart.ItemDetail.IsAvailable) {
+                        //not purchasable
+                        results.push({ ID: cart.ID, code: 'NOT_PURCHASABLE'});
+                    } else if (cart.ItemDetail.StockLimited && parseInt(cart.ItemDetail.StockQuantity) == 0) {
+                        results.push({ ID: cart.ID, code: 'SOLD_OUT' });
+                    } else if (cart.ItemDetail.StockLimited) {
+                        const remainingStocks = parseInt(cart.ItemDetail.StockQuantity);
+                        // insufficient stocks
+                        if (remainingStocks < parseInt(cart.Quantity)) {
+                            results.push({
+                                ID: cart.ID,
+                                remainingStocks,
+                                code: 'INSUFFICIENT_STOCKS'
+                            });
                         }
                     }
-
                 });
                 res.send({ success: results.length == 0, data: results });
-            } else res.send({ success: false });
+            } else  res.send({ success: false });
         });
     } else res.send({ success: false });
 

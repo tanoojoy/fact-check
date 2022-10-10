@@ -61,12 +61,11 @@ class TransactionSummaryComponent extends BaseComponent {
         shippingCost = detail.Freight;
 
         if (detail.PurchaseOrderNo) {
-          //  purchaseOrderNo = detail.PurchaseOrderNo;
-            purchaseOrderNo = detail.CosmeticNo != null && detail.CosmeticNo != "" ? detail.CosmeticNo : detail.PurchaseOrderNo;
+            purchaseOrderNo = detail.PurchaseOrderNo;
         }
 
         // quotation or bulk pricing discount
-        discountTotal += detail.DiscountAmountNotRoundOff || 0;
+        discountTotal += detail.DiscountAmount || 0;
 
         // quotation charge
         chargeTotal += detail.Surcharge || 0;
@@ -74,7 +73,7 @@ class TransactionSummaryComponent extends BaseComponent {
         if (detail.CartItemDetails) {
             detail.CartItemDetails.forEach(function (cartItemDetail) {
                 if (cartItemDetail.DiscountAmount) {
-                    discount += cartItemDetail.DiscountAmount === null ? 0 : cartItemDetail.DiscountAmountNotRoundOff;
+                    discount += cartItemDetail.DiscountAmount === null ? 0 : cartItemDetail.DiscountAmount;
                 }
                 if (cartItemDetail.AcceptedOffer) {
                     channelRedirect = "/chat?channelId=" + cartItemDetail.AcceptedOffer.ChannelID;

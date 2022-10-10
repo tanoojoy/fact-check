@@ -4,19 +4,20 @@ var React = require('react');
 var UserMenuComponentTemplate = require('./user-menu')
 var SellerMenuComponentTemplate = require('./seller-menu')
 var LanguageMenuComponentTemplate = require('./language-menu')
+let CommonModule = require('../../../../public/js/common.js');
 
 class HeaderMenuComponentTemplate extends React.Component {
     renderSellerMenu() {
         if (typeof this.props.user !== 'undefined' && this.props.user != null && this.props.user.Roles != null && (this.props.user.Roles.includes('Merchant') || this.props.user.Roles.includes('Submerchant'))) {
             return (
-                <SellerMenuComponentTemplate {...this.props}/>    
+                <SellerMenuComponentTemplate {...this.props}/>
             )
         }
 
         if (this.props.isPrivateEnabled === false) {
             return (
                 <li>
-                    <a href="/accounts/non-private/be-seller" className="hidden-xs">BE A SELLER</a> 
+                    <a href={CommonModule.getAppPrefix()+"/accounts/non-private/be-seller"} className="hidden-xs">BE A SELLER</a>
                 </li>
             )
         }
@@ -24,7 +25,7 @@ class HeaderMenuComponentTemplate extends React.Component {
     }
 
     render() {
-        
+
         return (
             <div className="pull-right">
                 <ul className="header-menus">

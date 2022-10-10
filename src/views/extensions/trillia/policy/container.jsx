@@ -3,6 +3,7 @@ var React = require('react');
 var ReactRedux = require('react-redux');
 
 var EnumCore = require('../../../../public/js/enum-core');
+const CommonModule = require('../../../../public/js/common');
 
 if (typeof window !== 'undefined') {
     var $ = window.$;
@@ -19,19 +20,19 @@ class ContainerComponent extends React.Component {
         let faq = EnumCore.GetPolicyMappingByKey('Faq');
         if (this.props.policy.Title !== "FAQ") {
             if (this.props.pages.find(p => p.Title === about.value)) {
-                links.push(<li className={this.props.policy.Title == about.value ? 'active' : ''}><a href={'/policy/' + about.url}>{about.name}</a></li>);
+                links.push(<li className={this.props.policy.Title == about.value ? 'active' : ''}><a href={CommonModule.getAppPrefix() + '/policy/' + about.url}>{about.name}</a></li>);
             }
             if (this.props.pages.find(p => p.Title === terms.value)) {
-                links.push(<li className={this.props.policy.Title == terms.value ? 'active' : ''}><a href={'/policy/' + terms.url}>{terms.name}</a></li>);
+                links.push(<li className={this.props.policy.Title == terms.value ? 'active' : ''}><a href={CommonModule.getAppPrefix() + '/policy/' + terms.url}>{terms.name}</a></li>);
             }
             if (this.props.pages.find(p => p.Title === privacy.value)) {
-                links.push(<li className={this.props.policy.Title == privacy.value ? 'active' : ''}><a href={'/policy/' + privacy.url}>{privacy.name}</a></li>);
+                links.push(<li className={this.props.policy.Title == privacy.value ? 'active' : ''}><a href={CommonModule.getAppPrefix() + '/policy/' + privacy.url}>{privacy.name}</a></li>);
             }
             if (this.props.pages.find(p => p.Title === returns.value)) {
-                links.push(<li className={this.props.policy.Title == returns.value ? 'active' : ''}><a href={'/policy/' + returns.url}>{returns.name}</a></li>);
+                links.push(<li className={this.props.policy.Title == returns.value ? 'active' : ''}><a href={CommonModule.getAppPrefix() + '/policy/' + returns.url}>{returns.name}</a></li>);
             }
             /* if (this.props.pages.find(p => p.Title === contact.value)) {
-                 links.push(<li className={this.props.policy.Title == contact.value ? 'active' : ''}><a href={'/policy/' + contact.url}>{contact.name}</a></li>);
+                 links.push(<li className={this.props.policy.Title == contact.value ? 'active' : ''}><a href={CommonModule.getAppPrefix() + '/policy/' + contact.url}>{contact.name}</a></li>);
              }*/
         }
 

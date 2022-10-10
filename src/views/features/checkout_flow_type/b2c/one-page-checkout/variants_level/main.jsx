@@ -10,7 +10,6 @@ import {
     proceedToPayment, updateSelectedAddress, onTextChangeAddAddress, addressToDelete, deliveryChanged, onTextChangeUser, calculateCost, updateBuyerAddress,
     updateIsSameBilingAndDelivery, deleteAddress, createAddress, clearAddAddressModal
 } from '../../../../../../redux/checkoutReviewAction';
-const { validatePermissionToPerformAction } = require('../../../../../../redux/accountPermissionActions');
 
 
 
@@ -42,8 +41,7 @@ function mapStateToProps(state, ownProps) {
         buyerAddress: state.checkoutReducer.buyerAddress,
         paymentMethods: state.checkoutReducer.paymentMethods,
         isSameBillingAndDelivery: state.checkoutReducer.isSameBillingAndDelivery,
-        pendingOffer: state.checkoutReducer.pendingOffer,
-        permissions: state.userReducer.permissions
+        pendingOffer: state.checkoutReducer.pendingOffer
     };
 }
 
@@ -63,12 +61,11 @@ function mapDispatchToProps(dispatch) {
         clearAddAddressModal: () => dispatch(clearAddAddressModal()),
         updateSelectedPaymentMethod: (code) => dispatch(updateSelectedPaymentMethod(code)),
         generateStripeSessionId: (callback) => dispatch(generateStripeSessionId(callback)),
-        postPayment: (stripe, omise, isProcessPayment, callback) => dispatch(postPayment(stripe, omise, null, null, isProcessPayment, null, callback)),
+        postPayment: (stripe, omise, isProcessPayment, callback) => dispatch(postPayment(stripe, omise, null, null, isProcessPayment, callback)),
         calculateCost: (selectedDelOption, orderID) => dispatch(calculateCost(selectedDelOption, orderID)),
         updateUserInfo: (userInfo) => dispatch(updateUserInfo(userInfo)),
         updateBuyerAddress: (address) => dispatch(updateBuyerAddress(address)),
         updateIsSameBilingAndDelivery: (value) => dispatch(updateIsSameBilingAndDelivery(value)),
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback))
     }
 }
 

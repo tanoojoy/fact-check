@@ -3,7 +3,7 @@ var React = require('react');
 var ReactRedux = require('react-redux');
 var Toastr = require('toastr');
 require('daterangepicker');
-var HeaderLayoutComponent = require('../../../layouts/header').HeaderLayoutComponent;
+var HeaderLayoutComponent = require('../../../layouts/header/index').HeaderLayoutComponent;
 var SidebarLayoutComponent = require('../../../layouts/sidebar').SidebarLayoutComponent;
 var FooterLayout = require('../../../../views/layouts/footer').FooterLayoutComponent;
 
@@ -18,8 +18,6 @@ var BaseComponent = require('../../../../views/shared/base');
 var OrderActions = require('../../../../redux/orderActions');
 
 let PurchaseOrderListComponent = require('../../../features/checkout_flow_type/' + process.env.CHECKOUT_FLOW_TYPE + '/purchase_order/merchant/order_history_list/index');
-
-const { validatePermissionToPerformAction } = require('../../../../redux/accountPermissionActions');
 
 class OrderHistoryComponent extends BaseComponent {
     //renderPurchaseTable() {
@@ -370,8 +368,6 @@ class OrderHistoryComponent extends BaseComponent {
                                
                                 {this.renderPurchaseSearch()}
                                 <PurchaseOrderListComponent
-                                    pagePermissions={this.props.pagePermissions}
-                                    validatePermissionToPerformAction={this.props.validatePermissionToPerformAction}
                                     Records={self.props.history.Records} statuses={self.props.statuses.Records}
                                     updateHistoryOrders={self.props.updateHistoryOrders}
                                     revertPaymentOrderList={self.props.revertPaymentOrderList}
@@ -395,7 +391,6 @@ class OrderHistoryComponent extends BaseComponent {
 function mapStateToProps(state, ownProps) {
     return {
         user: state.userReducer.user,
-        pagePermissions: state.userReducer.pagePermissions,
         history: state.orderReducer.history,
         keyword: state.orderReducer.keyword,
         suppliers: state.orderReducer.suppliers,
@@ -414,7 +409,6 @@ function mapStateToProps(state, ownProps) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        validatePermissionToPerformAction: (code, callback) => dispatch(validatePermissionToPerformAction(code, callback)),
         revertPaymentOrderList: (cartItemID, status) => dispatch(OrderActions.revertPaymentOrderList(cartItemID, status)),
         updateDetailOrder: (status,invoiceNo) => dispatch(OrderActions.updateDetailOrder(status,invoiceNo)),
         goToPage: (pageNo, filters) => dispatch(OrderActions.goToPage(pageNo, filters)),

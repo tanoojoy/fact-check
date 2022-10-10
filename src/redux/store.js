@@ -30,29 +30,30 @@ const quotationReducer = require('./reducers/quotations').quotationReducer;
 const requisitionReducer = require('./reducers/requisitions').requisitionReducer;
 const receivingNoteReducer = require('./reducers/receiving-notes').recevingNoteReducer;
 const invoiceReducer = require('./reducers/invoice').invoiceReducer;
-const userGroupReducer = require('./reducers/user-groups').userGroupReducer;
-const accountPermissionReducer = require('./reducers/account-permissions').accountPermissionReducer;
+const companyReducer = require('./reducers/company').companyReducer;
+const productInfoReducer = require('./reducers/product').productReducer;
+const productReducer = require('./reducers/cgi-product').productReducer;
 
 const thunk = require('redux-thunk').default;
 
 const headerReducer = redux.combineReducers({
-    categoryReducer, userReducer, panelsReducer, marketplaceReducer, inboxReducer, cartReducer
+    categoryReducer, userReducer, panelsReducer, marketplaceReducer, inboxReducer, cartReducer, searchReducer
 });
 
-const sidebarReducer =  redux.combineReducers({
+const sidebarReducer = redux.combineReducers({
     userReducer, marketplaceReducer, approvalReducer
 });
 
 const homepageReducer = redux.combineReducers({
-    itemsReducer, categoryReducer, userReducer, panelsReducer, settingsReducer
+    itemsReducer, categoryReducer, userReducer, panelsReducer, settingsReducer, searchReducer, productReducer
 });
 
 const itemDetailReducer = redux.combineReducers({
-    itemsReducer, userReducer, panelsReducer, merchantReducer, comparisonReducer, marketplaceReducer, cartReducer
+    itemsReducer, userReducer, panelsReducer, merchantReducer, comparisonReducer, marketplaceReducer, cartReducer, searchReducer
 });
 
 const purchasePageReducer = redux.combineReducers({
-    userReducer, purchaseReducer, orderDiaryReducer, comparisonReducer, marketplaceReducer
+    userReducer, purchaseReducer, orderDiaryReducer, comparisonReducer
 });
 
 const storeFrontPageReducer = redux.combineReducers({
@@ -60,11 +61,11 @@ const storeFrontPageReducer = redux.combineReducers({
 });
 
 const orderPageReducer = redux.combineReducers({
-    userReducer, orderReducer, orderDiaryReducer, marketplaceReducer
+    userReducer, orderReducer, orderDiaryReducer
 });
 
 const inboxPageReducer = redux.combineReducers({
-    userReducer, inboxReducer
+    userReducer, inboxReducer, companyReducer, searchReducer
 });
 
 const ActivityLogPageReducer = redux.combineReducers({
@@ -76,7 +77,7 @@ const ComparisonPageReducer = redux.combineReducers({
 });
 
 const settingPageReducer = redux.combineReducers({
-    settingsReducer, userReducer, currentUserReducer
+    settingsReducer, userReducer, currentUserReducer, searchReducer
 });
 
 const searchPageReducer = redux.combineReducers({
@@ -92,7 +93,7 @@ const dashboardComponentReducer = redux.combineReducers({
 });
 
 const itemUploadEditReducer = redux.combineReducers({
-    uploadEditItemReducer, userReducer
+    uploadEditItemReducer, userReducer, searchReducer
 });
 
 const deliverySettingsReducerCombineReducer = redux.combineReducers({
@@ -116,7 +117,7 @@ const policyPageReducer = redux.combineReducers({
 });
 
 const chatPageReducer = redux.combineReducers({
-    userReducer, chatReducer, comparisonReducer
+    userReducer, chatReducer, comparisonReducer, companyReducer, searchReducer
 });
 
 const cartPageReducer = redux.combineReducers({
@@ -128,7 +129,7 @@ const checkoutPageReducer = redux.combineReducers({
 });
 
 const OnePageCheckoutReducer = redux.combineReducers({
-    settingsReducer, merchantReducer, checkoutReducer, userReducer, currentUserReducer, marketplaceReducer
+    settingsReducer, merchantReducer, checkoutReducer, userReducer, currentUserReducer
 });
 
 const approvalPageReducer = redux.combineReducers({
@@ -136,31 +137,43 @@ const approvalPageReducer = redux.combineReducers({
 });
 
 const QuotationPageReducer = redux.combineReducers({
-    userReducer, quotationReducer
+    userReducer, quotationReducer, searchReducer, itemsReducer
 });
 
 const RequisitionPageReducer = redux.combineReducers({
-    userReducer, requisitionReducer, orderDiaryReducer, marketplaceReducer
+    userReducer, requisitionReducer, orderDiaryReducer
 });
 
 const ReceivingNotePageReducer = redux.combineReducers({
-    userReducer, receivingNoteReducer, orderDiaryReducer, marketplaceReducer
+    userReducer, receivingNoteReducer, orderDiaryReducer
 });
 
 const InvoicePageReducer = redux.combineReducers({
-    userReducer, invoiceReducer, orderDiaryReducer, marketplaceReducer
+    userReducer, invoiceReducer, orderDiaryReducer
 });
 
-const UserGroupPageReducer = redux.combineReducers({
-    userReducer, userGroupReducer
+const PartnersPageReducer = redux.combineReducers({
+    userReducer, marketplaceReducer, searchReducer
 });
 
-const AccountPermissionPageReducer = redux.combineReducers({
-    userReducer, accountPermissionReducer
+const InboxPageReducer = redux.combineReducers({
+    userReducer, inboxReducer, marketplaceReducer, searchReducer, companyReducer
 });
 
-const UnauthorizedAccessPageReducer = redux.combineReducers({
-    userReducer
+const CompanyPageReducer = redux.combineReducers({
+    userReducer, companyReducer, searchReducer
+});
+
+const ProductPageReducer = redux.combineReducers({
+    userReducer, productInfoReducer, searchReducer, quotationReducer, companyReducer, itemsReducer
+});
+
+const ProductSettingsPageReducer = redux.combineReducers({
+    userReducer, productInfoReducer, searchReducer, quotationReducer
+});
+
+const CreateRFQPage = redux.combineReducers({
+    userReducer, productReducer, searchReducer, quotationReducer
 });
 
 function createDeliverySettingsStore(initialState) {
@@ -287,16 +300,36 @@ function createInvoiceStore(initialState) {
     return redux.createStore(InvoicePageReducer, initialState, redux.applyMiddleware(thunk));
 }
 
-function createUserGroupStore(initialState) {
-    return redux.createStore(UserGroupPageReducer, initialState, redux.applyMiddleware(thunk));
+function createPartnersPageStore(initialStore) {
+    return redux.createStore(PartnersPageReducer, initialStore, redux.applyMiddleware(thunk));
 }
 
-function createAccountPermissionStore(initialState) {
-    return redux.createStore(AccountPermissionPageReducer, initialState, redux.applyMiddleware(thunk));
+function createCompanyPageStore(initialStore) {
+    return redux.createStore(CompanyPageReducer, initialStore, redux.applyMiddleware(thunk));
 }
 
-function createUnauthorizedAccessStore(initialState) {
-    return redux.createStore(UnauthorizedAccessPageReducer, initialState, redux.applyMiddleware(thunk));
+function createProductPageStore(initialStore) {
+    return redux.createStore(ProductPageReducer, initialStore, redux.applyMiddleware(thunk));
+}
+
+function createProductSettingsPageStore(initialStore) {
+    return redux.createStore(ProductSettingsPageReducer, initialStore, redux.applyMiddleware(thunk));
+}
+
+function createQuotationPageStore(initialStore) {
+    return redux.createStore(QuotationPageReducer, initialStore, redux.applyMiddleware(thunk));
+}
+
+function createInboxPageStore(initialStore) {
+    return redux.createStore(InboxPageReducer, initialStore, redux.applyMiddleware(thunk));
+}
+
+function createUserInfoStore(initialStore) {
+    return redux.createStore(userReducer, initialStore, redux.applyMiddleware(thunk));
+}
+
+function createRFQPageStore(initialStore) {
+    return redux.createStore(CreateRFQPage, initialStore, redux.applyMiddleware(thunk));
 }
 
 module.exports = {
@@ -331,7 +364,12 @@ module.exports = {
     createRequisitionStore: createRequisitionStore,
     createReceivingNoteStore: createReceivingNoteStore,
     createInvoiceStore: createInvoiceStore,
-    createUserGroupStore: createUserGroupStore,
-    createAccountPermissionStore: createAccountPermissionStore,
-    createUnauthorizedAccessStore: createUnauthorizedAccessStore
+    createPartnersPageStore,
+    createCompanyPageStore,
+    createProductPageStore,
+    createProductSettingsPageStore,
+    createQuotationPageStore,
+    createInboxPageStore,
+    createUserInfoStore,
+    createRFQPageStore
 };
